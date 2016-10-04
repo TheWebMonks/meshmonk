@@ -4,8 +4,8 @@
 
 In order to get started you need the [VTK C++](http://www.vtk.org) and 
 a lot of other C++ and Linux stuff :) All this has been wrapped in a 
-reproducible docker image. Go and fetch the 
-[docker image](https://hub.docker.com/r/lukin0110/docker-vtk-python/).
+reproducible docker image. The docker image is hosted on 
+[Docker Hub](https://hub.docker.com/r/lukin0110/docker-vtk-python/).
 
 ### Download
 
