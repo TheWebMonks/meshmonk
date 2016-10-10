@@ -21,7 +21,7 @@ vh3 = pyramid.add_vertex(TriMesh.Point(0, 1, 0))
 fh0 = pyramid.add_face(vh0, vh1, vh2)
 fh1 = pyramid.add_face(vh0, vh2, vh3)
 fh2 = pyramid.add_face(vh0, vh3, vh1)
-fh2 = pyramid.add_face(vh1, vh2, vh3)
+fh3 = pyramid.add_face(vh1, vh3, vh2)
 
 #Save
 write_mesh(pyramid, "/home/jonatan/kuleuven-algorithms/src/data/pyramid.obj")
@@ -55,14 +55,21 @@ write_mesh(pyramid, "/home/jonatan/kuleuven-algorithms/src/data/fucked_up_pyrami
 #parameters needed for initialization
 nVertices = pyramid.n_vertices()
 nFaces = pyramid.n_faces()
-maxValence = 7 #assumption that no vertex will be connected that more than 7 other vertices
+maxValenceAssumed = 7 #assumption that no vertex will be connected that more than 7 other vertices
 
 #Extract positions, normals and connectivity
 positions = np.zeros((nVertices,3), dtype = float)
 normals = np.zeros((nVertices,3), dtype = float)
-neighbourIndices = -1 * np.ones((nVertices, maxValence), dtype = int)
+faces = np.zeros((nFaces,3), dtype = int)
+neighbourIndices = -1 * np.ones((nVertices, maxValenceAssumed), dtype = int)
 
-i = 0
+face = TriMesh.Face(0,0,0)
+for i, fh in enumerate(pyramid.faces()): #loop over faces
+    for j,fvh in enumerate(pyramid.fv(fh)): #for current face, loop over all vertices (fv = face-vertex iterator)
+        faces[i,j] = fvh.idx()
+        #TODO: DEZE LOOP DEBUGGEN
+
+maxValence = 0 #we save the maximum valence so that we can release array memory later
 for i, vh in enumerate(pyramid.vertices()):
     positions[i,0] = pyramid.point(vh)[0]
     positions[i,1] = pyramid.point(vh)[1]
@@ -70,12 +77,46 @@ for i, vh in enumerate(pyramid.vertices()):
     normals[i,0] = pyramid.normal(vh)[0]
     normals[i,1] = pyramid.normal(vh)[1]
     normals[i,2] = pyramid.normal(vh)[2]
+    for j, vvh in enumerate(pyramid.vv(vh)):
+        neighbourIndices[i,j] = vvh.idx()
+        if (j+1) > maxValence:
+            maxValence = j+1
 
-    for j, vvh in enumerate(pyramid.vv_iter(vh)):
-        neighbourIndices[i,j] = pyramid.point(vvh).idx()
+#release memory for neighbourIndices matrix
+neighbourIndices = np.delete(neighbourIndices,range(maxValence,maxValenceAssumed),1) #delete the first column that just contains nCorners in each element
 
-#TODO: verder het stukje hier net boven: zodat we indices van neighbours kunnen opslaan. Als te lang duurt, gewoon skippen want lijkt makkelijker in c++. Dan andersom de keten doen: van numpy naar OpenMesh. En dan wta algoritmes tussenin proberen!
+##########
+#DATA INSERTION
+##########
+#=====Let's see if we can insert all the data we need into both an new mesh=====#
+"""
+The data formats we assume to be working with to represent a triangular mesh is the following:
+-positions: (nVertices x 3) numpy matrix of floats/doubles with each row the x,y,z coordinates for each vertex
+-normals: (nVertices x 3) numpy matrix of floats/doubles with each row the x,y,z values for each vertex (!) normal (not the face normal)
+-neighbours: (nVertices x maxNumNeighbours) numpy matrix of integers with each row the indices of a vertex's neighbouring vertices (elements equal to -1 are used to fill up the matrix)
+-faces: (nFaces x 3) numpy of integers with each row the three indices of the vertices that belong to that face.
 
-print(positions)
-print(normals)
-print(neighbourIndices)
+NOTE: neighbours and faces contains similar information. However, we provision the possibility that the neighbouring vertices
+can later be determined not only through connecting edges, but can also be found through a real neighbourhood search.
+"""
+pyramidNew = TriMesh()
+
+pos = TriMesh.Point(0,0,0)
+vh_list = []
+for i in range(nVertices):
+    pos[0] = positions[i,0]
+    pos[1] = positions[i,1]
+    pos[2] = positions[i,2]
+    vh = pyramidNew.add_vertex(pos)
+    vh_list.append(vh)
+
+id = [ 0 for i in range(3)]
+for i in range(nFaces):
+    id[0] = faces[i,0]
+    id[1] = faces[i,1]
+    id[2] = faces[i,2]
+    fh = pyramidNew.add_face(vh_list[id[0]], vh_list[id[1]], vh_list[id[2]])
+    print(id)
+
+#Save
+write_mesh(pyramidNew, "/home/jonatan/kuleuven-algorithms/src/data/fucked_up_pyramid.obj")
