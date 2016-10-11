@@ -6,6 +6,11 @@ from openmesh import *
 import numpy as np
 from scipy import linalg
 
+floatingMeshPath = "/home/jonatan/kuleuven-algorithms/src/data/bunny90.obj"
+targetMeshPath = "/home/jonatan/kuleuven-algorithms/src/data/fucked_up_bunny2.obj"
+outputMeshName = "/home/jonatan/kuleuven-algorithms/src/data/registered_bunny.obj"
+
+
 """
 In this example, we will perform rigid registration of the original
 (downsampled) bunny to the fucked up bunny.
@@ -62,8 +67,6 @@ adjustScale = False
 
 
 ##Load meshes
-floatingMeshPath = "/home/jonatan/kuleuven-algorithms/src/data/pyramid_centered.obj"
-targetMeshPath = "/home/jonatan/kuleuven-algorithms/src/data/pyramid_rotated.obj"
 floatingMesh = TriMesh()
 read_mesh(floatingMesh, floatingMeshPath)
 targetMesh = TriMesh()
@@ -237,7 +240,9 @@ translationMatrix = np.identity(4, dtype = float)
 rotationMatrix = np.identity(4, dtype = float)
 translationMatrix[0:3,3] = translation
 rotationMatrix[0:3,0:3] = scaleFactor * rotMatTemp
-transformationMatrix = rotationMatrix.dot(translationMatrix)
+#First rotate, then translate (transformations using homogeneous transformation
+#matrices are executed from right to left).
+transformationMatrix = translationMatrix.dot(rotationMatrix)
 
 ##4) Apply transformation
 oldFloatingPositions = floatingPositions.copy()
@@ -270,40 +275,4 @@ floatingMesh.update_normals()
 floatingMesh.release_face_normals()
 
 ##Save the mesh
-outputMeshName = "/home/jonatan/kuleuven-algorithms/src/data/pyramid_result.obj"
 write_mesh(floatingMesh, outputMeshName)
-
-
-##########
-#VERIFICATION OF BUNNIES
-##########
-"""
-The original bunny90 was transformed with the following transformation matrix:
-0.291926581726429 0.837222414029987 0.46242567005663 1.2
--0.454648713412841 -0.303896654864527 0.837222414029987 1.3
-0.841470984807897 -0.454648713412841 0.291926581726429 0
-0 0 0 1
-
-The transformation matrix resulting from our ICP should be the inverse of that,
-hence if we multiply the one above with our resulting matrix they should give a
-matrix that's unity.
-"""
-# originalTransformation = np.array([[0.291926581726429, 0.837222414029987, 0.46242567005663, 1.2],[-0.454648713412841, -0.303896654864527, 0.837222414029987, 1.3],[0.841470984807897, -0.454648713412841, 0.291926581726429, 0],[0.0, 0.0, 0.0, 1.0]])
-# print(originalTransformation)
-# resultingTransformationShouldBe = np.linalg.inv(originalTransformation)
-# print(resultingTransformationShouldBe)
-# isThisUnity = transformationMatrix.dot(originalTransformation)
-# print(isThisUnity)
-# isThisUnity2 = originalTransformation.dot(transformationMatrix)
-# print(isThisUnity2)
-
-##########
-#VERIFICATION OF PYRAMIDS
-##########
-"""
-The original bunny90 was transformed with the following transformation matrix:
-"""
-originalTransformation = np.array([[-1.0/np.sqrt(6.0), -1.0/np.sqrt(6.0), 2.0/np.sqrt(6.0), 0.0],[1.0/np.sqrt(2.0), -1.0/np.sqrt(2.0), 0.0, 0.0],[1.0/np.sqrt(3.0), 1.0/np.sqrt(3.0), 1.0/np.sqrt(3.0), 0.0],[0.0, 0.0, 0.0, 1.0]])
-print(originalTransformation)
-print(transformationMatrix)
-print(originalTransformation.dot(transformationMatrix.transpose())) #should be near unity matrix
