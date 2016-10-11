@@ -88,7 +88,7 @@ neighbourIndices = np.delete(neighbourIndices,range(maxValence,maxValenceAssumed
 ##########
 #DATA INSERTION
 ##########
-#=====Let's see if we can insert all the data we need into both an new mesh=====#
+#=====Let's see if we can insert all the data we need into a new mesh=====#
 """
 The data formats we assume to be working with to represent a triangular mesh is the following:
 -positions: (nVertices x 3) numpy matrix of floats/doubles with each row the x,y,z coordinates for each vertex

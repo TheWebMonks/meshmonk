@@ -4,6 +4,7 @@ sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
 from openmesh import *
 #Importing the rest of utilities
 import numpy as np
+from scipy import linalg
 
 """
 In this example, we will perform rigid registration of the original
@@ -41,9 +42,10 @@ iterative loop.
 vertex's neighbours. (Neighbours can be determined in various ways. They are
 important for some operations where neighbouring vertices play a role in the
 computation.)
--kappa: mahalanobis distance for outlier determination (e.g. kappa = 2 means
+-kappaa: mahalanobis distance for outlier determination (e.g. kappaa = 2 means
 that 2 standard deviations of the distribution is the middle of the transition
 zone from inlier to outlier classification)
+-adjustScale: whether or not to change the size of the floating mesh during ICP
 """
 
 ##########
@@ -51,7 +53,8 @@ zone from inlier to outlier classification)
 ##########
 maxNumIterations = 1
 maxNumNeighbours = 20 #
-kappa = 3
+kappaa = 3
+adjustScale = False
 
 ##########
 # PREPARE DATA
@@ -59,8 +62,8 @@ kappa = 3
 
 
 ##Load meshes
-floatingMeshPath = "/home/jonatan/kuleuven-algorithms/src/data/bunny90.obj"
-targetMeshPath = "/home/jonatan/kuleuven-algorithms/src/data/fucked_up_bunny.obj"
+floatingMeshPath = "/home/jonatan/kuleuven-algorithms/src/data/pyramid_centered.obj"
+targetMeshPath = "/home/jonatan/kuleuven-algorithms/src/data/pyramid_rotated.obj"
 floatingMesh = TriMesh()
 read_mesh(floatingMesh, floatingMeshPath)
 targetMesh = TriMesh()
@@ -92,42 +95,42 @@ numTargetVertices = targetMesh.n_vertices()
 numTargetFaces = targetMesh.n_faces()
 
 ###Initialize positions
-floatingPositions = np.zeros((numFloatingVertices,3), dtype = float)
-correspondingPositions = np.zeros((numFloatingVertices,3), dtype = float)
-targetPositions = np.zeros((numTargetVertices,3), dtype = float)
+floatingPositions = np.zeros((3,numFloatingVertices), dtype = float)
+correspondingPositions = np.zeros((3,numFloatingVertices), dtype = float)
+targetPositions = np.zeros((3,numTargetVertices), dtype = float)
 ### Initialize normals
-floatingNormals = np.zeros((numFloatingVertices,3), dtype = float)
-correspondingNormals = np.zeros((numFloatingVertices,3), dtype = float)
-targetNormals = np.zeros((numTargetVertices,3), dtype = float)
+floatingNormals = np.zeros((3,numFloatingVertices), dtype = float)
+correspondingNormals = np.zeros((3,numFloatingVertices), dtype = float)
+targetNormals = np.zeros((3,numTargetVertices), dtype = float)
 ### Initialize neighbours (these matrices are filled with '-1' elements)
-floatingNeighbours = -1 * np.ones((numFloatingVertices, maxNumNeighbours), dtype = int)
+floatingNeighbours = -1.0 * np.ones((maxNumNeighbours, numFloatingVertices), dtype = int)
 correspondingNeighbours = floatingNeighbours #a shallow copy suffices
-targetNeighbours = -1 * np.ones((numTargetVertices, maxNumNeighbours), dtype = int)
+targetNeighbours = -1.0 * np.ones((maxNumNeighbours, numTargetVertices), dtype = int)
 ### Initialize weights
-floatingWeights = np.ones((numFloatingVertices,1), dtype = float)
-targetWeights = np.ones((numFloatingVertices,1), dtype = float)
+floatingWeights = np.ones((numFloatingVertices), dtype = float)
+targetWeights = np.ones((numFloatingVertices), dtype = float)
 
 ###Extract data from meshes
 for i, vh in enumerate(floatingMesh.vertices()):
-    floatingPositions[i,0] = floatingMesh.point(vh)[0]
-    floatingPositions[i,1] = floatingMesh.point(vh)[1]
-    floatingPositions[i,2] = floatingMesh.point(vh)[2]
-    floatingNormals[i,0] = floatingMesh.normal(vh)[0]
-    floatingNormals[i,1] = floatingMesh.normal(vh)[1]
-    floatingNormals[i,2] = floatingMesh.normal(vh)[2]
+    floatingPositions[0,i] = floatingMesh.point(vh)[0]
+    floatingPositions[1,i] = floatingMesh.point(vh)[1]
+    floatingPositions[2,i] = floatingMesh.point(vh)[2]
+    floatingNormals[0,i] = floatingMesh.normal(vh)[0]
+    floatingNormals[1,i] = floatingMesh.normal(vh)[1]
+    floatingNormals[2,i] = floatingMesh.normal(vh)[2]
     for j,vvh in enumerate(floatingMesh.vv(vh)):
-        floatingNeighbours[i,j] = vvh.idx()
+        floatingNeighbours[j,i] = vvh.idx()
         #warning: make sure you limit this loop to number of maxNumNeighbours
 
 for i, vh in enumerate(targetMesh.vertices()):
-    targetPositions[i,0] = targetMesh.point(vh)[0]
-    targetPositions[i,1] = targetMesh.point(vh)[1]
-    targetPositions[i,2] = targetMesh.point(vh)[2]
-    targetNormals[i,0] = targetMesh.normal(vh)[0]
-    targetNormals[i,1] = targetMesh.normal(vh)[1]
-    targetNormals[i,2] = targetMesh.normal(vh)[2]
+    targetPositions[0,i] = targetMesh.point(vh)[0]
+    targetPositions[1,i] = targetMesh.point(vh)[1]
+    targetPositions[2,i] = targetMesh.point(vh)[2]
+    targetNormals[0,i] = targetMesh.normal(vh)[0]
+    targetNormals[1,i] = targetMesh.normal(vh)[1]
+    targetNormals[2,i] = targetMesh.normal(vh)[2]
     for j,vvh in enumerate(targetMesh.vv(vh)):
-        targetNeighbours[i,j] = vvh.idx()
+        targetNeighbours[j,i] = vvh.idx()
         #warning: make sure you limit this loop to number of maxNumNeighbours
 
 ##########
@@ -136,52 +139,171 @@ for i, vh in enumerate(targetMesh.vertices()):
 """
 
 """
-for iteration in range(0,maxNumIterations):
-    ##1) Determine Nearest neighbours. We'll simply use index correspondences for the bunny
-    correspondingPositions = targetPositions
-    correspondingNormals = targetNormals
-    ##2) Determine weights. A weight related to the gaussian distance distribution suffices.
-    ### Update the distribution parameters
-    sigmaNumerator = 0
-    sigmaDenominator = 0
+#for iteration in range(0,maxNumIterations):
+##1) Determine Nearest neighbours. We'll simply use index correspondences for the bunny
+correspondingPositions = targetPositions
+##2) Determine weights. A weight related to the gaussian distance distribution suffices.
+### Update the distribution parameters
+sigmaa = 0.0
+lambdaa = 0.0
+sigmaNumerator = 0.0
+sigmaDenominator = 0.0
+for i in range(numFloatingVertices):
+    distance = np.linalg.norm(correspondingPositions[:,i] - floatingPositions[:,i])
+    sigmaNumerator = sigmaNumerator + floatingWeights[i] * distance * distance
+    sigmaDenominator = sigmaDenominator + floatingWeights[i]
+
+sigmaa = np.sqrt(sigmaNumerator/sigmaDenominator)
+lambdaa = 1.0/(np.sqrt(2 * 3.14159) * sigmaa) * np.exp(-0.5 * kappaa * kappaa)
+### Recalculate the weights
+for i in range(numFloatingVertices):
+    distance = np.linalg.norm(correspondingPositions[:,i] - floatingPositions[:,i])
+    inlierProbability = 1.0/(np.sqrt(2 * 3.14159) * sigmaa) * np.exp(-0.5 * np.square(distance/sigmaa))
+    #floatingWeights[i] = inlierProbability / (inlierProbability + lambdaa) #TODO: I left the weight calculation out for now
+
+##3) Determine and update transformation.
+###3.1 Compute the centroids of the Floating and Corresponding mesh
+floatingCentroid = np.array([0.0,0.0,0.0], dtype = float)
+correspondingCentroid = np.array([0.0,0.0,0.0], dtype = float)
+weightSum = 0.0
+for i in range(numFloatingVertices):
+    floatingCentroid = floatingCentroid + floatingWeights[i] * floatingPositions[:,i]
+    correspondingCentroid = correspondingCentroid + floatingWeights[i] * correspondingPositions[:,i]
+    weightSum = weightSum + floatingWeights[i]
+
+floatingCentroid = floatingCentroid / weightSum
+correspondingCentroid = correspondingCentroid / weightSum
+###3.2 Compute the Cross Variance matrix
+crossVarianceMatrix = np.zeros((3,3), dtype = float)
+for i in range(numFloatingVertices):
+    #CrossVarMat = sum(weight[i] * floatingPosition[i] * correspondingPosition[i]_Transposed)
+    crossVarianceMatrix = crossVarianceMatrix + floatingWeights[i] * np.outer(floatingPositions[:,i], correspondingPositions[:,i])
+
+crossVarianceMatrix = crossVarianceMatrix / weightSum - np.outer(floatingCentroid, correspondingCentroid)
+###3.3 Compute the Anti-Symmetric matrix
+antiSymmetricMatrix = crossVarianceMatrix - crossVarianceMatrix.transpose()
+###3.4 Use the cyclic elements of the Anti-Symmetric matrix to construct delta
+delta = np.zeros(3)
+delta[0] = antiSymmetricMatrix[1,2];
+delta[1] = antiSymmetricMatrix[2,0];
+delta[2] = antiSymmetricMatrix[0,1];
+###3.5 Compute Q
+Q = np.zeros((4,4), dtype = float)
+Q[0,0] = np.trace(crossVarianceMatrix)
+####take care with transposition of delta here. Depending on your library, it might be the opposite than this
+Q[1:4,0] = delta
+Q[0,1:4] = delta #in some libraries, you might have to transpose delta here
+Q[1:4,1:4] = crossVarianceMatrix + crossVarianceMatrix.transpose() - np.identity(3, dtype = float)*np.trace(crossVarianceMatrix)
+###3.6 we now compute the rotation quaternion by finding the eigenvector of
+#Q of its largest eigenvalue
+eigenValues, eigenVectors = np.linalg.eig(Q)
+indexMaxVal = 0
+maxVal = 0
+for i, eigenValue in enumerate(eigenValues):
+    if abs(eigenValue) > maxVal:
+        maxVal = abs(eigenValue)
+        indexMaxVal = i
+
+rotQ = eigenVectors[:,indexMaxVal]
+###3.7 Now we can construct the rotation matrix
+rotMatTemp = np.zeros((3,3), dtype = float)
+####diagonal elements
+rotMatTemp[0,0] = np.square(rotQ[0]) + np.square(rotQ[1]) - np.square(rotQ[2]) - np.square(rotQ[3])
+rotMatTemp[1,1] = np.square(rotQ[0]) + np.square(rotQ[2]) - np.square(rotQ[1]) - np.square(rotQ[3])
+rotMatTemp[2,2] = np.square(rotQ[0]) + np.square(rotQ[3]) - np.square(rotQ[1]) - np.square(rotQ[2])
+####remaining elements
+rotMatTemp[1,0] = 2.0 * (rotQ[1] * rotQ[2] + rotQ[0] * rotQ[3])
+rotMatTemp[0,1] = 2.0 * (rotQ[1] * rotQ[2] - rotQ[0] * rotQ[3])
+rotMatTemp[2,0] = 2.0 * (rotQ[1] * rotQ[3] - rotQ[0] * rotQ[2])
+rotMatTemp[0,2] = 2.0 * (rotQ[1] * rotQ[3] + rotQ[0] * rotQ[2])
+rotMatTemp[2,1] = 2.0 * (rotQ[2] * rotQ[3] + rotQ[0] * rotQ[1])
+rotMatTemp[1,2] = 2.0 * (rotQ[2] * rotQ[3] - rotQ[0] * rotQ[1])
+### 3.8 Adjust the scale (optional)
+scaleFactor = 1.0 #>1 to grow ; <1 to shrink
+if adjustScale:
+    numerator = 0.0
+    denominator = 0.0
     for i in range(numFloatingVertices):
-        distance = np.linalg.norm(correspondingPositions[i,] - floatingPositions[i,])
-        sigmaNumerator = sigmaNumerator + floatingWeights[i] * distance * distance
-        sigmaDenominator = sigmaDenominator + floatingWeights[i]
-        print(distance)
-        print(sigmaNumerator)
-        print(sigmaDenominator)
-    sigma = np.sqrt(sigmaNumerator/sigmaDenominator)
-    lambdaa = 1.0/(np.sqrt(2 * 3.14159) * sigma) * np.exp(-0.5 * kappa * kappa)
-    print(sigma)
-    print(lambdaa)
-    ### Recalculate the weights
-    for i, vh in enumerate(floatingMesh.vertices()):
-        distance = np.linalg.norm(correspondingPositions[i,] - floatingPositions[i,])
-        inlierProbability = 1.0/(np.sqrt(2 * 3.14159) * sigma) * np.exp(-0.5 * np.square(distance/sigma))
-        floatingWeights[i] = inlierProbability / (inlierProbability + lambdaa)
-        print(distance)
-        print(inlierProbability)
-        print(floatingWeights[i])
-    ##3) Determine and update transformation.
-    ###3.1 Compute the centroids of the Floating and Corresponding mesh
-    floatingCentroid = np.array([0.0,0.0,0.0], dtype = float)
-    correspondingCentroid = np.array([0.0,0.0,0.0], dtype = float)
-    weightSum = 0.0
-    for i in range(numFloatingVertices):
-        floatingCentroid = floatingCentroid + floatingWeights[i] * floatingPositions[i,]
-        correspondingCentroid = correspondingCentroid + floatingWeights[i] * correspondingPositions[i,]
-        weightSum = weightSum + floatingWeights[i]
-    floatingCentroid = floatingCentroid / weightSum
-    correspondingCentroid = correspondingCentroid / weightSum
-    ###3.2 Compute the Cross Variance matrix
-    crossVarianceMatrix = numpy.zeros((3,3), dtype = float)
-    for i in range(numFloatingVertices):
-        #CrossVarMat = sum(weight[i] * floatingPosition[i] * correspondingPosition[i]_Transposed)
-        crossVarianceMatrix = crossVarianceMatrix + floatingWeights[i] * np.outer(floatingPositions[i,:], correspondingPositions[i,:])
-    crossVarianceMatrix = crossVarianceMatrix / weightSum - np.outer(floatingCentroid, correspondingCentroid)
-    ###3.3 Compute the Anti-Symmetric matrix
-    antiSymmetricMatrix = crossVarianceMatrix - crossVarianceMatrix.transpose()
-    ###3.4 Use the cyclic elements of the Anti-Symmetric matrix to construct delta
-    delta = ones(())
-    ##4) Apply transformation
+        centeredFloatingPosition = rotMatTemp.dot(floatingPositions[:,i] - floatingCentroid)
+        centeredCorrespondingPosition = correspondingPositions[:,i] - correspondingCentroid
+        numerator = numerator + floatingWeights[i] * np.dot(centeredCorrespondingPosition, centeredFloatingPosition)
+        denominator = denominator + floatingWeights[i] * np.dot(centeredFloatingPosition, centeredFloatingPosition)
+    scaleFactor = numerator / denominator
+
+### 3.9 Compute the remaining translation necessary between the centroids
+translation = correspondingCentroid - scaleFactor * rotMatTemp.dot(floatingCentroid)
+### 3.10 Let's (finally) compute the entire transformation matrix!
+translationMatrix = np.identity(4, dtype = float)
+rotationMatrix = np.identity(4, dtype = float)
+translationMatrix[0:3,3] = translation
+rotationMatrix[0:3,0:3] = scaleFactor * rotMatTemp
+transformationMatrix = rotationMatrix.dot(translationMatrix)
+
+##4) Apply transformation
+oldFloatingPositions = floatingPositions.copy()
+
+floatingPosition = np.ones((4), dtype = float)
+for i in range(numFloatingVertices):
+    floatingPosition[0:3] = floatingPositions[:,i].copy()
+    print(floatingPosition)
+    floatingPositions[:,i] = transformationMatrix.dot(floatingPosition)[0:3]
+    print(floatingPositions[:,i])
+
+#print(oldFloatingPositions[100:110,:])
+#print(floatingPositions[100:110,:])
+#print(oldFloatingPositions[100:110] - floatingPositions[100:110])
+##########
+#EXPORT DATA
+##########
+##New vertex positions
+newPosition = TriMesh.Point(0.0,0.0,0.0)
+for i, vh in enumerate(floatingMesh.vertices()):
+    newPosition[0] = floatingPositions[0,i]
+    newPosition[1] = floatingPositions[1,i]
+    newPosition[2] = floatingPositions[2,i]
+    floatingMesh.set_point(vh,newPosition)
+
+##New vertex normals
+floatingMesh.request_vertex_normals()
+floatingMesh.request_face_normals()
+floatingMesh.update_normals()
+floatingMesh.release_face_normals()
+
+##Save the mesh
+outputMeshName = "/home/jonatan/kuleuven-algorithms/src/data/pyramid_result.obj"
+write_mesh(floatingMesh, outputMeshName)
+
+
+##########
+#VERIFICATION OF BUNNIES
+##########
+"""
+The original bunny90 was transformed with the following transformation matrix:
+0.291926581726429 0.837222414029987 0.46242567005663 1.2
+-0.454648713412841 -0.303896654864527 0.837222414029987 1.3
+0.841470984807897 -0.454648713412841 0.291926581726429 0
+0 0 0 1
+
+The transformation matrix resulting from our ICP should be the inverse of that,
+hence if we multiply the one above with our resulting matrix they should give a
+matrix that's unity.
+"""
+# originalTransformation = np.array([[0.291926581726429, 0.837222414029987, 0.46242567005663, 1.2],[-0.454648713412841, -0.303896654864527, 0.837222414029987, 1.3],[0.841470984807897, -0.454648713412841, 0.291926581726429, 0],[0.0, 0.0, 0.0, 1.0]])
+# print(originalTransformation)
+# resultingTransformationShouldBe = np.linalg.inv(originalTransformation)
+# print(resultingTransformationShouldBe)
+# isThisUnity = transformationMatrix.dot(originalTransformation)
+# print(isThisUnity)
+# isThisUnity2 = originalTransformation.dot(transformationMatrix)
+# print(isThisUnity2)
+
+##########
+#VERIFICATION OF PYRAMIDS
+##########
+"""
+The original bunny90 was transformed with the following transformation matrix:
+"""
+originalTransformation = np.array([[-1.0/np.sqrt(6.0), -1.0/np.sqrt(6.0), 2.0/np.sqrt(6.0), 0.0],[1.0/np.sqrt(2.0), -1.0/np.sqrt(2.0), 0.0, 0.0],[1.0/np.sqrt(3.0), 1.0/np.sqrt(3.0), 1.0/np.sqrt(3.0), 0.0],[0.0, 0.0, 0.0, 1.0]])
+print(originalTransformation)
+print(transformationMatrix)
+print(originalTransformation.dot(transformationMatrix.transpose())) #should be near unity matrix
