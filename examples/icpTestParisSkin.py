@@ -1,3 +1,19 @@
+"""
+   Copyright 2016 Jonatan Snyders
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+"""
+
 #Linking to the OpenMesh bindings. (Check out http://stackoverflow.com/questions/33637373/openmesh-with-python-3-4 for troubleshooting)
 #if problems with libstdc++ : http://askubuntu.com/questions/575505/glibcxx-3-4-20-not-found-how-to-fix-this-error
 import sys
@@ -17,9 +33,9 @@ real life data.
 #PARAMETERS
 ##########
 # DATA
-floatingMeshPath = "/home/jonatan/kuleuven-algorithms/src/data/paris/558/skin95.obj"
-targetMeshPath = "/home/jonatan/kuleuven-algorithms/src/data/paris/559/skin95.obj"
-outputMeshName = "/home/jonatan/kuleuven-algorithms/src/data/paris/results/icp_558_to_559.obj"
+floatingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/paris/558/skin95.obj"
+targetMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/paris/559/skin95.obj"
+outputMeshName = "/home/jonatan/kuleuven-algorithms/examples/data/paris/results/icp_558_to_559.obj"
 # CORRESPONDENCES
 k = 3
 leafsize = 15 #should be between 5 and 50 or so
@@ -30,7 +46,7 @@ scaleNormals = 1.0 #by scaling the normals, their relative importance in the k-n
 # OUTLIER DETECTION
 kappaa = 3
 # ICP PROCESS
-maxNumIterations = 10
+maxNumIterations = 1
 adjustScale = False
 """
 ################################################################################
