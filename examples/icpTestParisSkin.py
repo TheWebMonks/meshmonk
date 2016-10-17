@@ -209,6 +209,8 @@ for iteration in range(0,maxNumIterations): #TODO: un-comment later
     the each column corresponds to a single vertex and the rows to a different
     co-ordinate or feature.
     """
+    #TODO: als switch naar functie uit core.py, dan moet deze transpose alleen
+    #voor de transformatie gebeuren! opletet
     floatingPositions = floatingPositions.transpose()
     targetPositions = targetPositions.transpose()
     correspondingPositions = correspondingPositions.transpose()
