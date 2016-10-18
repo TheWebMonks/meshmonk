@@ -101,9 +101,8 @@ def wknn_affinity(features1, features2, weights2, affinity12, k = 3):
             distance = distances12[i,j]
             if distance < 0.001:
                 distance = 0.001 #numeric stability
-            ## The affinity is 1 over the squared distance, weighed by the
-            ## corresponding weight of the nearest neighbour (weights2)
-            affinity = weights2[idx] * 1.0/(distance * distance)
+            ## The affinity is 1 over the squared distance
+            affinity = 1.0 / (distance * distance)
             if affinity < 0.0001:
                 affinity = 0.0001 #numeric stability for the normalization
             ### this should be inserted in the affinity matrix element that
@@ -116,42 +115,27 @@ def wknn_affinity(features1, features2, weights2, affinity12, k = 3):
     affinity12 = affinity12 / rowSums
     return True
 
-def fuse_affinities(affinity12, affinity21, weights1, weights2, affinityTotal):
+def fuse_affinities(affinity12, affinity21, affinityFused):
     """
     # GOAL
-    Fuse the two affinity matrices together, taking weights into account.
+    Fuse the two affinity matrices together.
 
     # INPUTS
     -affinity12
     -affinity21: dimensions should be transposed of affinity12
-    -weights1
-    -weights2
 
     # PARAMETERS
-    -k(=3): number of nearest neighbours
 
     # OUTPUT
-    -affinityTotal
+    -affinityFused
 
     # RETURNS
     """
-    # Obtain Info
-    numElements1 = affinity12.shape[0]
-    numElements2 = affinity12.shape[1]
-    # Initialize total affinity matrix
-    for i in range(numElements1):
-        w1 = weights1[i]
-        w2 = weights2[i]
-        sumWeights = w1 + w2
-        if sumWeights > 0.0001:
-            #TODO: should tranpose affinity21?
-            affinityTotal[i,:] = (w2 * affinity12[i,:] + w1 * affinity21.tranpose()[i,:]) / sumWeights
-        else:
-            affinityTotal[i,:] = np.zeros((numElements2), dtype = float)
+    # Fusing is done by simple averaging
+    affinityFused = affinity12 + affinity21.transpose()
+    rowSums = affinityFused.sum(axis=1, keepdims=True)
+    affinityFused = affinityFused / rowSums
 
-    # Normaly, the affinity matrix should be normalized now. TODO: verify this
-    #rowSums = affinityFloatingToTarget.sum(axis=1, keepdims=True)
-    #affinityFloatingToTarget = affinityFloatingToTarget / rowSums
     return True
 
 def inlier_detection(features, correspondingFeatures, neighbourIndices):
