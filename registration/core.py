@@ -24,7 +24,44 @@ from numpy import linalg
 from scipy import spatial
 import helpers
 
-def wknn_affinity(features1, features2, weights2, indices12, affinity12, k = 3):
+def affinity_to_correspondences(features2, weights2, flags2, affinity, correspondingFeatures, correspondingWeights, correspondingFlags, flagRoundingLimit = 0.8):
+    """
+    # GOAL
+    This function computes all the corresponding features, weights and flags,
+    when the affinity for a set of features, weights and flags is given.
+
+    # INPUTS
+    -features2
+    -weights2
+    -flags2
+    -affinity
+
+    # PARAMETERS
+    -flagRoundingLimit:
+    Flags are binary. Anything over this double is rounded up, whereas anything
+    under it is rounded down. A suggested cut-off is 0.8, which means that if
+    an element flagged zero contributes 20 percent or to the affinity, the
+    corresponding element should be flagged a zero as well.
+
+    # OUTPUT
+    -correspondingFeatures
+    -correspondingWeights
+    -correspondingFlags
+
+    # RETURNS
+    """
+    correspondingFeatures = affinity.dot(features2)
+    correspondingWeights = affinity.dot(weights2)
+    correspondingFlags = affinity.dot(flags2)
+    # Flags are binary. We will round them down if lower than the flag rounding
+    # limit (see explanation in parameter description).
+    for i,flag in enumerate(correspondingFlags):
+        if flag > flagRoundingLimit:
+            correspondingFlags[i] = 1.0
+        else:
+            correspondingFlags[i] = 0.0
+
+def wknn_affinity(features1, features2, weights2, affinity12, k = 3):
     """
     # GOAL
     For each element in features1, you're going to determine affinity weights
@@ -68,7 +105,7 @@ def wknn_affinity(features1, features2, weights2, indices12, affinity12, k = 3):
             ## corresponding weight of the nearest neighbour (weights2)
             affinity = weights2[idx] * 1.0/(distance * distance)
             if affinity < 0.0001:
-                affinity = 0.0001 #numeric stability
+                affinity = 0.0001 #numeric stability for the normalization
             ### this should be inserted in the affinity matrix element that
             ### links the first set element index i with second element set at
             ### index 'idx'
@@ -77,6 +114,7 @@ def wknn_affinity(features1, features2, weights2, indices12, affinity12, k = 3):
     ## Normalize the affinity matrix (the sum of each row has to equal 1.0)
     rowSums = affinity12.sum(axis=1, keepdims=True)
     affinity12 = affinity12 / rowSums
+    return True
 
 def fuse_affinities(affinity12, affinity21, weights1, weights2, affinityTotal):
     """
@@ -114,29 +152,20 @@ def fuse_affinities(affinity12, affinity21, weights1, weights2, affinityTotal):
     # Normaly, the affinity matrix should be normalized now. TODO: verify this
     #rowSums = affinityFloatingToTarget.sum(axis=1, keepdims=True)
     #affinityFloatingToTarget = affinityFloatingToTarget / rowSums
+    return True
 
-
-def inlier_detection(features, correspondingFeatures, indices12, indices21, k = 3):
+def inlier_detection(features, correspondingFeatures, neighbourIndices):
     """
     # GOAL
-    For each element in features1, you're going to determine corresponding
-    features by looking at the elements present in features2. This is done with
-    'symmetric weighted k nearest neighbours'. Concretely:
-    ## K Nearest Neighbours
-    The k nearest neighbours for each element in features1 are sought in
-    features2 using the Euclidean distance metric
-    ## Weighted:
-    The k nearest neighbours are combined through weighted averaging
-    to obtain a correspondence
-    ## Symmetric:
-    The final correspondences in features2 for features1 are determined by
-    combining weighted k-nn correspondences in features2 for features1 and
-    weighted k-nn correspondences in features1 for features2. This can be though
-    of as combining push and pull forces.
+    Determine which elements are inliers ('normal') and which are outliers
+    ('abnormal'). There are different ways to to that, but they should all
+    result in a scalar assigmnent that represents the probability of an element
+    being an inlier.
 
     # INPUTS
-    -features1
-    -features2
+    -features
+    -correspondingFeatures
+    -neighbourIndices
 
 
     # PARAMETERS
@@ -149,6 +178,10 @@ def inlier_detection(features, correspondingFeatures, indices12, indices21, k = 
 
     # RETURNS
     """
+    # Flagged element handling
+    ## Get indices of flagged elements
+    ## Find which elements
+
     numFeatures = features.shape[0]
     sigmaa = 0.0
     lambdaa = 0.0
@@ -167,3 +200,5 @@ def inlier_detection(features, correspondingFeatures, indices12, indices21, k = 
             distance = np.linalg.norm(correspondingFeatures[:,i] - floatingFeatures[:,i])
             inlierProbability = 1.0/(np.sqrt(2 * 3.14159) * sigmaa) * np.exp(-0.5 * np.square(distance/sigmaa))
             floatingInlierProb[i] = inlierProbability / (inlierProbability + lambdaa) #TODO: I left the weight calculation out for now
+
+    return True
