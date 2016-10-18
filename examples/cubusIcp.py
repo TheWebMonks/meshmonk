@@ -47,16 +47,17 @@ numFloatingFaces = 8
 
 # Initialize matrices
 floatingPositions = np.zeros((numFloatingVertices,3), dtype = float)
-correspondingPositions = np.zeros((numFloatingVertices,3), dtype = float)
 targetPositions = np.zeros((numFloatingVertices,3), dtype = float)
 floatingNormals = np.zeros((numFloatingVertices,3), dtype = float)
-correspondingNormals = np.zeros((numFloatingVertices,3), dtype = float)
 targetNormals = np.zeros((numFloatingVertices,3), dtype = float)
 floatingFeatures = np.zeros((numFloatingVertices,6), dtype = float)
-correspondingFeatures = np.zeros((numFloatingVertices,6), dtype = float)
 targetFeatures = np.zeros((numFloatingVertices,6), dtype = float)
 # Initialize weights
 floatingWeights = np.ones((numFloatingVertices), dtype = float)
+targetWeights = np.ones((numFloatingVertices), dtype = float)
+floatingFlags = np.ones((numFloatingVertices), dtype = float)
+targetFlags = np.ones((numFloatingVertices), dtype = float)
+targetFlags[3] = 0.0
 
 # Put in the right positions and normals
 floatingPositions[0,:] = [1.0,1.0,1.0]
@@ -90,7 +91,7 @@ for i in range(numFloatingVertices):
     targetPositions[i,:] = originalTransformation.dot(position)[0:3]
     targetNormals[i,:] = originalTransformation.dot(normal)[0:3]
 
-
+targetFeatures = np.hstack((targetPositions,targetNormals))
 ##########
 # ICP
 ##########
@@ -99,27 +100,14 @@ for i in range(numFloatingVertices):
 """
 #for iteration in range(0,maxNumIterations):
 ##1) Determine Nearest neighbours. We'll simply use index correspondences for the bunny
-registration.core.wknn_affinity(floatingPositions, features2, affinity12, k = 3)
+k = 3
+affinity = registration.core.wknn_affinity(floatingFeatures, targetFeatures, k)
+correspondingFeatures, correspondingFlags = registration.core.affinity_to_correspondences(targetFeatures, targetFlags, affinity, 0.9)
 ##2) Determine weights. A weight related to the gaussian distance distribution suffices.
 ### Update the distribution parameters
-sigmaa = 0.0
-lambdaa = 0.0
-sigmaNumerator = 0.0
-sigmaDenominator = 0.0
-for i in range(numFloatingVertices):
-    distance = np.linalg.norm(correspondingPositions[:,i] - floatingPositions[:,i])
-    sigmaNumerator = sigmaNumerator + floatingWeights[i] * distance * distance
-    sigmaDenominator = sigmaDenominator + floatingWeights[i]
-
-sigmaa = np.sqrt(sigmaNumerator/sigmaDenominator)
-lambdaa = 1.0/(np.sqrt(2 * 3.14159) * sigmaa) * np.exp(-0.5 * kappaa * kappaa)
-### Recalculate the weights
-for i in range(numFloatingVertices):
-    distance = np.linalg.norm(correspondingPositions[:,i] - floatingPositions[:,i])
-    inlierProbability = 1.0/(np.sqrt(2 * 3.14159) * sigmaa) * np.exp(-0.5 * np.square(distance/sigmaa))
-    #floatingWeights[i] = inlierProbability / (inlierProbability + lambdaa) #TODO: I left the weight calculation out for now
-
+registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, 3)
 ##3) Determine and update transformation.
+#TODO: WRITE RIGID TRANSFORMATION FUNCTION IN REGISTRATION/CORE.PY
 ###3.1 Compute the centroids of the Floating and Corresponding mesh
 floatingCentroid = np.array([0.0,0.0,0.0], dtype = float)
 correspondingCentroid = np.array([0.0,0.0,0.0], dtype = float)
