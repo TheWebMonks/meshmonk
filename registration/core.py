@@ -24,44 +24,9 @@ from numpy import linalg
 from scipy import spatial
 import helpers
 
-def affinity_to_correspondences(features2, weights2, flags2, affinity, correspondingFeatures, correspondingWeights, correspondingFlags, flagRoundingLimit = 0.8):
-    """
-    # GOAL
-    This function computes all the corresponding features, weights and flags,
-    when the affinity for a set of features, weights and flags is given.
 
-    # INPUTS
-    -features2
-    -weights2
-    -flags2
-    -affinity
 
-    # PARAMETERS
-    -flagRoundingLimit:
-    Flags are binary. Anything over this double is rounded up, whereas anything
-    under it is rounded down. A suggested cut-off is 0.8, which means that if
-    an element flagged zero contributes 20 percent or to the affinity, the
-    corresponding element should be flagged a zero as well.
-
-    # OUTPUT
-    -correspondingFeatures
-    -correspondingWeights
-    -correspondingFlags
-
-    # RETURNS
-    """
-    correspondingFeatures = affinity.dot(features2)
-    correspondingWeights = affinity.dot(weights2)
-    correspondingFlags = affinity.dot(flags2)
-    # Flags are binary. We will round them down if lower than the flag rounding
-    # limit (see explanation in parameter description).
-    for i,flag in enumerate(correspondingFlags):
-        if flag > flagRoundingLimit:
-            correspondingFlags[i] = 1.0
-        else:
-            correspondingFlags[i] = 0.0
-
-def wknn_affinity(features1, features2, weights2, affinity12, k = 3):
+def wknn_affinity(features1, features2, affinity12, k = 3):
     """
     # GOAL
     For each element in features1, you're going to determine affinity weights
@@ -71,8 +36,6 @@ def wknn_affinity(features1, features2, weights2, affinity12, k = 3):
     # INPUTS
     -features1
     -features2
-    -weights2
-
 
     # PARAMETERS
     -k(=3): number of nearest neighbours
@@ -87,7 +50,7 @@ def wknn_affinity(features1, features2, weights2, affinity12, k = 3):
     numElements1 = features1.shape[0]
     numElements2 = features2.shape[0]
     # Determine the nearest neighbours
-    helpers.nearest_neighbours(features1, features2, distances, neighbourIndices, k):
+    helpers.nearest_neighbours(features1, features2, distances, neighbourIndices, k)
     # Compute the affinity matrix
     ## Initialize the matrix
     affinity12 = np.zeros((numElements1, numElements2), dtype = float)
@@ -138,7 +101,41 @@ def fuse_affinities(affinity12, affinity21, affinityFused):
 
     return True
 
-def inlier_detection(features, correspondingFeatures, neighbourIndices):
+def affinity_to_correspondences(features2, flags2, affinity, correspondingFeatures, correspondingFlags, flagRoundingLimit = 0.9):
+    """
+    # GOAL
+    This function computes all the corresponding features and flags,
+    when the affinity for a set of features and flags is given.
+
+    # INPUTS
+    -features2
+    -flags2
+    -affinity
+
+    # PARAMETERS
+    -flagRoundingLimit:
+    Flags are binary. Anything over this double is rounded up, whereas anything
+    under it is rounded down. A suggested cut-off is 0.9, which means that if
+    an element flagged zero contributes 10 percent or to the affinity, the
+    corresponding element should be flagged a zero as well.
+
+    # OUTPUT
+    -correspondingFeatures
+    -correspondingFlags
+
+    # RETURNS
+    """
+    correspondingFeatures = affinity.dot(features2)
+    correspondingFlags = affinity.dot(flags2)
+    # Flags are binary. We will round them down if lower than the flag rounding
+    # limit (see explanation in parameter description).
+    for i,flag in enumerate(correspondingFlags):
+        if flag > flagRoundingLimit:
+            correspondingFlags[i] = 1.0
+        else:
+            correspondingFlags[i] = 0.0
+
+def inlier_detection(features, correspondingFeatures, correspondingFlags, inlierProbability):
     """
     # GOAL
     Determine which elements are inliers ('normal') and which are outliers
@@ -149,40 +146,51 @@ def inlier_detection(features, correspondingFeatures, neighbourIndices):
     # INPUTS
     -features
     -correspondingFeatures
-    -neighbourIndices
-
+    -correspondingFlags
 
     # PARAMETERS
 
-
     # OUTPUT
-    -correspondingFeatures
-    -indices12
-    -indices21
+    -inlierProbability
 
     # RETURNS
     """
-    # Flagged element handling
-    ## Get indices of flagged elements
-    ## Find which elements
+    # Info
+    numElements = features.shape[0]
 
-    numFeatures = features.shape[0]
+    # Flag based inlier/outlier classification
+    for i,flag in enumerate(correspondingFlags):
+        if flag < 0.5:
+            inlierProbability[i] = 0.0
+
+    # Distance based inlier/outlier classification
+    ## Re-calculate the parameters sigma and lambda
     sigmaa = 0.0
     lambdaa = 0.0
     sigmaNumerator = 0.0
     sigmaDenominator = 0.0
-    for i in range(numFeatures):
+    for i in range(numElements):
         distance = np.linalg.norm(correspondingFeatures[i,:] - features[i,:])
-        sigmaNumerator = sigmaNumerator + floatingInlierProb[i] * distance * distance
-        sigmaDenominator = sigmaDenominator + floatingInlierProb[i]
+        sigmaNumerator = sigmaNumerator + inlierProbability[i] * distance * distance
+        sigmaDenominator = sigmaDenominator + inlierProbability[i]
 
-        sigmaa = np.sqrt(sigmaNumerator/sigmaDenominator)
-        lambdaa = 1.0/(np.sqrt(2 * 3.14159) * sigmaa) * np.exp(-0.5 * kappaa * kappaa)
+    sigmaa = np.sqrt(sigmaNumerator/sigmaDenominator)
+    lambdaa = 1.0/(np.sqrt(2 * 3.14159) * sigmaa) * np.exp(-0.5 * kappaa * kappaa)
+    ## Recalculate the distance-based probabilities
+    for i in range(numElements):
+        distance = np.linalg.norm(correspondingFeatures[:,i] - features[:,i])
+        probability = 1.0/(np.sqrt(2 * 3.14159) * sigmaa) * np.exp(-0.5 * np.square(distance/sigmaa))
+        inlierProbability[i] = probability / (probability + lambdaa) #TODO: I left the weight calculation out for now
 
-        ### Recalculate the weights
-        for i in range(numFloatingVertices):
-            distance = np.linalg.norm(correspondingFeatures[:,i] - floatingFeatures[:,i])
-            inlierProbability = 1.0/(np.sqrt(2 * 3.14159) * sigmaa) * np.exp(-0.5 * np.square(distance/sigmaa))
-            floatingInlierProb[i] = inlierProbability / (inlierProbability + lambdaa) #TODO: I left the weight calculation out for now
+    #Gradient Based inlier/outlier classification
+    for i in range(numElements):
+        normal = features[i,3:6]
+        correspondingNormal = features[i,3:6]
+        ## Dot product gives an idea of how well they point in the same
+        ## direction. This gives a weight between -1.0 and +1.0
+        dotProduct = normal.dot(correspondingNormal)
+        ## Rescale this result so that it's continuous between 0.0 and +1.0
+        probability = dotProduct / 2.0 + 0.5
+        inlierProbability[i] = inlierProbability[i] * probability
 
     return True

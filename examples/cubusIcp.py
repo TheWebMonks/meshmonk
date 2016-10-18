@@ -6,6 +6,8 @@ from openmesh import *
 import numpy as np
 from scipy import linalg
 
+from context import registration
+
 """
 In this example, we will perform rigid registration of a self-made object,
 which are basically one pyramid tied to another pyramid upside down.
@@ -39,30 +41,40 @@ adjustScale = False
 # PREPARE DATA
 ##########
 
-
-
-
-
-##Convert to the matrices we need
-###Obtain info for initialization
-numFloatingVertices = 6
+# Obtain info for initialization
+numFloatingVertices = 8
 numFloatingFaces = 8
 
-
-###Initialize positions
-floatingPositions = np.zeros((3,numFloatingVertices), dtype = float)
-correspondingPositions = np.zeros((3,numFloatingVertices), dtype = float)
-targetPositions = np.zeros((3,numFloatingVertices), dtype = float)
-### Initialize weights
+# Initialize matrices
+floatingPositions = np.zeros((numFloatingVertices,3), dtype = float)
+correspondingPositions = np.zeros((numFloatingVertices,3), dtype = float)
+targetPositions = np.zeros((numFloatingVertices,3), dtype = float)
+floatingNormals = np.zeros((numFloatingVertices,3), dtype = float)
+correspondingNormals = np.zeros((numFloatingVertices,3), dtype = float)
+targetNormals = np.zeros((numFloatingVertices,3), dtype = float)
+floatingFeatures = np.zeros((numFloatingVertices,6), dtype = float)
+correspondingFeatures = np.zeros((numFloatingVertices,6), dtype = float)
+targetFeatures = np.zeros((numFloatingVertices,6), dtype = float)
+# Initialize weights
 floatingWeights = np.ones((numFloatingVertices), dtype = float)
 
-###Put in the right positions
-floatingPositions[:,0] = [0.0,0.0,1.0]
-floatingPositions[:,1] = [1.0,0.0,0.0]
-floatingPositions[:,2] = [0.0,-1.0,0.0]
-floatingPositions[:,3] = [-1.0,0.0,0.0]
-floatingPositions[:,4] = [0.0,1.0,0.0]
-floatingPositions[:,5] = [0.0,0.0,-1.0]
+# Put in the right positions and normals
+floatingPositions[0,:] = [1.0,1.0,1.0]
+floatingPositions[1,:] = [1.0,-1.0,1.0]
+floatingPositions[2,:] = [-1.0,-1.0,1.0]
+floatingPositions[3,:] = [-1.0,1.0,1.0]
+floatingPositions[4,:] = [1.0,1.0,-1.0]
+floatingPositions[5,:] = [1.0,-1.0,-1.0]
+floatingPositions[6,:] = [-1.0,-1.0,-1.0]
+floatingPositions[7,:] = [-1.0,1.0,-1.0]
+## The normals are pointing in the same direction as the position vectors, but
+## they have to be normalized to be unit vectors.
+for i in range(numFloatingVertices):
+    length = linalg.norm(floatingPositions[i,:])
+    floatingNormals[i,:] = floatingPositions[i,:] / length
+
+# The features are the concatenation of positions and normals
+floatingFeatures = np.hstack((floatingPositions,floatingNormals))
 
 """
 The original transformation which we will apply to the floating data to obtain
@@ -70,10 +82,13 @@ our target data. We will try to recover this matrix through ICP.
 """
 originalTransformation = np.array([[-1.0/np.sqrt(6.0), -1.0/np.sqrt(6.0), 2.0/np.sqrt(6.0), 0.0],[1.0/np.sqrt(2.0), -1.0/np.sqrt(2.0), 0.0, 0.0],[1.0/np.sqrt(3.0), 1.0/np.sqrt(3.0), 1.0/np.sqrt(3.0), 0.0],[0.0, 0.0, 0.0, 1.0]])
 
-pos = np.array([0.0,0.0,0.0,1.0])
+position = np.array([0.0,0.0,0.0,1.0])
+normal = np.array([0.0,0.0,0.0,1.0])
 for i in range(numFloatingVertices):
-    pos[0:3] = floatingPositions[:,i]
-    targetPositions[:,i] = originalTransformation.dot(pos)[0:3]
+    position[0:3] = floatingFeatures[i,0:3]
+    normal[0:3] = floatingFeatures[i,3:6]
+    targetPositions[i,:] = originalTransformation.dot(position)[0:3]
+    targetNormals[i,:] = originalTransformation.dot(normal)[0:3]
 
 
 ##########
@@ -84,7 +99,7 @@ for i in range(numFloatingVertices):
 """
 #for iteration in range(0,maxNumIterations):
 ##1) Determine Nearest neighbours. We'll simply use index correspondences for the bunny
-correspondingPositions = targetPositions
+registration.core.wknn_affinity(floatingPositions, features2, affinity12, k = 3)
 ##2) Determine weights. A weight related to the gaussian distance distribution suffices.
 ### Update the distribution parameters
 sigmaa = 0.0
