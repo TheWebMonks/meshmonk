@@ -11,22 +11,6 @@ from context import registration
 """
 In this example, we will perform rigid registration of a self-made object,
 which are basically one pyramid tied to another pyramid upside down.
-
-#####
-#Some definitions and info:
-#####
-
-PROCESS PARAMETERS
--maxNumIterations: a hard limit for the maximum number of iterations in the ICP
-iterative loop.
--maxNumNeighbours: the maximum number of vertices that can be considered one
-vertex's neighbours. (Neighbours can be determined in various ways. They are
-important for some operations where neighbouring vertices play a role in the
-computation.)
--kappaa: mahalanobis distance for outlier determination (e.g. kappaa = 2 means
-that 2 standard deviations of the distribution is the middle of the transition
-zone from inlier to outlier classification)
--adjustScale: whether or not to change the size of the floating mesh during ICP
 """
 
 ##########
