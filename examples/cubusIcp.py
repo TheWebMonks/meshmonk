@@ -1,7 +1,7 @@
 #Linking to the OpenMesh bindings. (Check out http://stackoverflow.com/questions/33637373/openmesh-with-python-3-4 for troubleshooting)
 import sys
 sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
-from openmesh import *
+import openmesh as om
 #Importing the rest of utilities
 import numpy as np
 from scipy import linalg
@@ -32,66 +32,72 @@ zone from inlier to outlier classification)
 ##########
 # SET PARAMETERS
 ##########
+# ICP management
 maxNumIterations = 1
 maxNumNeighbours = 20 #
+# Correspondences
+wknnNumNeighbours = 1
+# Inlier Detection
 kappaa = 3
 adjustScale = False
+floatingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/cubus.obj"
+targetMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/cubus_transformed.obj"
+resultingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/cubus_registered.obj"
 
 ##########
 # PREPARE DATA
 ##########
+# Load from file
+floatingMesh = om.TriMesh()
+targetMesh = om.TriMesh()
+om.read_mesh(floatingMesh, floatingMeshPath)
+om.read_mesh(targetMesh, targetMeshPath)
 
-# Obtain info for initialization
-numFloatingVertices = 8
-numFloatingFaces = 8
-
-# Initialize matrices
+# Obtain info and initialize matrices
+numFloatingVertices = floatingMesh.n_vertices()
+numTargetVertices = targetMesh.n_vertices()
 floatingPositions = np.zeros((numFloatingVertices,3), dtype = float)
-targetPositions = np.zeros((numFloatingVertices,3), dtype = float)
+targetPositions = np.zeros((numTargetVertices,3), dtype = float)
 floatingNormals = np.zeros((numFloatingVertices,3), dtype = float)
-targetNormals = np.zeros((numFloatingVertices,3), dtype = float)
-floatingFeatures = np.zeros((numFloatingVertices,6), dtype = float)
-targetFeatures = np.zeros((numFloatingVertices,6), dtype = float)
-# Initialize weights
+targetNormals = np.zeros((numTargetVertices,3), dtype = float)
+# Initialize weights and flags
 floatingWeights = np.ones((numFloatingVertices), dtype = float)
-targetWeights = np.ones((numFloatingVertices), dtype = float)
+targetWeights = np.ones((numTargetVertices), dtype = float)
 floatingFlags = np.ones((numFloatingVertices), dtype = float)
-targetFlags = np.ones((numFloatingVertices), dtype = float)
-targetFlags[3] = 0.0
+targetFlags = np.ones((numTargetVertices), dtype = float)
+#targetFlags[3] = 0.0 #randomly attributed
 
 # Put in the right positions and normals
-floatingPositions[0,:] = [1.0,1.0,1.0]
-floatingPositions[1,:] = [1.0,-1.0,1.0]
-floatingPositions[2,:] = [-1.0,-1.0,1.0]
-floatingPositions[3,:] = [-1.0,1.0,1.0]
-floatingPositions[4,:] = [1.0,1.0,-1.0]
-floatingPositions[5,:] = [1.0,-1.0,-1.0]
-floatingPositions[6,:] = [-1.0,-1.0,-1.0]
-floatingPositions[7,:] = [-1.0,1.0,-1.0]
-## The normals are pointing in the same direction as the position vectors, but
-## they have to be normalized to be unit vectors.
-for i in range(numFloatingVertices):
-    length = linalg.norm(floatingPositions[i,:])
-    floatingNormals[i,:] = floatingPositions[i,:] / length
+## Make sure normals are present
+floatingMesh.request_vertex_normals()
+floatingMesh.request_face_normals()
+floatingMesh.update_normals()
+floatingMesh.release_face_normals()
+for i, vh in enumerate(floatingMesh.vertices()):
+    floatingPositions[i,0] = floatingMesh.point(vh)[0]
+    floatingPositions[i,1] = floatingMesh.point(vh)[1]
+    floatingPositions[i,2] = floatingMesh.point(vh)[2]
+    floatingNormals[i,0] = floatingMesh.normal(vh)[0]
+    floatingNormals[i,1] = floatingMesh.normal(vh)[1]
+    floatingNormals[i,2] = floatingMesh.normal(vh)[2]
+
+targetMesh.request_vertex_normals()
+targetMesh.request_face_normals()
+targetMesh.update_normals()
+targetMesh.release_face_normals()
+for i, vh in enumerate(targetMesh.vertices()):
+    targetPositions[i,0] = targetMesh.point(vh)[0]
+    targetPositions[i,1] = targetMesh.point(vh)[1]
+    targetPositions[i,2] = targetMesh.point(vh)[2]
+    targetNormals[i,0] = targetMesh.normal(vh)[0]
+    targetNormals[i,1] = targetMesh.normal(vh)[1]
+    targetNormals[i,2] = targetMesh.normal(vh)[2]
 
 # The features are the concatenation of positions and normals
 floatingFeatures = np.hstack((floatingPositions,floatingNormals))
-
-"""
-The original transformation which we will apply to the floating data to obtain
-our target data. We will try to recover this matrix through ICP.
-"""
-originalTransformation = np.array([[-1.0/np.sqrt(6.0), -1.0/np.sqrt(6.0), 2.0/np.sqrt(6.0), 0.0],[1.0/np.sqrt(2.0), -1.0/np.sqrt(2.0), 0.0, 0.0],[1.0/np.sqrt(3.0), 1.0/np.sqrt(3.0), 1.0/np.sqrt(3.0), 0.0],[0.0, 0.0, 0.0, 1.0]])
-
-position = np.array([0.0,0.0,0.0,1.0])
-normal = np.array([0.0,0.0,0.0,1.0])
-for i in range(numFloatingVertices):
-    position[0:3] = floatingFeatures[i,0:3]
-    normal[0:3] = floatingFeatures[i,3:6]
-    targetPositions[i,:] = originalTransformation.dot(position)[0:3]
-    targetNormals[i,:] = originalTransformation.dot(normal)[0:3]
-
 targetFeatures = np.hstack((targetPositions,targetNormals))
+
+
 ##########
 # ICP
 ##########
@@ -100,97 +106,32 @@ targetFeatures = np.hstack((targetPositions,targetNormals))
 """
 #for iteration in range(0,maxNumIterations):
 ##1) Determine Nearest neighbours. We'll simply use index correspondences for the bunny
-k = 3
-affinity = registration.core.wknn_affinity(floatingFeatures, targetFeatures, k)
-correspondingFeatures, correspondingFlags = registration.core.affinity_to_correspondences(targetFeatures, targetFlags, affinity, 0.9)
+affinity = registration.core.wknn_affinity(floatingFeatures, targetFeatures, wknnNumNeighbours)
+correspondingFeatures, correspondingFlags = registration.core.affinity_to_correspondences(targetFeatures, targetFlags, affinity, 0.5)
 ##2) Determine weights. A weight related to the gaussian distance distribution suffices.
 ### Update the distribution parameters
-registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, 3)
+floatingWeights = registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, 3.0)
 ##3) Determine and update transformation.
-#TODO: WRITE RIGID TRANSFORMATION FUNCTION IN REGISTRATION/CORE.PY
-###3.1 Compute the centroids of the Floating and Corresponding mesh
-floatingCentroid = np.array([0.0,0.0,0.0], dtype = float)
-correspondingCentroid = np.array([0.0,0.0,0.0], dtype = float)
-weightSum = 0.0
-for i in range(numFloatingVertices):
-    floatingCentroid = floatingCentroid + floatingWeights[i] * floatingPositions[:,i]
-    correspondingCentroid = correspondingCentroid + floatingWeights[i] * correspondingPositions[:,i]
-    weightSum = weightSum + floatingWeights[i]
+transformationMatrix = registration.core.rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeights, False)
 
-floatingCentroid = floatingCentroid / weightSum
-correspondingCentroid = correspondingCentroid / weightSum
-###3.2 Compute the Cross Variance matrix
-crossVarianceMatrix = np.zeros((3,3), dtype = float)
-for i in range(numFloatingVertices):
-    #CrossVarMat = sum(weight[i] * floatingPosition[i] * correspondingPosition[i]_Transposed)
-    crossVarianceMatrix = crossVarianceMatrix + floatingWeights[i] * np.outer(floatingPositions[:,i], correspondingPositions[:,i])
 
-crossVarianceMatrix = crossVarianceMatrix / weightSum - np.outer(floatingCentroid, correspondingCentroid)
-###3.3 Compute the Anti-Symmetric matrix
-antiSymmetricMatrix = crossVarianceMatrix - crossVarianceMatrix.transpose()
-###3.4 Use the cyclic elements of the Anti-Symmetric matrix to construct delta
-delta = np.zeros(3)
-delta[0] = antiSymmetricMatrix[1,2];
-delta[1] = antiSymmetricMatrix[2,0];
-delta[2] = antiSymmetricMatrix[0,1];
-###3.5 Compute Q
-Q = np.zeros((4,4), dtype = float)
-Q[0,0] = np.trace(crossVarianceMatrix)
-####take care with transposition of delta here. Depending on your library, it might be the opposite than this
-Q[1:4,0] = delta
-Q[0,1:4] = delta #in some libraries, you might have to transpose delta here
-Q[1:4,1:4] = crossVarianceMatrix + crossVarianceMatrix.transpose() - np.identity(3, dtype = float)*np.trace(crossVarianceMatrix)
-###3.6 we now compute the rotation quaternion by finding the eigenvector of
-#Q of its largest eigenvalue
-eigenValues, eigenVectors = np.linalg.eig(Q)
-indexMaxVal = 0
-maxVal = 0
-for i, eigenValue in enumerate(eigenValues):
-    if abs(eigenValue) > maxVal:
-        maxVal = abs(eigenValue)
-        indexMaxVal = i
 
-rotQ = eigenVectors[:,indexMaxVal]
-###3.7 Now we can construct the rotation matrix
-rotMatTemp = np.zeros((3,3), dtype = float)
-####diagonal elements
-rotMatTemp[0,0] = np.square(rotQ[0]) + np.square(rotQ[1]) - np.square(rotQ[2]) - np.square(rotQ[3])
-rotMatTemp[1,1] = np.square(rotQ[0]) + np.square(rotQ[2]) - np.square(rotQ[1]) - np.square(rotQ[3])
-rotMatTemp[2,2] = np.square(rotQ[0]) + np.square(rotQ[3]) - np.square(rotQ[1]) - np.square(rotQ[2])
-####remaining elements
-rotMatTemp[1,0] = 2.0 * (rotQ[1] * rotQ[2] + rotQ[0] * rotQ[3])
-rotMatTemp[0,1] = 2.0 * (rotQ[1] * rotQ[2] - rotQ[0] * rotQ[3])
-rotMatTemp[2,0] = 2.0 * (rotQ[1] * rotQ[3] - rotQ[0] * rotQ[2])
-rotMatTemp[0,2] = 2.0 * (rotQ[1] * rotQ[3] + rotQ[0] * rotQ[2])
-rotMatTemp[2,1] = 2.0 * (rotQ[2] * rotQ[3] + rotQ[0] * rotQ[1])
-rotMatTemp[1,2] = 2.0 * (rotQ[2] * rotQ[3] - rotQ[0] * rotQ[1])
-### 3.8 Adjust the scale (optional)
-scaleFactor = 1.0 #>1 to grow ; <1 to shrink
-if adjustScale:
-    numerator = 0.0
-    denominator = 0.0
-    for i in range(numFloatingVertices):
-        centeredFloatingPosition = rotMatTemp.dot(floatingPositions[:,i] - floatingCentroid)
-        centeredCorrespondingPosition = correspondingPositions[:,i] - correspondingCentroid
-        numerator = numerator + floatingWeights[i] * np.dot(centeredCorrespondingPosition, centeredFloatingPosition)
-        denominator = denominator + floatingWeights[i] * np.dot(centeredFloatingPosition, centeredFloatingPosition)
-    scaleFactor = numerator / denominator
+##########
+# EXPORT DATA
+##########
+##New vertex positions
+newPosition = om.TriMesh.Point(0.0,0.0,0.0)
+for i, vh in enumerate(floatingMesh.vertices()):
+    newPosition[0] = floatingFeatures[i,0]
+    newPosition[1] = floatingFeatures[i,1]
+    newPosition[2] = floatingFeatures[i,2]
+    floatingMesh.set_point(vh,newPosition)
 
-### 3.9 Compute the remaining translation necessary between the centroids
-translation = correspondingCentroid - scaleFactor * rotMatTemp.dot(floatingCentroid)
-### 3.10 Let's (finally) compute the entire transformation matrix!
-translationMatrix = np.identity(4, dtype = float)
-rotationMatrix = np.identity(4, dtype = float)
-translationMatrix[0:3,3] = translation
-rotationMatrix[0:3,0:3] = scaleFactor * rotMatTemp
-transformationMatrix = rotationMatrix.dot(translationMatrix)
+##New vertex normals
+floatingMesh.request_vertex_normals()
+floatingMesh.request_face_normals()
+floatingMesh.update_normals()
+floatingMesh.release_face_normals()
 
-##4) Apply transformation
-oldFloatingPositions = floatingPositions.copy()
-
-floatingPosition = np.ones((4), dtype = float)
-for i in range(numFloatingVertices):
-    floatingPosition[0:3] = floatingPositions[:,i].copy()
-    print(floatingPosition)
-    floatingPositions[:,i] = transformationMatrix.dot(floatingPosition)[0:3]
-    print(floatingPositions[:,i])
+##Save the mesh
+om.write_mesh(floatingMesh, resultingMeshPath)

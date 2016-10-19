@@ -53,21 +53,31 @@ def wknn_affinity(features1, features2, k = 3):
     ## Loop over the first feature set to determine their affinity with the
     ## second set.
     for i in range(numElements1):
-        ### Loop over k nearest neighbours
-        for j, idx in enumerate(neighbourIndices[i,:]):
-            ### idx now indicates the index of the second set element that was
-            ## determined a neighbour of the current first set element
-            distance = distances[i,j]
-            if distance < 0.001:
-                distance = 0.001 #numeric stability
+        if k == 1:
+            idx = neighbourIndices[i]
+            dist = distances[i]
+            if dist < 0.001:
+                dist = 0.001 #numeric stability
             ## The affinity is 1 over the squared distance
-            affinityElement = 1.0 / (distance * distance)
+            affinityElement = 1.0 / (dist * dist)
             if affinityElement < 0.0001:
                 affinityElement = 0.0001 #numeric stability for the normalization
-            ### this should be inserted in the affinity matrix element that
-            ### links the first set element index i with second element set at
-            ### index 'idx'
             affinity12[i,idx] = affinityElement
+        else: ### Loop over k nearest neighbours
+            for j, idx in enumerate(neighbourIndices[i,:]):
+                ### idx now indicates the index of the second set element that was
+                ## determined a neighbour of the current first set element
+                distance = distances[i,j]
+                if distance < 0.001:
+                    distance = 0.001 #numeric stability
+                ## The affinity is 1 over the squared distance
+                affinityElement = 1.0 / (distance * distance)
+                if affinityElement < 0.0001:
+                    affinityElement = 0.0001 #numeric stability for the normalization
+                ### this should be inserted in the affinity matrix element that
+                ### links the first set element index i with second element set at
+                ### index 'idx'
+                affinity12[i,idx] = affinityElement
 
     ## Normalize the affinity matrix (the sum of each row has to equal 1.0)
     rowSums = affinity12.sum(axis=1, keepdims=True)
@@ -131,7 +141,7 @@ def affinity_to_correspondences(features2, flags2, affinity, flagRoundingLimit =
 
     return correspondingFeatures, correspondingFlags
 
-def inlier_detection(features, correspondingFeatures, correspondingFlags, inlierProbability, kappaa = 3):
+def inlier_detection(features, correspondingFeatures, correspondingFlags, oldProbability, kappaa = 3.0):
     """
     # GOAL
     Determine which elements are inliers ('normal') and which are outliers
@@ -143,21 +153,22 @@ def inlier_detection(features, correspondingFeatures, correspondingFlags, inlier
     -features
     -correspondingFeatures
     -correspondingFlags
+    -inlierProbability:
+    Is processed here and returned when the function ends.
 
     # PARAMETERS
     -kappaa(=3): Mahalanobis distance that determines cut-off in- vs outliers
 
     # OUTPUTS
-    -inlierProbability
 
     # RETURNS
+    -inlierProbability
     """
     # Info & Initialization
     numElements = features.shape[0]
     # Flag based inlier/outlier classification
-    for i,flag in enumerate(correspondingFlags):
-        if flag < 0.5:
-            inlierProbability[i] = 0.0
+    ## Do an element-wise multiplication
+    newProbability = oldProbability * correspondingFlags
 
     # Distance based inlier/outlier classification
     ## Re-calculate the parameters sigma and lambda
@@ -167,8 +178,8 @@ def inlier_detection(features, correspondingFeatures, correspondingFlags, inlier
     sigmaDenominator = 0.0
     for i in range(numElements):
         distance = np.linalg.norm(correspondingFeatures[i,:] - features[i,:])
-        sigmaNumerator = sigmaNumerator + inlierProbability[i] * distance * distance
-        sigmaDenominator = sigmaDenominator + inlierProbability[i]
+        sigmaNumerator = sigmaNumerator + newProbability[i] * distance * distance
+        sigmaDenominator = sigmaDenominator + newProbability[i]
 
     sigmaa = np.sqrt(sigmaNumerator/sigmaDenominator)
     lambdaa = 1.0/(np.sqrt(2 * 3.14159) * sigmaa) * np.exp(-0.5 * kappaa * kappaa)
@@ -176,7 +187,8 @@ def inlier_detection(features, correspondingFeatures, correspondingFlags, inlier
     for i in range(numElements):
         distance = np.linalg.norm(correspondingFeatures[i,:] - features[i,:])
         probability = 1.0/(np.sqrt(2 * 3.14159) * sigmaa) * np.exp(-0.5 * np.square(distance/sigmaa))
-        inlierProbability[i] = probability / (probability + lambdaa) #TODO: I left the weight calculation out for now
+        probability = probability / (probability + lambdaa)
+        newProbability[i] = newProbability[i] * probability
 
     #Gradient Based inlier/outlier classification
     for i in range(numElements):
@@ -187,9 +199,11 @@ def inlier_detection(features, correspondingFeatures, correspondingFlags, inlier
         dotProduct = normal.dot(correspondingNormal)
         ## Rescale this result so that it's continuous between 0.0 and +1.0
         probability = dotProduct / 2.0 + 0.5
-        inlierProbability[i] = inlierProbability[i] * probability
+        newProbability[i] = newProbability[i] * probability
 
-def rigid_transformation(features, correspondingFeatures, weights):
+    return newProbability
+
+def rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeights, allowScaling = False):
     """
     # GOAL
     This function computes the rigid transformation between a set a features and
@@ -199,31 +213,46 @@ def rigid_transformation(features, correspondingFeatures, weights):
     transformation matrix that was used.
 
     # INPUTS
-    -features
+    -floatingFeatures
     -correspondingFeatures
-    -weights
+    -floatingWeights
 
     # PARAMETERS
+    -allowScaling:
+    Whether or not to allow scaling.
 
     # RETURNS
     -transformationMatrix
     """
-    #TODO: TRANSPOSE THE DATA BEFORE AND AFTER
-    floatingCentroid = np.array([0.0,0.0,0.0], dtype = float)
-    correspondingCentroid = np.array([0.0,0.0,0.0], dtype = float)
+    # Info and initialization
+    numElements = floatingFeatures.shape[0]
+    numFeatures = floatingFeatures.shape[1]
+    floatingFeaturesT = [] #numFeatures x numElements matrix
+    correspondingFeaturesT = [] #numFeatures x numElements matrix
+    # Tranpose the data if necessary
+    if numElements > numFeatures: #this should normally be the case
+        if numFeatures < 6:
+            print('Warning: small set of features? Transposition during computation of the transformation might have gone wrong.')
+        floatingFeaturesT = floatingFeatures.transpose()
+        correspondingFeaturesT = correspondingFeatures.transpose()
+    else:
+        print('Warning: input of rigid transformation expects rows to correspond with elements, not features, and to have more elements than features per element.')
+
+    floatingCentroid = np.zeros((3), dtype = float)
+    correspondingCentroid = np.zeros((3), dtype = float)
     weightSum = 0.0
-    for i in range(numFloatingVertices):
-        floatingCentroid = floatingCentroid + floatingWeights[i] * floatingPositions[:,i]
-        correspondingCentroid = correspondingCentroid + floatingWeights[i] * correspondingPositions[:,i]
+    for i in range(numElements):
+        floatingCentroid = floatingCentroid + floatingWeights[i] * floatingFeaturesT[0:3,i]
+        correspondingCentroid = correspondingCentroid + floatingWeights[i] * correspondingFeaturesT[0:3,i]
         weightSum = weightSum + floatingWeights[i]
 
     floatingCentroid = floatingCentroid / weightSum
     correspondingCentroid = correspondingCentroid / weightSum
     ###3.2 Compute the Cross Variance matrix
     crossVarianceMatrix = np.zeros((3,3), dtype = float)
-    for i in range(numFloatingVertices):
+    for i in range(numElements):
         #CrossVarMat = sum(weight[i] * floatingPosition[i] * correspondingPosition[i]_Transposed)
-        crossVarianceMatrix = crossVarianceMatrix + floatingWeights[i] * np.outer(floatingPositions[:,i], correspondingPositions[:,i])
+        crossVarianceMatrix = crossVarianceMatrix + floatingWeights[i] * np.outer(floatingFeaturesT[0:3,i], correspondingFeaturesT[0:3,i])
 
     crossVarianceMatrix = crossVarianceMatrix / weightSum - np.outer(floatingCentroid, correspondingCentroid)
     ###3.3 Compute the Anti-Symmetric matrix
@@ -266,12 +295,12 @@ def rigid_transformation(features, correspondingFeatures, weights):
     rotMatTemp[1,2] = 2.0 * (rotQ[2] * rotQ[3] - rotQ[0] * rotQ[1])
     ### 3.8 Adjust the scale (optional)
     scaleFactor = 1.0 #>1 to grow ; <1 to shrink
-    if adjustScale:
+    if allowScaling:
         numerator = 0.0
         denominator = 0.0
-        for i in range(numFloatingVertices):
-            centeredFloatingPosition = rotMatTemp.dot(floatingPositions[:,i] - floatingCentroid)
-            centeredCorrespondingPosition = correspondingPositions[:,i] - correspondingCentroid
+        for i in range(numElements):
+            centeredFloatingPosition = rotMatTemp.dot(floatingFeaturesT[0:3,i] - floatingCentroid)
+            centeredCorrespondingPosition = correspondingFeaturesT[0:3,i] - correspondingCentroid
             numerator = numerator + floatingWeights[i] * np.dot(centeredCorrespondingPosition, centeredFloatingPosition)
             denominator = denominator + floatingWeights[i] * np.dot(centeredFloatingPosition, centeredFloatingPosition)
         scaleFactor = numerator / denominator
@@ -286,11 +315,9 @@ def rigid_transformation(features, correspondingFeatures, weights):
     transformationMatrix = rotationMatrix.dot(translationMatrix)
 
     ##4) Apply transformation
-    oldFloatingPositions = floatingPositions.copy()
+    vector = np.ones((4), dtype = float)
+    for i in range(numElements):
+        vector[0:3] = floatingFeaturesT[0:3,i].copy()
+        floatingFeatures[i,0:3] = transformationMatrix.dot(vector)[0:3]
 
-    floatingPosition = np.ones((4), dtype = float)
-    for i in range(numFloatingVertices):
-        floatingPosition[0:3] = floatingPositions[:,i].copy()
-        print(floatingPosition)
-        floatingPositions[:,i] = transformationMatrix.dot(floatingPosition)[0:3]
-        print(floatingPositions[:,i])
+    return transformationMatrix
