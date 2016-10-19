@@ -16,9 +16,9 @@
 
 import sys
 sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
-from openmesh import *
+import openmesh
 #Importing the rest of utilities
-import numpy as np
+import numpy
 from numpy import linalg
 from scipy import spatial
 
@@ -88,7 +88,7 @@ def gaussian_vector_interpolation(position, fieldPositions, fieldVectors, fieldW
     # Obtain info and initialize outputs
     numVectors = fieldVectors.shape[0]
     numFeatures = fieldVectors.shape[1]
-    interpolatedVector = np.zeros((numFeatures), dtype = float)
+    interpolatedVector = numpy.zeros((numFeatures), dtype = float)
 
     # Loop over the field vectors
     sumWeights = 0.0
@@ -97,7 +97,7 @@ def gaussian_vector_interpolation(position, fieldPositions, fieldVectors, fieldW
         distanceVector = fieldPositions[i] - position
         distance = linalg.norm(distanceVector)
         ## From the distance, we can compute the gaussian weight
-        gaussianWeight = np.exp(-0.5 * np.square(distance / sigmaa))
+        gaussianWeight = numpy.exp(-0.5 * numpy.square(distance / sigmaa))
         ## Let's take the user-defined weight into account
         combinedWeight = gaussianWeight * fieldWeights[i]
         ## Weigh the current vector field vector and sum it
@@ -148,7 +148,7 @@ def gaussian_scalar_interpolation(position, fieldPositions, fieldScalars, fieldW
         distanceVector = fieldPositions[i] - position
         distance = linalg.norm(distanceVector)
         ## From the distance, we can compute the gaussian weight
-        gaussianWeight = np.exp(-0.5 * np.square(distance / sigmaa))
+        gaussianWeight = numpy.exp(-0.5 * numpy.square(distance / sigmaa))
         ## Let's take the user-defined weight into account
         combinedWeight = gaussianWeight * fieldWeights[i]
         ## Weigh the current node's scalar and sum it
@@ -160,3 +160,48 @@ def gaussian_scalar_interpolation(position, fieldPositions, fieldScalars, fieldW
     interpolatedScalar = interpolatedScalar / sumWeights
 
     return interpolatedScalar
+
+def openmesh_normals_from_positions(mesh, newPositions):
+    """
+    GOAL
+    This function recalculates the normals for a given mesh, when there are new
+    positions for the nodes.
+
+    INPUT
+    -mesh:
+    this has to be a mesh of openmesh's TriMesh type
+    -newPositions:
+    the new positions that have to be inserted into the mesh to recompute the
+    vertex normals.
+
+    PARAMETERS
+
+    RETURNS
+    -newNormals:
+    The new vertex normals that were recomputed given the new positions and mesh
+    structure.
+    """
+    # Info and Initialization
+    numVertices = newPositions.shape[0]
+    newNormals = numpy.zeros((numVertices,3), dtype = float)
+    # Put positions back into the floating mesh
+    newPosition = openmesh.TriMesh.Point(0.0,0.0,0.0)
+    for i, vh in enumerate(mesh.vertices()):
+        newPosition[0] = newPositions[i,0]
+        newPosition[1] = newPositions[i,1]
+        newPosition[2] = newPositions[i,2]
+        mesh.set_point(vh,newPosition)
+
+    # Let openmesh recalculate the vertex normals
+    mesh.request_vertex_normals()
+    mesh.request_face_normals()
+    mesh.update_normals()
+    mesh.release_face_normals()
+
+    # Get the normals back out from the openmesh TriMesh
+    for i, vh in enumerate(mesh.vertices()):
+        newNormals[i,0] = mesh.normal(vh)[0]
+        newNormals[i,1] = mesh.normal(vh)[1]
+        newNormals[i,2] = mesh.normal(vh)[2]
+
+    return newNormals
