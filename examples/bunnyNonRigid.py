@@ -29,21 +29,20 @@ In this example, we will perform nonrigid registration of the stanford bunny.
 ##########
 # SET PARAMETERS
 ##########
-# Annealing
-numIterations = 10
+# Data I/O
+floatingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/fucked_up_bunny.obj"
+targetMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunny90.obj"
+resultingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunnyNonRigid.obj"
 # Correspondences
 wknnNumNeighbours = 3
 # Inlier Detection
 kappaa = 3
 adjustScale = False
-floatingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/fucked_up_bunny.obj"
-targetMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunny90.obj"
-resultingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunnyNonRigid.obj"
 # Transformation
 numNeighbourDisplacements = 6
 sigmaSmoothing = 0.01
-numViscousSmoothingIterations = 10
-numElasticSmoothingIterations = 10
+numViscousSmoothingIterationsList = [10, 5, 2, 1]
+numElasticSmoothingIterationsList = [10, 5, 2, 1]
 
 ##########
 # PREPARE DATA
@@ -80,7 +79,7 @@ originalFloatingPositions = numpy.copy(floatingFeatures[:,0:3])
 regulatedDisplacementField = numpy.zeros((numFloatingVertices,3), dtype = float)
 
 ##TODO: HERE WE SHOULD START THE ANNEALING SCHEME
-for iteration in range(numIterations):
+for numViscousSmoothingIterations, numElasticSmoothingIterations in zip(numViscousSmoothingIterationsList, numElasticSmoothingIterationsList):
     ## 1) Determine Nearest neighbours.
     affinity = registration.core.wknn_affinity(floatingFeatures, targetFeatures, wknnNumNeighbours)
     ###TODO: REMOVE THIS HACK WHERE WE SET AFFINITY TO UNITY (BECAUSE BUNNIES CORRESPOND BY INDEX)
