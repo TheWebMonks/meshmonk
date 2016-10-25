@@ -40,6 +40,8 @@ resultingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunnyNonRig
 # Transformation
 numNeighbourDisplacements = 6
 sigmaSmoothing = 1.0 # no idea on right value
+numViscousSmoothingIterations = 1
+numElasticSmoothingIterations = 1
 
 ##########
 # PREPARE DATA
@@ -114,22 +116,14 @@ correspondingFeatures, correspondingFlags = registration.core.affinity_to_corres
 ## 2) Determine inlier weights.
 floatingWeights = registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, kappaa)
 ## 3) Determine and update transformation.
-### We only use the positions here, not the normals. So let's separate them.
-floatingPositions = floatingFeatures[:,0:3]
-targetPositions = targetFeatures[:,0:3]
-correspondingPositions = correspondingFeatures[:,0:3]
-floatingNormals = floatingFeatures[:,3:6]
-targetNormals = targetFeatures[:,3:6]
-correspondingNormals = correspondingFeatures[:,3:6]
 ### Compute a viscoelastic transformation
-registration.core.compute_viscoelastic_transformation(floatingPositions, correspondingPositions, floatingWeights, regulatedDisplacementField, numNeighbourDisplacements, sigmaSmoothing)
+registration.core.compute_viscoelastic_transformation(floatingFeatures[:,0:3], correspondingFeatures[:,0:3], floatingWeights, regulatedDisplacementField, numNeighbourDisplacements, sigmaSmoothing, numViscousSmoothingIterations, numElasticSmoothingIterations)
 
 ### Apply the computed displacement field
-floatingPositions = originalFloatingPositions + regulatedDisplacementField
-### Re-calculate the normals
-floatingNormals = registration.helpers.openmesh_normals_from_positions(floatingMesh, floatingPositions)
-### Re-combine the new positions and normals into the floating feature set
-floatingFeatures = numpy.hstack((floatingPositions,floatingNormals)) #TODO: UITPUT BUNNY BEKIJKEN?
+floatingFeatures[:,0:3] = originalFloatingPositions + regulatedDisplacementField
+
+## 4) Re-calculate the mesh's properties (like normals e.g.)
+floatingFeatures[:,3:6] = registration.helpers.openmesh_normals_from_positions(floatingMesh, floatingFeatures[:,0:3])
 
 ##########
 # EXPORT DATA

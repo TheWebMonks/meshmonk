@@ -322,7 +322,7 @@ def rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeight
 
     return transformationMatrix
 
-def compute_viscoelastic_transformation(currentFloatingPositions, correspondingPositions, floatingWeights, toBeUpdatedDisplacementField, numNeighbourDisplacements, sigmaSmoothing):
+def compute_viscoelastic_transformation(currentFloatingPositions, correspondingPositions, floatingWeights, toBeUpdatedDisplacementField, numNeighbourDisplacements, sigmaSmoothing = 1.0, numViscousSmoothingIterations = 1, numElasticSmoothingIterations = 1):
     """
     # GOAL
     This function computes the rigid transformation between a set a features and
@@ -348,6 +348,10 @@ def compute_viscoelastic_transformation(currentFloatingPositions, correspondingP
     enough to keep computational speed high.
     -sigmaSmoothing:
     The value for sigma of the gaussian used for the regularization.
+    -numViscousSmoothingIterations:
+    Number of times the viscous deformation is smoothed.
+    -numElasticSmoothingIterations:
+    Number of times the elastic deformation is smoothed
 
     # RETURNS
     """
@@ -360,15 +364,15 @@ def compute_viscoelastic_transformation(currentFloatingPositions, correspondingP
     ## viscous behaviour is obtained.
     ### Compute the Force Field
     unregulatedForceField = correspondingPositions - currentFloatingPositions
-    ### Regulate the Force Field
+    ### Regulate the Force Field (Gaussian smoothing, iteratively)
     regulatedForceField = numpy.zeros((numFloatingVertices,3), dtype = float)
-    helpers.gaussian_smoothing_displacement_field(currentFloatingPositions, unregulatedForceField, regulatedForceField, floatingWeights, numNeighbourDisplacements, sigmaSmoothing)
+    for i in range(numViscousSmoothingIterations):
+        helpers.gaussian_smoothing_vector_field(currentFloatingPositions, unregulatedForceField, regulatedForceField, floatingWeights, numNeighbourDisplacements, sigmaSmoothing)
 
     # Elastic Part
     ## Add the regulated Force Field to the current Displacement Field that has
     ## to be updated.
     unregulatedDisplacementField = toBeUpdatedDisplacementField + regulatedForceField
-    ## Regulate the new Displacement Field (same to what we did with the Force
-    ## Field) and insert it into currentDisplacementField (which is the
-    ## requested output of this function.)
-    helpers.gaussian_smoothing_displacement_field(currentFloatingPositions, unregulatedDisplacementField, toBeUpdatedDisplacementField, floatingWeights, numNeighbourDisplacements, sigmaSmoothing)
+    ## Regulate the new Displacement Field (Gaussian smoothing, iteratively)
+    for i in range(numElasticSmoothingIterations):
+        helpers.gaussian_smoothing_vector_field(currentFloatingPositions, unregulatedDisplacementField, toBeUpdatedDisplacementField, floatingWeights, numNeighbourDisplacements, sigmaSmoothing)

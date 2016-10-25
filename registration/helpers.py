@@ -162,19 +162,19 @@ def gaussian_scalar_interpolation(position, fieldPositions, fieldScalars, fieldW
 
     return interpolatedScalar
 
-def gaussian_smoothing_displacement_field(floatingPositions, unregulatedDisplacementField, regulatedDisplacementField, floatingWeights, numNeighbours, gaussianSigma):
+def gaussian_smoothing_vector_field(fieldPositions, fieldVectors, regulatedFieldVectors, fieldWeights, numNeighbours, gaussianSigma):
     """
     GOAL
-    This function performs gaussian smoothing on a displacement field.
+    This function performs gaussian smoothing on an entire vector field.
 
     INPUT
-    -floatingPositions
-    -unregulatedDisplacementField:
-    The displacement field that should be regulated/smoothed.
-    -floatingWeights
+    -fieldPositions
+    -fieldVectors:
+    The vector field that should be smoothed.
+    -fieldWeights
 
     OUTPUT
-    -regulatedDisplacementField:
+    -regulatedFieldVectors:
     The resulting regulated displacement field.
 
 
@@ -190,26 +190,26 @@ def gaussian_smoothing_displacement_field(floatingPositions, unregulatedDisplace
     RETURNS
     """
     # Info & Initialization
-    numFloatingVertices = floatingPositions.shape[0]
-    # Determine for each displacement the (closely) neighbouring displacements
-    distances, neighbourIndices = nearest_neighbours(floatingPositions, floatingPositions, numNeighbours, 15, 0.0001, 2, 1000.0)
-    # Use the neighbouring displacements to smooth each individual displacement
-    for i in range(numFloatingVertices):
-        position = floatingPositions[i,:]
+    numNodes = fieldPositions.shape[0]
+    # Determine for each field node the (closely) neighbouring nodes
+    distances, neighbourIndices = nearest_neighbours(fieldPositions, fieldPositions, numNeighbours, 15, 0.0001, 2, 1000.0)
+    # Use the neighbouring field vectors to smooth each individual field vector
+    for i in range(numNodes):
+        position = fieldPositions[i,:]
         neighbourPositions = numpy.zeros((numNeighbours,3), dtype = float)
-        neighbourDisplacements = numpy.zeros((numNeighbours,3), dtype = float)
+        neighbourVectors = numpy.zeros((numNeighbours,3), dtype = float)
         neighbourWeights = numpy.zeros((numNeighbours), dtype = float)
-        ## For the current displacement, get all the neighbouring displacements,
-        ## positions, and weights (needed for Gaussian smoothing!).
+        ## For the current displacement, get all the neighbouring positions,
+        ## vectors, and weights (needed for Gaussian smoothing!).
         for j in range(numNeighbours):
             neighbourIndex = neighbourIndices[i,j]
-            neighbourPositions[j,:] = floatingPositions[neighbourIndex,:]
-            neighbourDisplacements[j,:] = unregulatedDisplacementField[neighbourIndex,:]
-            neighbourWeights[j] = floatingWeights[neighbourIndex]
+            neighbourPositions[j,:] = fieldPositions[neighbourIndex,:]
+            neighbourVectors[j,:] = fieldVectors[neighbourIndex,:]
+            neighbourWeights[j] = fieldWeights[neighbourIndex]
 
         ## Gaussian averaging of neighbouring displacements
-        regulatedDisplacement = gaussian_vector_interpolation(position, neighbourPositions, neighbourDisplacements, neighbourWeights, gaussianSigma)
-        regulatedDisplacementField[i,:] = regulatedDisplacement
+        smoothedVector = gaussian_vector_interpolation(position, neighbourPositions, neighbourVectors, neighbourWeights, gaussianSigma)
+        regulatedFieldVectors[i,:] = smoothedVector
 
 
 def openmesh_normals_from_positions(mesh, newPositions):
