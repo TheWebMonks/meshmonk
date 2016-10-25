@@ -149,22 +149,7 @@ for i in range(numFloatingVertices):
 displacementField = regulatedDisplacementField + regulatedForceField
 
 ### Regulate the Displacement Field (same to what we did with the Force Field)
-#### Use the neighbouring displacements to smooth each individual displacement
-for i in range(numFloatingVertices):
-    position = floatingPositions[i,:]
-    neighbourPositions = numpy.zeros((numNeighbourForces,3), dtype = float)
-    neighbourDisplacements = numpy.zeros((numNeighbourForces,3), dtype = float)
-    neighbourWeights = numpy.zeros((numNeighbourForces), dtype = float)
-    ##### For the current displacement, get all the neighbouring forces,
-    ##### positions, and weights (needed for Gaussian smoothing!).
-    for j in range(numNeighbourForces):
-        neighbourIndex = neighbourIndices[i,j]
-        neighbourPositions[j,:] = floatingPositions[neighbourIndex,:]
-        neighbourDisplacements[j,:] = displacementField[neighbourIndex,:]
-        neighbourWeights[j] = floatingWeights[neighbourIndex]
-
-    regulatedDisplacement = registration.helpers.gaussian_vector_interpolation(position, neighbourPositions, neighbourDisplacements, neighbourWeights, sigmaSmoothing)
-    regulatedDisplacementField[i,:] = regulatedDisplacement
+registration.helpers.gaussian_smoothing_displacement_field(floatingPositions, displacementField, regulatedDisplacementField, floatingWeights, numNeighbourForces, sigmaSmoothing)
 
 ### Apply the regulated Displacement Field
 floatingPositions = initialFloatingPositions + regulatedDisplacementField
