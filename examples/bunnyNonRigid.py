@@ -29,6 +29,8 @@ In this example, we will perform nonrigid registration of the stanford bunny.
 ##########
 # SET PARAMETERS
 ##########
+# Annealing
+numIterations = 10
 # Correspondences
 wknnNumNeighbours = 3
 # Inlier Detection
@@ -39,9 +41,9 @@ targetMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunny90.obj"
 resultingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunnyNonRigid.obj"
 # Transformation
 numNeighbourDisplacements = 6
-sigmaSmoothing = 1.0 # no idea on right value
-numViscousSmoothingIterations = 1
-numElasticSmoothingIterations = 1
+sigmaSmoothing = 0.01
+numViscousSmoothingIterations = 10
+numElasticSmoothingIterations = 10
 
 ##########
 # PREPARE DATA
@@ -55,45 +57,16 @@ openmesh.read_mesh(targetMesh, targetMeshPath)
 # Obtain info and initialize matrices
 numFloatingVertices = floatingMesh.n_vertices()
 numTargetVertices = targetMesh.n_vertices()
-floatingPositions = numpy.zeros((numFloatingVertices,3), dtype = float)
-targetPositions = numpy.zeros((numTargetVertices,3), dtype = float)
-floatingNormals = numpy.zeros((numFloatingVertices,3), dtype = float)
-targetNormals = numpy.zeros((numTargetVertices,3), dtype = float)
-# Initialize weights and flags
+## Initialize weights and flags
 floatingWeights = numpy.ones((numFloatingVertices), dtype = float)
 targetWeights = numpy.ones((numTargetVertices), dtype = float)
 floatingFlags = numpy.ones((numFloatingVertices), dtype = float)
 targetFlags = numpy.ones((numTargetVertices), dtype = float)
 
-# Put in the right positions and normals
-## Make sure normals are present
-floatingMesh.request_vertex_normals()
-floatingMesh.request_face_normals()
-floatingMesh.update_normals()
-floatingMesh.release_face_normals()
-for i, vh in enumerate(floatingMesh.vertices()):
-    floatingPositions[i,0] = floatingMesh.point(vh)[0]
-    floatingPositions[i,1] = floatingMesh.point(vh)[1]
-    floatingPositions[i,2] = floatingMesh.point(vh)[2]
-    floatingNormals[i,0] = floatingMesh.normal(vh)[0]
-    floatingNormals[i,1] = floatingMesh.normal(vh)[1]
-    floatingNormals[i,2] = floatingMesh.normal(vh)[2]
-
-targetMesh.request_vertex_normals()
-targetMesh.request_face_normals()
-targetMesh.update_normals()
-targetMesh.release_face_normals()
-for i, vh in enumerate(targetMesh.vertices()):
-    targetPositions[i,0] = targetMesh.point(vh)[0]
-    targetPositions[i,1] = targetMesh.point(vh)[1]
-    targetPositions[i,2] = targetMesh.point(vh)[2]
-    targetNormals[i,0] = targetMesh.normal(vh)[0]
-    targetNormals[i,1] = targetMesh.normal(vh)[1]
-    targetNormals[i,2] = targetMesh.normal(vh)[2]
-
-# The features are the concatenation of positions and normals
-floatingFeatures = numpy.hstack((floatingPositions,floatingNormals))
-targetFeatures = numpy.hstack((targetPositions,targetNormals))
+# Obtain the floating and target mesh features (= positions and normals)
+floatingFeatures = registration.helpers.openmesh_to_numpy_features(floatingMesh)
+targetFeatures = registration.helpers.openmesh_to_numpy_features(targetMesh)
+correspondingFeatures = numpy.zeros((floatingFeatures.shape), dtype = float)
 
 
 ##########
@@ -103,31 +76,27 @@ targetFeatures = numpy.hstack((targetPositions,targetNormals))
 
 """
 ## Initialize
-originalFloatingPositions = numpy.copy(floatingPositions)
+originalFloatingPositions = numpy.copy(floatingFeatures[:,0:3])
 regulatedDisplacementField = numpy.zeros((numFloatingVertices,3), dtype = float)
 
-##TODO: HERE WE SHOULD START THE ITERATIONS
+##TODO: HERE WE SHOULD START THE ANNEALING SCHEME
+for iteration in range(numIterations):
+    ## 1) Determine Nearest neighbours.
+    affinity = registration.core.wknn_affinity(floatingFeatures, targetFeatures, wknnNumNeighbours)
+    ###TODO: REMOVE THIS HACK WHERE WE SET AFFINITY TO UNITY (BECAUSE BUNNIES CORRESPOND BY INDEX)
+    affinity = numpy.identity(numFloatingVertices, dtype = float)
+    correspondingFeatures, correspondingFlags = registration.core.affinity_to_correspondences(targetFeatures, targetFlags, affinity, 0.5)
+    ## 2) Determine inlier weights.
+    floatingWeights = registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, kappaa)
+    ## 3) Determine and update transformation.
+    ### Compute a viscoelastic transformation
+    registration.core.compute_viscoelastic_transformation(floatingFeatures[:,0:3], correspondingFeatures[:,0:3], floatingWeights, regulatedDisplacementField, numNeighbourDisplacements, sigmaSmoothing, numViscousSmoothingIterations, numElasticSmoothingIterations)
 
-## 1) Determine Nearest neighbours.
-affinity = registration.core.wknn_affinity(floatingFeatures, targetFeatures, wknnNumNeighbours)
-###TODO: REMOVE THIS CHEAT WHERE WE SET AFFINITY TO UNITY (BECAUSE BUNNIES CORRESPOND BY INDEX)
-affinity = numpy.identity(numFloatingVertices, dtype = float)
-correspondingFeatures, correspondingFlags = registration.core.affinity_to_correspondences(targetFeatures, targetFlags, affinity, 0.5)
-## 2) Determine inlier weights.
-floatingWeights = registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, kappaa)
-## 3) Determine and update transformation.
-### Compute a viscoelastic transformation
-numNeighbourDisplacements = 6
-sigmaSmoothing = 0.01
-numViscousSmoothingIterations = 10
-numElasticSmoothingIterations = 10
-registration.core.compute_viscoelastic_transformation(floatingFeatures[:,0:3], correspondingFeatures[:,0:3], floatingWeights, regulatedDisplacementField, numNeighbourDisplacements, sigmaSmoothing, numViscousSmoothingIterations, numElasticSmoothingIterations)
+    ### Apply the computed displacement field
+    floatingFeatures[:,0:3] = originalFloatingPositions + regulatedDisplacementField
 
-### Apply the computed displacement field
-floatingFeatures[:,0:3] = originalFloatingPositions + regulatedDisplacementField
-
-## 4) Re-calculate the mesh's properties (like normals e.g.)
-floatingFeatures[:,3:6] = registration.helpers.openmesh_normals_from_positions(floatingMesh, floatingFeatures[:,0:3])
+    ## 4) Re-calculate the mesh's properties (like normals e.g.)
+    floatingFeatures[:,3:6] = registration.helpers.openmesh_normals_from_positions(floatingMesh, floatingFeatures[:,0:3])
 
 ##########
 # EXPORT DATA

@@ -256,3 +256,43 @@ def openmesh_normals_from_positions(mesh, newPositions):
         newNormals[i,2] = mesh.normal(vh)[2]
 
     return newNormals
+
+def openmesh_to_numpy_features(mesh):
+    """
+    GOAL
+    This function converts an openmesh data structure to the feature
+    representation in numpy arrays required by the registration framework.
+
+    INPUT
+    -mesh:
+    this has to be a mesh of openmesh's TriMesh type
+
+    PARAMETERS
+
+    RETURNS
+    -features:
+    a numVertices x 6 numpy array where the first three columns are made up of
+    the positions of the vertices, and the last three columns the normals of
+    those vertices.
+    """
+    # Info and Initialization
+    numVertices = mesh.n_vertices()
+    features = numpy.zeros((numVertices,6), dtype = float)
+
+    # Let openmesh recalculate the vertex normals (typically, only the face
+    # normals are present).
+    mesh.request_vertex_normals()
+    mesh.request_face_normals()
+    mesh.update_normals()
+    mesh.release_face_normals()
+
+    # Extract the vertex positions and normals
+    for i, vertexHandle in enumerate(mesh.vertices()):
+        features[i,0] = mesh.point(vertexHandle)[0]
+        features[i,1] = mesh.point(vertexHandle)[1]
+        features[i,2] = mesh.point(vertexHandle)[2]
+        features[i,3] = mesh.normal(vertexHandle)[0]
+        features[i,4] = mesh.normal(vertexHandle)[1]
+        features[i,5] = mesh.normal(vertexHandle)[2]
+
+    return features
