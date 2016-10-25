@@ -117,6 +117,10 @@ correspondingFeatures, correspondingFlags = registration.core.affinity_to_corres
 floatingWeights = registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, kappaa)
 ## 3) Determine and update transformation.
 ### Compute a viscoelastic transformation
+numNeighbourDisplacements = 6
+sigmaSmoothing = 0.01
+numViscousSmoothingIterations = 10
+numElasticSmoothingIterations = 10
 registration.core.compute_viscoelastic_transformation(floatingFeatures[:,0:3], correspondingFeatures[:,0:3], floatingWeights, regulatedDisplacementField, numNeighbourDisplacements, sigmaSmoothing, numViscousSmoothingIterations, numElasticSmoothingIterations)
 
 ### Apply the computed displacement field

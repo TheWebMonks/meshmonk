@@ -368,6 +368,7 @@ def compute_viscoelastic_transformation(currentFloatingPositions, correspondingP
     regulatedForceField = numpy.zeros((numFloatingVertices,3), dtype = float)
     for i in range(numViscousSmoothingIterations):
         helpers.gaussian_smoothing_vector_field(currentFloatingPositions, unregulatedForceField, regulatedForceField, floatingWeights, numNeighbourDisplacements, sigmaSmoothing)
+        unregulatedForceField = regulatedForceField
 
     # Elastic Part
     ## Add the regulated Force Field to the current Displacement Field that has
@@ -376,3 +377,4 @@ def compute_viscoelastic_transformation(currentFloatingPositions, correspondingP
     ## Regulate the new Displacement Field (Gaussian smoothing, iteratively)
     for i in range(numElasticSmoothingIterations):
         helpers.gaussian_smoothing_vector_field(currentFloatingPositions, unregulatedDisplacementField, toBeUpdatedDisplacementField, floatingWeights, numNeighbourDisplacements, sigmaSmoothing)
+        unregulatedDisplacementField = toBeUpdatedDisplacementField
