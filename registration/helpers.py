@@ -162,14 +162,14 @@ def gaussian_scalar_interpolation(position, fieldPositions, fieldScalars, fieldW
 
     return interpolatedScalar
 
-def gaussian_smoothing_displacement_field(floatingPositions, oldDisplacementField, regulatedDisplacementField, floatingWeights, numNeighbours, gaussianSigma):
+def gaussian_smoothing_displacement_field(floatingPositions, unregulatedDisplacementField, regulatedDisplacementField, floatingWeights, numNeighbours, gaussianSigma):
     """
     GOAL
     This function performs gaussian smoothing on a displacement field.
 
     INPUT
     -floatingPositions
-    -oldDisplacementField:
+    -unregulatedDisplacementField:
     The displacement field that should be regulated/smoothed.
     -floatingWeights
 
@@ -204,7 +204,7 @@ def gaussian_smoothing_displacement_field(floatingPositions, oldDisplacementFiel
         for j in range(numNeighbours):
             neighbourIndex = neighbourIndices[i,j]
             neighbourPositions[j,:] = floatingPositions[neighbourIndex,:]
-            neighbourDisplacements[j,:] = oldDisplacementField[neighbourIndex,:]
+            neighbourDisplacements[j,:] = unregulatedDisplacementField[neighbourIndex,:]
             neighbourWeights[j] = floatingWeights[neighbourIndex]
 
         ## Gaussian averaging of neighbouring displacements

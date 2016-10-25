@@ -38,7 +38,6 @@ floatingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/fucked_up_bu
 targetMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunny90.obj"
 resultingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunnyNonRigid.obj"
 # Transformation
-numNeighbourForces = 6
 numNeighbourDisplacements = 6
 sigmaSmoothing = 1.0 # no idea on right value
 
@@ -102,7 +101,7 @@ targetFeatures = numpy.hstack((targetPositions,targetNormals))
 
 """
 ## Initialize
-initialFloatingPositions = numpy.copy(floatingPositions)
+originalFloatingPositions = numpy.copy(floatingPositions)
 regulatedDisplacementField = numpy.zeros((numFloatingVertices,3), dtype = float)
 
 ##TODO: HERE WE SHOULD START THE ITERATIONS
@@ -122,20 +121,11 @@ correspondingPositions = correspondingFeatures[:,0:3]
 floatingNormals = floatingFeatures[:,3:6]
 targetNormals = targetFeatures[:,3:6]
 correspondingNormals = correspondingFeatures[:,3:6]
-### The 'Force Field' is what drives the deformation: the difference between
-### the floating vertices and their correspondences
-forceField = correspondingPositions - floatingPositions
-regulatedForceField = numpy.zeros((numFloatingVertices,3), dtype = float)
-### Let's regulate the Force Field
-registration.helpers.gaussian_smoothing_displacement_field(floatingPositions, forceField, regulatedForceField, floatingWeights, numNeighbourForces, sigmaSmoothing)
+### Compute a viscoelastic transformation
+registration.core.compute_viscoelastic_transformation(floatingPositions, correspondingPositions, floatingWeights, regulatedDisplacementField, numNeighbourDisplacements, sigmaSmoothing)
 
-### Add the regulated Force Field to the Displacement Field
-displacementField = regulatedDisplacementField + regulatedForceField
-### Regulate the Displacement Field (same to what we did with the Force Field)
-registration.helpers.gaussian_smoothing_displacement_field(floatingPositions, displacementField, regulatedDisplacementField, floatingWeights, numNeighbourDisplacements, sigmaSmoothing)
-
-### Apply the regulated Displacement Field
-floatingPositions = initialFloatingPositions + regulatedDisplacementField
+### Apply the computed displacement field
+floatingPositions = originalFloatingPositions + regulatedDisplacementField
 ### Re-calculate the normals
 floatingNormals = registration.helpers.openmesh_normals_from_positions(floatingMesh, floatingPositions)
 ### Re-combine the new positions and normals into the floating feature set

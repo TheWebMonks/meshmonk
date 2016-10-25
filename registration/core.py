@@ -19,7 +19,7 @@ import sys
 sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
 from openmesh import *
 #Importing the rest of utilities
-import numpy as np
+import numpy
 from numpy import linalg
 from scipy import spatial
 import helpers
@@ -46,7 +46,7 @@ def wknn_affinity(features1, features2, k = 3):
     # Obtain some required info and initialize data structures
     numElements1 = features1.shape[0]
     numElements2 = features2.shape[0]
-    affinity12 = np.zeros((numElements1, numElements2), dtype = float)
+    affinity12 = numpy.zeros((numElements1, numElements2), dtype = float)
     # Determine the nearest neighbours
     distances, neighbourIndices = helpers.nearest_neighbours(features1, features2, k)
     # Compute the affinity matrix
@@ -177,16 +177,16 @@ def inlier_detection(features, correspondingFeatures, correspondingFlags, oldPro
     sigmaNumerator = 0.0
     sigmaDenominator = 0.0
     for i in range(numElements):
-        distance = np.linalg.norm(correspondingFeatures[i,:] - features[i,:])
+        distance = numpy.linalg.norm(correspondingFeatures[i,:] - features[i,:])
         sigmaNumerator = sigmaNumerator + newProbability[i] * distance * distance
         sigmaDenominator = sigmaDenominator + newProbability[i]
 
-    sigmaa = np.sqrt(sigmaNumerator/sigmaDenominator)
-    lambdaa = 1.0/(np.sqrt(2 * 3.14159) * sigmaa) * np.exp(-0.5 * kappaa * kappaa)
+    sigmaa = numpy.sqrt(sigmaNumerator/sigmaDenominator)
+    lambdaa = 1.0/(numpy.sqrt(2 * 3.14159) * sigmaa) * numpy.exp(-0.5 * kappaa * kappaa)
     ## Recalculate the distance-based probabilities
     for i in range(numElements):
-        distance = np.linalg.norm(correspondingFeatures[i,:] - features[i,:])
-        probability = 1.0/(np.sqrt(2 * 3.14159) * sigmaa) * np.exp(-0.5 * np.square(distance/sigmaa))
+        distance = numpy.linalg.norm(correspondingFeatures[i,:] - features[i,:])
+        probability = 1.0/(numpy.sqrt(2 * 3.14159) * sigmaa) * numpy.exp(-0.5 * numpy.square(distance/sigmaa))
         probability = probability / (probability + lambdaa)
         newProbability[i] = newProbability[i] * probability
 
@@ -238,8 +238,8 @@ def rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeight
     else:
         print('Warning: input of rigid transformation expects rows to correspond with elements, not features, and to have more elements than features per element.')
 
-    floatingCentroid = np.zeros((3), dtype = float)
-    correspondingCentroid = np.zeros((3), dtype = float)
+    floatingCentroid = numpy.zeros((3), dtype = float)
+    correspondingCentroid = numpy.zeros((3), dtype = float)
     weightSum = 0.0
     for i in range(numElements):
         floatingCentroid = floatingCentroid + floatingWeights[i] * floatingFeaturesT[0:3,i]
@@ -249,29 +249,29 @@ def rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeight
     floatingCentroid = floatingCentroid / weightSum
     correspondingCentroid = correspondingCentroid / weightSum
     ###3.2 Compute the Cross Variance matrix
-    crossVarianceMatrix = np.zeros((3,3), dtype = float)
+    crossVarianceMatrix = numpy.zeros((3,3), dtype = float)
     for i in range(numElements):
         #CrossVarMat = sum(weight[i] * floatingPosition[i] * correspondingPosition[i]_Transposed)
-        crossVarianceMatrix = crossVarianceMatrix + floatingWeights[i] * np.outer(floatingFeaturesT[0:3,i], correspondingFeaturesT[0:3,i])
+        crossVarianceMatrix = crossVarianceMatrix + floatingWeights[i] * numpy.outer(floatingFeaturesT[0:3,i], correspondingFeaturesT[0:3,i])
 
-    crossVarianceMatrix = crossVarianceMatrix / weightSum - np.outer(floatingCentroid, correspondingCentroid)
+    crossVarianceMatrix = crossVarianceMatrix / weightSum - numpy.outer(floatingCentroid, correspondingCentroid)
     ###3.3 Compute the Anti-Symmetric matrix
     antiSymmetricMatrix = crossVarianceMatrix - crossVarianceMatrix.transpose()
     ###3.4 Use the cyclic elements of the Anti-Symmetric matrix to construct delta
-    delta = np.zeros(3)
+    delta = numpy.zeros(3)
     delta[0] = antiSymmetricMatrix[1,2];
     delta[1] = antiSymmetricMatrix[2,0];
     delta[2] = antiSymmetricMatrix[0,1];
     ###3.5 Compute Q
-    Q = np.zeros((4,4), dtype = float)
-    Q[0,0] = np.trace(crossVarianceMatrix)
+    Q = numpy.zeros((4,4), dtype = float)
+    Q[0,0] = numpy.trace(crossVarianceMatrix)
     ####take care with transposition of delta here. Depending on your library, it might be the opposite than this
     Q[1:4,0] = delta
     Q[0,1:4] = delta #in some libraries, you might have to transpose delta here
-    Q[1:4,1:4] = crossVarianceMatrix + crossVarianceMatrix.transpose() - np.identity(3, dtype = float)*np.trace(crossVarianceMatrix)
+    Q[1:4,1:4] = crossVarianceMatrix + crossVarianceMatrix.transpose() - numpy.identity(3, dtype = float)*numpy.trace(crossVarianceMatrix)
     ###3.6 we now compute the rotation quaternion by finding the eigenvector of
     #Q of its largest eigenvalue
-    eigenValues, eigenVectors = np.linalg.eig(Q)
+    eigenValues, eigenVectors = numpy.linalg.eig(Q)
     indexMaxVal = 0
     maxVal = 0
     for i, eigenValue in enumerate(eigenValues):
@@ -281,11 +281,11 @@ def rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeight
 
     rotQ = eigenVectors[:,indexMaxVal]
     ###3.7 Now we can construct the rotation matrix
-    rotMatTemp = np.zeros((3,3), dtype = float)
+    rotMatTemp = numpy.zeros((3,3), dtype = float)
     ####diagonal elements
-    rotMatTemp[0,0] = np.square(rotQ[0]) + np.square(rotQ[1]) - np.square(rotQ[2]) - np.square(rotQ[3])
-    rotMatTemp[1,1] = np.square(rotQ[0]) + np.square(rotQ[2]) - np.square(rotQ[1]) - np.square(rotQ[3])
-    rotMatTemp[2,2] = np.square(rotQ[0]) + np.square(rotQ[3]) - np.square(rotQ[1]) - np.square(rotQ[2])
+    rotMatTemp[0,0] = numpy.square(rotQ[0]) + numpy.square(rotQ[1]) - numpy.square(rotQ[2]) - numpy.square(rotQ[3])
+    rotMatTemp[1,1] = numpy.square(rotQ[0]) + numpy.square(rotQ[2]) - numpy.square(rotQ[1]) - numpy.square(rotQ[3])
+    rotMatTemp[2,2] = numpy.square(rotQ[0]) + numpy.square(rotQ[3]) - numpy.square(rotQ[1]) - numpy.square(rotQ[2])
     ####remaining elements
     rotMatTemp[1,0] = 2.0 * (rotQ[1] * rotQ[2] + rotQ[0] * rotQ[3])
     rotMatTemp[0,1] = 2.0 * (rotQ[1] * rotQ[2] - rotQ[0] * rotQ[3])
@@ -301,23 +301,74 @@ def rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeight
         for i in range(numElements):
             centeredFloatingPosition = rotMatTemp.dot(floatingFeaturesT[0:3,i] - floatingCentroid)
             centeredCorrespondingPosition = correspondingFeaturesT[0:3,i] - correspondingCentroid
-            numerator = numerator + floatingWeights[i] * np.dot(centeredCorrespondingPosition, centeredFloatingPosition)
-            denominator = denominator + floatingWeights[i] * np.dot(centeredFloatingPosition, centeredFloatingPosition)
+            numerator = numerator + floatingWeights[i] * numpy.dot(centeredCorrespondingPosition, centeredFloatingPosition)
+            denominator = denominator + floatingWeights[i] * numpy.dot(centeredFloatingPosition, centeredFloatingPosition)
         scaleFactor = numerator / denominator
 
     ### 3.9 Compute the remaining translation necessary between the centroids
     translation = correspondingCentroid - scaleFactor * rotMatTemp.dot(floatingCentroid)
     ### 3.10 Let's (finally) compute the entire transformation matrix!
-    translationMatrix = np.identity(4, dtype = float)
-    rotationMatrix = np.identity(4, dtype = float)
+    translationMatrix = numpy.identity(4, dtype = float)
+    rotationMatrix = numpy.identity(4, dtype = float)
     translationMatrix[0:3,3] = translation
     rotationMatrix[0:3,0:3] = scaleFactor * rotMatTemp
     transformationMatrix = rotationMatrix.dot(translationMatrix)
 
     ##4) Apply transformation
-    vector = np.ones((4), dtype = float)
+    vector = numpy.ones((4), dtype = float)
     for i in range(numElements):
         vector[0:3] = floatingFeaturesT[0:3,i].copy()
         floatingFeatures[i,0:3] = transformationMatrix.dot(vector)[0:3]
 
     return transformationMatrix
+
+def compute_viscoelastic_transformation(currentFloatingPositions, correspondingPositions, floatingWeights, toBeUpdatedDisplacementField, numNeighbourDisplacements, sigmaSmoothing):
+    """
+    # GOAL
+    This function computes the rigid transformation between a set a features and
+    a set of corresponding features. Each correspondence can be weighed between
+    0.0 and 1.0.
+    The features are automatically transformed, and the function returns the
+    transformation matrix that was used.
+
+    # INPUTS
+    -floatingPositions
+    -correspondingPositions
+    -floatingWeights
+
+    # OUTPUTS
+    -toBeUpdatedDisplacementField:
+    The current displacement field that should be updated.
+
+    # PARAMETERS
+    -numNeighbourDisplacements:
+    For the regularization, the nearest neighbours for each floating positions
+    have to be found. The number should be high enough so that every significant
+    contribution (up to a distance of e.g. 3*sigmaSmoothing) is included. But low
+    enough to keep computational speed high.
+    -sigmaSmoothing:
+    The value for sigma of the gaussian used for the regularization.
+
+    # RETURNS
+    """
+    # Info and Initialization
+    numFloatingVertices = currentFloatingPositions.shape[0]
+
+    # Viscous Part
+    ## The 'Force Field' is what drives the deformation: the difference between
+    ## the floating vertices and their correspondences. By regulating it,
+    ## viscous behaviour is obtained.
+    ### Compute the Force Field
+    unregulatedForceField = correspondingPositions - currentFloatingPositions
+    ### Regulate the Force Field
+    regulatedForceField = numpy.zeros((numFloatingVertices,3), dtype = float)
+    helpers.gaussian_smoothing_displacement_field(currentFloatingPositions, unregulatedForceField, regulatedForceField, floatingWeights, numNeighbourDisplacements, sigmaSmoothing)
+
+    # Elastic Part
+    ## Add the regulated Force Field to the current Displacement Field that has
+    ## to be updated.
+    unregulatedDisplacementField = toBeUpdatedDisplacementField + regulatedForceField
+    ## Regulate the new Displacement Field (same to what we did with the Force
+    ## Field) and insert it into currentDisplacementField (which is the
+    ## requested output of this function.)
+    helpers.gaussian_smoothing_displacement_field(currentFloatingPositions, unregulatedDisplacementField, toBeUpdatedDisplacementField, floatingWeights, numNeighbourDisplacements, sigmaSmoothing)
