@@ -39,6 +39,7 @@ targetMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunny90.obj"
 resultingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunnyNonRigid.obj"
 # Transformation
 numNeighbourForces = 6
+numNeighbourDisplacements = 6
 sigmaSmoothing = 1.0 # no idea on right value
 
 ##########
@@ -124,32 +125,14 @@ correspondingNormals = correspondingFeatures[:,3:6]
 ### The 'Force Field' is what drives the deformation: the difference between
 ### the floating vertices and their correspondences
 forceField = correspondingPositions - floatingPositions
-### Let's regulate the Force Field
 regulatedForceField = numpy.zeros((numFloatingVertices,3), dtype = float)
-#### Determine for each force the (closely) neighbouring forces
-distances, neighbourIndices = registration.helpers.nearest_neighbours(floatingPositions, floatingPositions, numNeighbourForces, 15, 0.0001, 2, 1000.0)
-#### Use the neighbouring forces to smooth each individual force
-for i in range(numFloatingVertices):
-    position = floatingPositions[i,:]
-    neighbourPositions = numpy.zeros((numNeighbourForces,3), dtype = float)
-    neighbourForces = numpy.zeros((numNeighbourForces,3), dtype = float)
-    neighbourWeights = numpy.zeros((numNeighbourForces), dtype = float)
-    ##### For the current force, get all the neighbouring forces, positions, and
-    ##### weights (needed for Gaussian smoothing!).
-    for j in range(numNeighbourForces):
-        neighbourIndex = neighbourIndices[i,j]
-        neighbourPositions[j,:] = floatingPositions[neighbourIndex,:]
-        neighbourForces[j,:] = forceField[neighbourIndex,:]
-        neighbourWeights[j] = floatingWeights[neighbourIndex]
-
-    regulatedForce = registration.helpers.gaussian_vector_interpolation(position, neighbourPositions, neighbourForces, neighbourWeights, sigmaSmoothing)
-    regulatedForceField[i,:] = regulatedForce
+### Let's regulate the Force Field
+registration.helpers.gaussian_smoothing_displacement_field(floatingPositions, forceField, regulatedForceField, floatingWeights, numNeighbourForces, sigmaSmoothing)
 
 ### Add the regulated Force Field to the Displacement Field
 displacementField = regulatedDisplacementField + regulatedForceField
-
 ### Regulate the Displacement Field (same to what we did with the Force Field)
-registration.helpers.gaussian_smoothing_displacement_field(floatingPositions, displacementField, regulatedDisplacementField, floatingWeights, numNeighbourForces, sigmaSmoothing)
+registration.helpers.gaussian_smoothing_displacement_field(floatingPositions, displacementField, regulatedDisplacementField, floatingWeights, numNeighbourDisplacements, sigmaSmoothing)
 
 ### Apply the regulated Displacement Field
 floatingPositions = initialFloatingPositions + regulatedDisplacementField
