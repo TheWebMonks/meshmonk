@@ -4,6 +4,7 @@
 #include <OpenMesh/Core/IO/reader/OBJReader.hh>
 #include <OpenMesh/Core/IO/writer/OBJWriter.hh>
 #include <Eigen/Dense>
+#include <Eigen/SparseCore>
 #include <nanoflann.hpp>
 
 using namespace std;
@@ -11,18 +12,20 @@ using namespace std;
 const int NUM_FEATURES = 6;
 
 typedef OpenMesh::TriMesh_ArrayKernelT<>  TriMesh;
-typedef Eigen::Matrix< unsigned int, Eigen::Dynamic, Eigen::Dynamic> MatMxNi; //matrix MxN of type unsigned int
-typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatMxNf; //matrix MxN of type float
-typedef Eigen::Matrix< float, Eigen::Dynamic, 3> MatMx3f; //matrix Mx3 of type float
-typedef Eigen::Matrix< float, Eigen::Dynamic, NUM_FEATURES> MatMx6f; //matrix Mx6 of type float
-typedef nanoflann::KDTreeEigenMatrixAdaptor<MatMx6f, NUM_FEATURES, nanoflann::metric_L2>  NanoKDTree6D;
+typedef Eigen::Matrix< unsigned int, Eigen::Dynamic, Eigen::Dynamic> DynIntMat; //matrix MxN of type unsigned int
+typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> DynFloatMat; //matrix MxN of type float
+typedef Eigen::Matrix< float, Eigen::Dynamic, 3> VectorMat; //matrix Mx3 of type float
+typedef Eigen::Matrix< float, Eigen::Dynamic, NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
+typedef Eigen::SparseMatrix<float, 0, int> SparseMat;
+typedef Eigen::Triplet<float> Triplet;
+typedef nanoflann::KDTreeEigenMatrixAdaptor<FeatureMat, NUM_FEATURES, nanoflann::metric_L2>  NanoKDTree6D;
 
 
 
-void k_nearest_neighbours(const MatMx6f &inQueriedPoints,
-                        const MatMx6f &inSourcePoints,
-                        MatMxNi &outNeighbourIndices,
-                        MatMxNf &outNeighbourSquaredDistances,
+void k_nearest_neighbours(const FeatureMat &inQueriedPoints,
+                        const FeatureMat &inSourcePoints,
+                        DynIntMat &outNeighbourIndices,
+                        DynFloatMat &outNeighbourSquaredDistances,
                         const size_t paramK = 3,
                         const size_t paramLeafsize = 15){
     /*
@@ -49,8 +52,8 @@ void k_nearest_neighbours(const MatMx6f &inQueriedPoints,
     const size_t dimension = inSourcePoints.cols();
     const size_t numSourceElements = inSourcePoints.rows();
     const size_t numQueriedElements = inQueriedPoints.rows();
-    outNeighbourIndices = MatMxNi::Zero(numQueriedElements,paramK);
-    outNeighbourSquaredDistances = MatMxNf::Zero(numQueriedElements,paramK);
+    outNeighbourIndices = DynIntMat::Zero(numQueriedElements,paramK);
+    outNeighbourSquaredDistances = DynFloatMat::Zero(numQueriedElements,paramK);
 
     //# Construct kd-tree
     NanoKDTree6D kdTree(dimension, inSourcePoints, paramLeafsize);
@@ -94,7 +97,7 @@ void k_nearest_neighbours(const MatMx6f &inQueriedPoints,
 
 
 void openmesh_to_eigen_features(const TriMesh &inputMesh,
-                                MatMx6f &outputFeatures){
+                                FeatureMat &outputFeatures){
     /*
     GOAL
     This function converts an openmesh data structure to the feature
@@ -116,7 +119,7 @@ void openmesh_to_eigen_features(const TriMesh &inputMesh,
 
     //# Info and Initialization
     const int numVertices = inputMesh.n_vertices();
-    outputFeatures = MatMx6f::Zero(numVertices,NUM_FEATURES);
+    outputFeatures = FeatureMat::Zero(numVertices,NUM_FEATURES);
 
     //# Extract the vertex positions and normals
     unsigned int i = 0;
@@ -140,7 +143,7 @@ void openmesh_to_eigen_features(const TriMesh &inputMesh,
 
 void load_obj_to_eigen_features(const string inObjFilename,
                                 TriMesh &outMesh,
-                                MatMx6f &outFeatureMatrix){
+                                FeatureMat &outFeatureMatrix){
     /*
     GOAL
     This function loads an OBJ file given by a filename and converts it to
@@ -173,7 +176,8 @@ void load_obj_to_eigen_features(const string inObjFilename,
 
 }
 
-void eigen_features_to_openmesh(const MatMx6f &inFeatures, TriMesh &outMesh){
+void eigen_features_to_openmesh(const FeatureMat &inFeatures,
+                                TriMesh &outMesh){
     /*
     GOAL
     This function converts a feature representation of a mesh using Eigen
@@ -220,7 +224,7 @@ void eigen_features_to_openmesh(const MatMx6f &inFeatures, TriMesh &outMesh){
     }
 }
 
-void write_eigen_features_to_obj(const MatMx6f &inFeatures,
+void write_eigen_features_to_obj(const FeatureMat &inFeatures,
                                 TriMesh &inMesh,
                                 const string inObjFilename){
     /*
@@ -263,7 +267,8 @@ void write_eigen_features_to_obj(const MatMx6f &inFeatures,
     }
 }//end write_eigen_features_to_obj()
 
-void update_normals_for_altered_positions(TriMesh &ioMesh, MatMx6f &ioFeatures){
+void update_normals_for_altered_positions(TriMesh &ioMesh,
+                                        FeatureMat &ioFeatures){
     /*
     GOAL
     This function takes the positions that are in the first three columns of
@@ -327,42 +332,215 @@ void update_normals_for_altered_positions(TriMesh &ioMesh, MatMx6f &ioFeatures){
 
 }
 
+
+
+
+void normalize_sparse_matrix(SparseMat &ioMat) {
+    /*
+    # GOAL
+    Normalize each row of the inputted sparse matrix.
+
+    # INPUTS
+    -ioMat
+
+    # PARAMETERS
+
+    # OUTPUT
+    -ioMat
+    */
+
+    //# Normalize the rows of the affinity matrix
+    //## Initialize a vector that will contain the sum of each row
+    const size_t numRows = ioMat.rows();
+    std::vector<float> sumRows(numRows, 0.0f);
+
+    //## Loop over the rows and compute the total sum of its elements
+    for (size_t i = 0 ; i < ioMat.outerSize() ; i++) {
+        for (SparseMat::InnerIterator innerIt(ioMat,i) ; innerIt ; ++innerIt) {
+            //### Get index of current row we're in
+            const unsigned int currentRowIndex = innerIt.row();
+            //### Add current element to the sum of this row.
+            const float currentElement = innerIt.value();
+            sumRows[currentRowIndex] += currentElement;
+        }
+    }
+
+    //## Loop over the rows and divide each row by the sum of its elements
+    for (size_t i = 0 ; i < ioMat.outerSize() ; i++) {
+        for (SparseMat::InnerIterator innerIt(ioMat,i) ; innerIt ; ++innerIt) {
+            //### Get index and sum of the current row we're in
+            const unsigned int currentRowIndex = innerIt.row();
+            const float currentRowSum = sumRows[currentRowIndex];
+
+            //### Get current element and divide it by the sum of its row.
+            const float currentElement = innerIt.value();
+            innerIt.valueRef() = currentElement / currentRowSum;
+        }
+    }
+}//end normalize_sparse_matrix()
+
+
+
+
+
+void wknn_affinity(const FeatureMat &inFeatures1,
+                    const FeatureMat &inFeatures2,
+                    SparseMat &outAffinity,
+                    const size_t paramK = 3) {
+    /*
+    # GOAL
+    For each element in inFeatures1, you're going to determine affinity weights
+    which link it to elements in inFeatures2. This is based on the Euclidean
+    distance of k nearest neighbours found for each element of inFeatures1.
+
+    # INPUTS
+    -inFeatures1
+    -inFeatures2
+
+    # PARAMETERS
+    -paramK(=3):
+    number of nearest neighbours
+
+    # OUTPUT
+    -outAffinity
+    */
+
+    //# Info and Initialization
+    //## Number of elements in each feature matrix
+    const size_t numElements1 = inFeatures1.rows();
+    const size_t numElements2 = inFeatures2.rows();
+    //## Initialize matrices to save k-nn results
+    DynIntMat neighbourIndices = DynIntMat::Zero(numElements1, paramK);
+    DynFloatMat neighbourSquaredDistances = DynFloatMat::Zero(numElements1, paramK);
+    //## Initialize affinity matrix
+    outAffinity = SparseMat(numElements1, numElements2);
+    outAffinity.setZero();
+    //## Initialize a vector of triplets which is used to insert elements into
+    //## the affinity matrix later.
+    const size_t numAffinityElements = numElements1 * paramK;
+    std::vector<Triplet> affinityElements(numAffinityElements, Triplet(0,0,0.0f));
+    //## Parameters for the k-nn search
+    const size_t maxLeafsize = 15;
+
+
+    //# Determine the nearest neighbours
+    k_nearest_neighbours(inFeatures1, inFeatures2, neighbourIndices,
+                        neighbourSquaredDistances, paramK, maxLeafsize);
+
+
+    //# Compute the affinity matrix
+    //## Loop over the first feature set to determine their affinity with the
+    //## second set.
+    size_t i = 0;
+    size_t j = 0;
+    unsigned int counter = 0;
+    for ( ; i < numElements1 ; i++) {
+        //### Loop over each found neighbour
+        for ( j = 0 ; j < paramK ; j++) {
+            //### Get index of neighbour and squared distance to it
+            const int neighbourIndex = neighbourIndices(i,j);
+            float distanceSquared = neighbourSquaredDistances(i,j);
+
+            //### For numerical stability, check if the distance is very small
+            const float eps1 = 0.000001f;
+            if (distanceSquared < eps1) {distanceSquared = eps1;}
+
+            //### Compute the affinity element as 1/distance*distance
+            float affinityElement = 1.0f / distanceSquared;
+            const float eps2 = 0.0001f;
+            //### Check for numerical stability (the affinity elements will be
+            //### normalized later, so dividing by a sum of tiny elements might
+            //### go wrong.
+            if (affinityElement < eps2) {affinityElement = eps2;}
+
+            //### Write result to the affinity triplet list
+            affinityElements[counter] = Triplet(i,neighbourIndex,affinityElement);
+        }
+    }
+
+    //## Construct the sparse matrix with the computed element list
+    outAffinity.setFromTriplets(affinityElements.begin(),
+                                affinityElements.end());
+
+
+    //# Normalize the rows of the affinity matrix
+    normalize_sparse_matrix(outAffinity);
+}//end wknn_affinity()
+
+
+
+
+
 int main()
 {
-    //# IO options
-    OpenMesh::IO::Options readOptions;
+
+    /*
+    ############################################################################
+    ##############################  INPUT  #####################################
+    ############################################################################
+    */
     //# IO variables
-    TriMesh fuckedUpBunny;
-    TriMesh bunny;
     const string fuckedUpBunnyDir = "/home/jonatan/kuleuven-algorithms/examples/data/bunny_slightly_rotated.obj";
     const string bunnyDir = "/home/jonatan/kuleuven-algorithms/examples/data/bunny90.obj";
     const string fuckedUpBunnyResultDir = "/home/jonatan/kuleuven-algorithms/examples/data/fucked_up_bunny_result.obj";
 
     //# Load meshes and convert to feature matrices
-    MatMx6f floatingFeatures;
-    MatMx6f targetFeatures;
+    TriMesh fuckedUpBunny;
+    TriMesh bunny;
+    FeatureMat floatingFeatures;
+    FeatureMat targetFeatures;
     load_obj_to_eigen_features(fuckedUpBunnyDir, fuckedUpBunny, floatingFeatures);
     load_obj_to_eigen_features(bunnyDir, bunny, targetFeatures);
 
-    //# Do rigid ICP
+
+    /*
+    ############################################################################
+    ##############################  RIGID ICP  #################################
+    ############################################################################
+    */
+    //# Rigid ICP
     //## Find nearest neighbours
     const size_t k = 2;
-    MatMxNi neighbourIndices;
-    MatMxNf neighbourSquaredDistances;
+    DynIntMat neighbourIndices;
+    DynFloatMat neighbourSquaredDistances;
     k_nearest_neighbours(floatingFeatures, targetFeatures, neighbourIndices, neighbourSquaredDistances, k, 15);
 
+    //## Initialize affinity matrix
+    size_t numFloatingVertices = floatingFeatures.rows();
+    size_t numTargetVertices = targetFeatures.rows();
+    SparseMat affinity = SparseMat(numFloatingVertices, numTargetVertices);
+    affinity.setIdentity();
 
+
+
+    //## Compute corresponding features as affinity matrix multiplied with the
+    //## target features.
+    FeatureMat correspondingFeatures = affinity * targetFeatures;
 
 
 
 
     //TEST: ASSIGN FIRST NEIGHBOURS AS NEW LOCATIONS
-    for (unsigned int i = 0 ; i < floatingFeatures.rows() ; i++) {
-        floatingFeatures.row(i) = targetFeatures.row(neighbourIndices(i,0));
-    }
+//    for (unsigned int i = 0 ; i < floatingFeatures.rows() ; i++) {
+//        floatingFeatures.row(i) = targetFeatures.row(neighbourIndices(i,0));
+//    }
+    //TEST
+    floatingFeatures = correspondingFeatures;
 
+
+    /*
+    ############################################################################
+    ##########################  NON-RIGID ICP  #################################
+    ############################################################################
+    */
     //# Do non-rigid ICP
 
+
+    /*
+    ############################################################################
+    ##############################  OUTPUT #####################################
+    ############################################################################
+    */
     //# Write result to file
     write_eigen_features_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
 
