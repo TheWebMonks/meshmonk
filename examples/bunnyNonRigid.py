@@ -53,6 +53,22 @@ targetMesh = openmesh.TriMesh()
 openmesh.read_mesh(floatingMesh, floatingMeshPath)
 openmesh.read_mesh(targetMesh, targetMeshPath)
 
+# Decimate the mesh
+# create decimater and module handle
+decimator = openmesh.PolyMeshDecimater(floatingMesh)
+modHandle = openmesh.PolyMeshModQuadricHandle()
+# add modules
+decimator.add(modHandle)
+decimator.module(modHandle).set_max_err(0.001)
+
+# decimate
+decimator.initialize()
+decimator.decimate_to(100)
+
+floatingMesh.garbage_collection()
+openmesh.write_mesh(m, "/home/jonatan/kuleuven-algorithms/examples/data/openmesh_decimated_bunny.obj")
+
+
 # Obtain info and initialize matrices
 numFloatingVertices = floatingMesh.n_vertices()
 numTargetVertices = targetMesh.n_vertices()
