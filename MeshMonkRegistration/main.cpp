@@ -407,17 +407,17 @@ void wknn_affinity(const FeatureMat &inFeatures1,
 
     //# Info and Initialization
     //## Number of elements in each feature matrix
-    const size_t numElements1 = inFeatures1.rows();
-    const size_t numElements2 = inFeatures2.rows();
+    const size_t numVertices1 = inFeatures1.rows();
+    const size_t numVertices2 = inFeatures2.rows();
     //## Initialize matrices to save k-nn results
-    DynIntMat neighbourIndices = DynIntMat::Zero(numElements1, paramK);
-    DynFloatMat neighbourSquaredDistances = DynFloatMat::Zero(numElements1, paramK);
+    DynIntMat neighbourIndices = DynIntMat::Zero(numVertices1, paramK);
+    DynFloatMat neighbourSquaredDistances = DynFloatMat::Zero(numVertices1, paramK);
     //## Initialize affinity matrix
-    outAffinity = SparseMat(numElements1, numElements2);
+    outAffinity = SparseMat(numVertices1, numVertices2);
     outAffinity.setZero();
     //## Initialize a vector of triplets which is used to insert elements into
     //## the affinity matrix later.
-    const size_t numAffinityElements = numElements1 * paramK;
+    const size_t numAffinityElements = numVertices1 * paramK;
     std::vector<Triplet> affinityElements(numAffinityElements, Triplet(0,0,0.0f));
     //## Parameters for the k-nn search
     const size_t maxLeafsize = 15;
@@ -427,14 +427,14 @@ void wknn_affinity(const FeatureMat &inFeatures1,
     k_nearest_neighbours(inFeatures1, inFeatures2, neighbourIndices,
                         neighbourSquaredDistances, paramK, maxLeafsize);
 
-
+    cout << "Neighbour Indices: \n" << neighbourIndices << endl;
     //# Compute the affinity matrix
     //## Loop over the first feature set to determine their affinity with the
     //## second set.
     size_t i = 0;
     size_t j = 0;
     unsigned int counter = 0;
-    for ( ; i < numElements1 ; i++) {
+    for ( ; i < numVertices1 ; i++) {
         //### Loop over each found neighbour
         for ( j = 0 ; j < paramK ; j++) {
             //### Get index of neighbour and squared distance to it
@@ -455,6 +455,7 @@ void wknn_affinity(const FeatureMat &inFeatures1,
 
             //### Write result to the affinity triplet list
             affinityElements[counter] = Triplet(i,neighbourIndex,affinityElement);
+            counter++;
         }
     }
 
@@ -462,9 +463,11 @@ void wknn_affinity(const FeatureMat &inFeatures1,
     outAffinity.setFromTriplets(affinityElements.begin(),
                                 affinityElements.end());
 
-
+    cout << " Affinity before normalization: \n" << outAffinity << endl;
     //# Normalize the rows of the affinity matrix
     normalize_sparse_matrix(outAffinity);
+    cout << " Affinity after normalization: \n" << outAffinity << endl;
+
 }//end wknn_affinity()
 
 
@@ -489,8 +492,16 @@ int main()
     TriMesh bunny;
     FeatureMat floatingFeatures;
     FeatureMat targetFeatures;
-    load_obj_to_eigen_features(fuckedUpBunnyDir, fuckedUpBunny, floatingFeatures);
-    load_obj_to_eigen_features(bunnyDir, bunny, targetFeatures);
+    //load_obj_to_eigen_features(fuckedUpBunnyDir, fuckedUpBunny, floatingFeatures);
+    //load_obj_to_eigen_features(bunnyDir, bunny, targetFeatures);
+    floatingFeatures = FeatureMat::Zero(3, NUM_FEATURES);
+    targetFeatures = FeatureMat::Zero(3, NUM_FEATURES);
+    floatingFeatures << 0.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
+                        1.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
+                        0.1f, 1.1f, 0.1f, 0.0f, 0.0f, 1.0f;
+    targetFeatures << 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+                      1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+                      0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f;
 
 
     /*
@@ -498,21 +509,14 @@ int main()
     ##############################  RIGID ICP  #################################
     ############################################################################
     */
-    //# Rigid ICP
-    //## Find nearest neighbours
-    const size_t k = 2;
-    DynIntMat neighbourIndices;
-    DynFloatMat neighbourSquaredDistances;
-    k_nearest_neighbours(floatingFeatures, targetFeatures, neighbourIndices, neighbourSquaredDistances, k, 15);
-
+    //# Determine Correspondences
     //## Initialize affinity matrix
     size_t numFloatingVertices = floatingFeatures.rows();
     size_t numTargetVertices = targetFeatures.rows();
-    SparseMat affinity = SparseMat(numFloatingVertices, numTargetVertices);
-    affinity.setIdentity();
-
-
-
+    SparseMat affinity;
+    const size_t numNearestNeighbours = 3;
+    wknn_affinity(floatingFeatures, targetFeatures, affinity, numNearestNeighbours);
+    cout << "Resulting Affinity Matrix: \n" << affinity << endl;
     //## Compute corresponding features as affinity matrix multiplied with the
     //## target features.
     FeatureMat correspondingFeatures = affinity * targetFeatures;
@@ -526,7 +530,7 @@ int main()
 //    }
     //TEST
     floatingFeatures = correspondingFeatures;
-
+    cout << "Final Floating Features: \n" << floatingFeatures << endl;
 
     /*
     ############################################################################
@@ -542,7 +546,7 @@ int main()
     ############################################################################
     */
     //# Write result to file
-    write_eigen_features_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
+//    write_eigen_features_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
 
 
     return 0;
