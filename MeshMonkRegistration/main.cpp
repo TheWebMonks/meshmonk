@@ -12,20 +12,27 @@ using namespace std;
 const int NUM_FEATURES = 6;
 
 typedef OpenMesh::TriMesh_ArrayKernelT<>  TriMesh;
-typedef Eigen::Matrix< unsigned int, Eigen::Dynamic, Eigen::Dynamic> DynIntMat; //matrix MxN of type unsigned int
-typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> DynFloatMat; //matrix MxN of type float
-typedef Eigen::Matrix< float, Eigen::Dynamic, 3> VectorMat; //matrix Mx3 of type float
+typedef Eigen::Matrix< unsigned int, Eigen::Dynamic, Eigen::Dynamic> MatDynInt; //matrix MxN of type unsigned int
+typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat; //matrix MxN of type float
+typedef Eigen::VectorXf VecDynF;
+typedef Eigen::Vector3f Vec3Float;
+typedef Eigen::Vector4f Vec4Float;
+typedef Eigen::Matrix3f Mat3Float;
+typedef Eigen::Matrix4f Mat4Float;
+typedef Eigen::Matrix< float, Eigen::Dynamic, 3> Vec3Mat; //matrix Mx3 of type float
 typedef Eigen::Matrix< float, Eigen::Dynamic, NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
+typedef Eigen::Matrix< float, 1, NUM_FEATURES> FeatureVec; //matrix Mx6 of type float
 typedef Eigen::SparseMatrix<float, 0, int> SparseMat;
 typedef Eigen::Triplet<float> Triplet;
+typedef Eigen::SelfAdjointEigenSolver<Mat4Float> EigenVectorDecomposer;
 typedef nanoflann::KDTreeEigenMatrixAdaptor<FeatureMat, NUM_FEATURES, nanoflann::metric_L2>  NanoKDTree6D;
 
 
 
 void k_nearest_neighbours(const FeatureMat &inQueriedPoints,
                         const FeatureMat &inSourcePoints,
-                        DynIntMat &outNeighbourIndices,
-                        DynFloatMat &outNeighbourSquaredDistances,
+                        MatDynInt &outNeighbourIndices,
+                        MatDynFloat &outNeighbourSquaredDistances,
                         const size_t paramK = 3,
                         const size_t paramLeafsize = 15){
     /*
@@ -52,8 +59,8 @@ void k_nearest_neighbours(const FeatureMat &inQueriedPoints,
     const size_t dimension = inSourcePoints.cols();
     const size_t numSourceElements = inSourcePoints.rows();
     const size_t numQueriedElements = inQueriedPoints.rows();
-    outNeighbourIndices = DynIntMat::Zero(numQueriedElements,paramK);
-    outNeighbourSquaredDistances = DynFloatMat::Zero(numQueriedElements,paramK);
+    outNeighbourIndices = MatDynInt::Zero(numQueriedElements,paramK);
+    outNeighbourSquaredDistances = MatDynFloat::Zero(numQueriedElements,paramK);
 
     //# Construct kd-tree
     NanoKDTree6D kdTree(dimension, inSourcePoints, paramLeafsize);
@@ -332,9 +339,6 @@ void update_normals_for_altered_positions(TriMesh &ioMesh,
 
 }
 
-
-
-
 void normalize_sparse_matrix(SparseMat &ioMat) {
     /*
     # GOAL
@@ -379,10 +383,6 @@ void normalize_sparse_matrix(SparseMat &ioMat) {
     }
 }//end normalize_sparse_matrix()
 
-
-
-
-
 void wknn_affinity(const FeatureMat &inFeatures1,
                     const FeatureMat &inFeatures2,
                     SparseMat &outAffinity,
@@ -410,8 +410,8 @@ void wknn_affinity(const FeatureMat &inFeatures1,
     const size_t numVertices1 = inFeatures1.rows();
     const size_t numVertices2 = inFeatures2.rows();
     //## Initialize matrices to save k-nn results
-    DynIntMat neighbourIndices = DynIntMat::Zero(numVertices1, paramK);
-    DynFloatMat neighbourSquaredDistances = DynFloatMat::Zero(numVertices1, paramK);
+    MatDynInt neighbourIndices = MatDynInt::Zero(numVertices1, paramK);
+    MatDynFloat neighbourSquaredDistances = MatDynFloat::Zero(numVertices1, paramK);
     //## Initialize affinity matrix
     outAffinity = SparseMat(numVertices1, numVertices2);
     outAffinity.setZero();
@@ -427,7 +427,6 @@ void wknn_affinity(const FeatureMat &inFeatures1,
     k_nearest_neighbours(inFeatures1, inFeatures2, neighbourIndices,
                         neighbourSquaredDistances, paramK, maxLeafsize);
 
-    cout << "Neighbour Indices: \n" << neighbourIndices << endl;
     //# Compute the affinity matrix
     //## Loop over the first feature set to determine their affinity with the
     //## second set.
@@ -463,16 +462,269 @@ void wknn_affinity(const FeatureMat &inFeatures1,
     outAffinity.setFromTriplets(affinityElements.begin(),
                                 affinityElements.end());
 
-    cout << " Affinity before normalization: \n" << outAffinity << endl;
     //# Normalize the rows of the affinity matrix
     normalize_sparse_matrix(outAffinity);
-    cout << " Affinity after normalization: \n" << outAffinity << endl;
-
 }//end wknn_affinity()
 
+void fuse_affinities(SparseMat &ioAffinity1, const SparseMat &iAffinity2){
+    /*
+    # GOAL
+    Fuse the two affinity matrices together. The result is inserted into
+    ioAffinity1.
+
+    # INPUTS
+    -ioAffinity1
+    -iAffinity2: dimensions should be transposed of ioAffinity1
+
+    # PARAMETERS
+
+    # OUTPUT
+    -ioAffinity1
+
+    # RETURNS
+    """
+    */
+    //# Info and Initialization
+    const size_t numRows1 = ioAffinity1.rows();
+    const size_t numRows2 = iAffinity2.rows();
+    const size_t numCols1 = ioAffinity1.rows();
+    const size_t numCols2 = iAffinity2.rows();
+    //## Safety check for input sizes
+    if((numRows1 != numCols1) || (numCols1 != numRows2)) {
+        cerr << "The sizes of the inputted matrices in fuse_affinities are wrong."
+        << "Their sizes should be the transpose of each other!" << endl;
+    }
+
+    //# Fusing is done by simple averaging
+    //## Sum matrices. Note: because Eigen's Sparse matrices require storage
+    //## orders to match (row- or column-major) we need to construct a new
+    //## temporary matrix of the tranpose of iAffinity2.
+    ioAffinity1 += SparseMat(iAffinity2.transpose());
+    //## Normalize result
+    normalize_sparse_matrix(ioAffinity1);
+
+}
+
+void wkkn_correspondences(const FeatureMat &inFloatingFeatures,
+                            const FeatureMat &inTargetFeatures,
+                            FeatureMat &outCorrespondingFeatures,
+                            const size_t paramK = 3,
+                            const bool paramSymmetric = true) {
+    /*
+    # GOAL
+    For each element in inFloatingFeatures, we're going to find corresponding
+    features in the elements of inTargetFeatures. This is done in a symmetrical
+    weighted nearest neighbour approach approach.
+    The used weight is one over the distance squared.
+
+    # INPUTS
+    -inFloatingFeatures
+    -inTargetFeatures
+
+    # PARAMETERS
+    -paramK(=3):
+    number of nearest neighbours
+    -paramSymmetric:
+    If true, a push-pull approach is used to find correspondences. Not only
+    will we look for correspondences for inFloatingFeatures in the
+    inTargetFeatures set, we'll also do the opposite: find correspondences for
+    the inTargetFeatures set in the inFloatingFeatures set. These findings are
+    combined which creates an effect where the inTargetFeatures sort of attract
+    the inFloatingFeatures towards itself.
+
+    # OUTPUT
+    -outCorrespondingFeatures
+    */
+
+    //# Info & Initialization
+    const size_t numFloatingVertices = inFloatingFeatures.rows();
+    const size_t numTargetVertices = inTargetFeatures.rows();
+
+    SparseMat affinity = SparseMat(numFloatingVertices, numTargetVertices);
+    SparseMat affinityPull;
+
+    //# Compute the affinity for inFloatingFeatures towards inTargetFeatures
+    wknn_affinity(inFloatingFeatures, inTargetFeatures, affinity, paramK);
+
+    //# Ccompute symmetric correspondences (if required)
+    if (paramSymmetric == true) {
+        affinityPull = SparseMat(numTargetVertices, numFloatingVertices);
+        //## Compute the affinity for inTargetFeatures towards inFloatingFeatures
+        wknn_affinity(inTargetFeatures, inFloatingFeatures, affinityPull, paramK);
+
+        //## Fuse the two affinities together.
+        fuse_affinities(affinity, affinityPull);
+    }
+
+    //## Compute corresponding features as affinity matrix multiplied with the
+    //## target features.
+    outCorrespondingFeatures = affinity * inTargetFeatures;
+
+}//end wkkn_correspondences()
 
 
 
+
+
+
+
+void rigid_transformation(FeatureMat &ioFeatures,
+                            const FeatureMat &inCorrespondingFeatures,
+                            const VecDynF &inWeights,
+                            const bool paramScaling = false) {
+    /*
+    # GOAL
+    This function computes the rigid transformation between a set a features and
+    a set of corresponding features. Each correspondence can be weighed between
+    0.0 and 1.0.
+    The features are automatically transformed, and the function returns the
+    transformation matrix that was used.
+
+    # INPUTS
+    -ioFeatures
+    -inCorrespondingFeatures
+    -inWeights
+
+    # PARAMETERS
+    -paramScaling:
+    Whether or not to allow scaling.
+
+    # OUTPUTS
+    -ioFeatures
+    */
+
+    //# Info & Initialization
+    const size_t numVertices = ioFeatures.rows();
+    const size_t numFeatures = ioFeatures.cols();
+    FeatureMat featuresT = FeatureMat::Zero(numFeatures, numVertices);
+    FeatureMat correspondingFeaturesT = FeatureMat::Zero(numFeatures, numVertices);
+
+    //## Tranpose the data if necessary
+    if ((numVertices > numFeatures) && (numFeatures == NUM_FEATURES)) { //this should normally be the case
+        featuresT = ioFeatures.transpose();
+        correspondingFeaturesT = inCorrespondingFeatures.transpose();
+    }
+    else {
+        cerr<< "Warning: input of rigid transformation expects rows to correspond with elements, not features, and to have more elements than features per element." << endl;
+    }
+
+    //# Compute the tranformation in 10 steps.
+    //## 1. Get the centroids of each set
+    Vec3Float floatingCentroid = Vec3Float::Zero();
+    Vec3Float correspondingCentroid = Vec3Float::Zero();
+    float sumWeights = 0.0;
+    //### Weigh and sum all features
+    for (size_t i = 0 ; i < numVertices ; i++) {
+        floatingCentroid += inWeights[i] * featuresT.col(i).segment(0,3);
+        correspondingCentroid += inWeights[i] * correspondingFeaturesT.col(i).segment(0,3);
+        sumWeights += inWeights[i];
+    }
+    //### Divide by total weight
+    floatingCentroid /= sumWeights;
+    correspondingCentroid /= sumWeights;
+
+    //## 2. Compute the Cross Variance matrix
+    Mat3Float crossVarianceMatrix = Mat3Float::Zero();
+    for(size_t i = 0 ; i < numVertices ; i++) {
+        crossVarianceMatrix += inWeights[i] * featuresT.col(i) * correspondingFeaturesT.col(i).transpose();
+    }
+    crossVarianceMatrix = crossVarianceMatrix / sumWeights - floatingCentroid*correspondingCentroid.transpose();
+
+    //## 3. Compute the Anti-Symmetric matrix
+    Mat3Float antiSymmetricMatrix = crossVarianceMatrix - crossVarianceMatrix.transpose();
+
+    //## 4. Use the cyclic elements of the Anti-Symmetric matrix to construct delta
+    Vec3Float delta = Vec3Float::Zero();
+    delta[0] = antiSymmetricMatrix(1,2);
+    delta[1] = antiSymmetricMatrix(2,0);
+    delta[2] = antiSymmetricMatrix(0,1);
+
+    //## 5. Compute Q
+    Mat4Float Q = Mat4Float::Zero();
+    Q(0,0) = crossVarianceMatrix.trace();
+    Q.block<3,1>(1,0) = delta;
+    Q.block<1,3>(0,1) = delta.transpose();
+    Q.block<3,3>(1,1) = crossVarianceMatrix + crossVarianceMatrix.transpose()
+                        - crossVarianceMatrix.trace() * Mat3Float::Identity();
+
+    //## 6. Now compute the rotation quaternion by finding the eigenvector of Q
+    //## of its largest eigenvalue.
+    Vec4Float rotQuat = Vec4Float::Zero();
+    EigenVectorDecomposer decomposer(Q);
+    if (decomposer.info() != Eigen::Success) {
+        cerr << "eigenvector decomposer on Q failed!" << std::endl;
+        cerr << "Q : " << Q << std::endl;
+    }
+    size_t indexMaxVal = 0;
+    float maxEigenValue = 0.0;
+    for ( size_t i = 0 ; i < 4 ; i++ ){
+        if ( decomposer.eigenvalues()[i] > maxEigenValue ){
+            maxEigenValue = decomposer.eigenvalues()[i];
+            indexMaxVal = i;
+        }
+    }
+    rotQuat = decomposer.eigenvectors().col( indexMaxVal );
+
+    //## 7. Construct the rotation matrix
+    Mat3Float rotMatTemp = Mat3Float::Zero();
+    //### diagonal elements
+    rotMatTemp(0,0) = rotQuat[0] * rotQuat[0] + rotQuat[1] * rotQuat[1] - rotQuat[2] * rotQuat[2] - rotQuat[3] * rotQuat[3];
+    rotMatTemp(1,1) = rotQuat[0] * rotQuat[0] + rotQuat[2] * rotQuat[2] - rotQuat[1] * rotQuat[1] - rotQuat[3] * rotQuat[3];
+    rotMatTemp(2,2) = rotQuat[0] * rotQuat[0] + rotQuat[3] * rotQuat[3] - rotQuat[1] * rotQuat[1] - rotQuat[2] * rotQuat[2];
+    //### remaining elements
+    rotMatTemp(0,1) = 2.0 * (rotQuat[1] * rotQuat[2] - rotQuat[0] * rotQuat[3]);
+    rotMatTemp(1,0) = 2.0 * (rotQuat[1] * rotQuat[2] + rotQuat[0] * rotQuat[3]);
+    rotMatTemp(0,2) = 2.0 * (rotQuat[1] * rotQuat[3] + rotQuat[0] * rotQuat[2]);
+    rotMatTemp(2,0) = 2.0 * (rotQuat[1] * rotQuat[3] - rotQuat[0] * rotQuat[2]);
+    rotMatTemp(1,2) = 2.0 * (rotQuat[2] * rotQuat[3] - rotQuat[0] * rotQuat[1]);
+    rotMatTemp(2,1) = 2.0 * (rotQuat[2] * rotQuat[3] + rotQuat[0] * rotQuat[1]);
+
+    //## 8. Estimate scale (if required)
+    float scaleFactor = 1.0; //>1 to grow ; <1 to shrink
+    if (paramScaling == true){
+        float numerator = 0.0;
+        float denominator = 0.0;
+        for (size_t i = 0 ; i < numVertices ; i++){
+            //### Center and rotate the floating position
+            Vec3Float newFloatingPos = rotMatTemp * (featuresT.block<3,1>(0,i) - floatingCentroid.segment(0, 3));
+            //### Center the corresponding position
+            Vec3Float newCorrespondingPos = correspondingFeaturesT.block<3,1>(0,i) - correspondingCentroid.segment(0, 3);
+
+            //### Increment numerator and denominator
+            numerator += inWeights[i] * newCorrespondingPos.transpose() * newFloatingPos;
+            denominator += inWeights[i] * newFloatingPos.transpose() * newFloatingPos;
+        }
+        scaleFactor = numerator / denominator;
+    }
+
+
+    //## 9. Compute the remaining translation necessary between the centroids
+    Vec3Float translation = correspondingCentroid - scaleFactor * rotMatTemp * floatingCentroid;
+
+    //## 10. Compute the entire transformation matrix.
+    //### Initialize Matrices
+    Mat4Float translationMatrix = Mat4Float::Identity();
+    Mat4Float rotationMatrix = Mat4Float::Identity();
+    Mat4Float transformationMatrix = Mat4Float::Identity();
+    //### Convert to homogeneous transformation matrices
+    translationMatrix.block<3, 1>(0,3) = translation;
+    rotationMatrix.block<3, 3>(0, 0) = scaleFactor * rotMatTemp;
+    //### Matrix transformations on data is performed from right to left.
+    //### Translation should be performed before rotating, so translationMatrix
+    //### stands right in the multiplication with rotationMatrix.
+    transformationMatrix = rotationMatrix * translationMatrix;
+
+    //# Apply the transformation
+    //## initialize the position in a [x y z 1] representation
+    Vec4Float featurePos = Vec4Float::Ones();
+    for (size_t i = 0 ; i < numVertices ; i++) {
+        //## Extraxt position from feature matrix
+        featurePos.segment(0, 3) = featuresT.block<3,1>(0,i);
+        //## Apply transformation and assign to 'featurePos' variable again
+        featurePos = transformationMatrix * featurePos;
+        ioFeatures.block<1,3>(i,0) = featurePos.segment(0, 3);
+    }
+}
 
 int main()
 {
@@ -483,7 +735,8 @@ int main()
     ############################################################################
     */
     //# IO variables
-    const string fuckedUpBunnyDir = "/home/jonatan/kuleuven-algorithms/examples/data/bunny_slightly_rotated.obj";
+//    const string fuckedUpBunnyDir = "/home/jonatan/kuleuven-algorithms/examples/data/bunny_slightly_rotated.obj";
+    const string fuckedUpBunnyDir = "/home/jonatan/kuleuven-algorithms/examples/data/fucked_up_bunny.obj";
     const string bunnyDir = "/home/jonatan/kuleuven-algorithms/examples/data/bunny90.obj";
     const string fuckedUpBunnyResultDir = "/home/jonatan/kuleuven-algorithms/examples/data/fucked_up_bunny_result.obj";
 
@@ -492,14 +745,14 @@ int main()
     TriMesh bunny;
     FeatureMat floatingFeatures;
     FeatureMat targetFeatures;
-    //load_obj_to_eigen_features(fuckedUpBunnyDir, fuckedUpBunny, floatingFeatures);
-    //load_obj_to_eigen_features(bunnyDir, bunny, targetFeatures);
-    floatingFeatures = FeatureMat::Zero(3, NUM_FEATURES);
-    targetFeatures = FeatureMat::Zero(3, NUM_FEATURES);
-    floatingFeatures << 0.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
+    load_obj_to_eigen_features(fuckedUpBunnyDir, fuckedUpBunny, floatingFeatures);
+    load_obj_to_eigen_features(bunnyDir, bunny, targetFeatures);
+    //floatingFeatures = FeatureMat::Zero(3, NUM_FEATURES);
+    //targetFeatures = FeatureMat::Zero(3, NUM_FEATURES);
+    //floatingFeatures << 0.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
                         1.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
                         0.1f, 1.1f, 0.1f, 0.0f, 0.0f, 1.0f;
-    targetFeatures << 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+    //targetFeatures << 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
                       1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
                       0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f;
 
@@ -510,27 +763,21 @@ int main()
     ############################################################################
     */
     //# Determine Correspondences
-    //## Initialize affinity matrix
+    //## Info & Initialization
     size_t numFloatingVertices = floatingFeatures.rows();
     size_t numTargetVertices = targetFeatures.rows();
-    SparseMat affinity;
     const size_t numNearestNeighbours = 3;
-    wknn_affinity(floatingFeatures, targetFeatures, affinity, numNearestNeighbours);
-    cout << "Resulting Affinity Matrix: \n" << affinity << endl;
-    //## Compute corresponding features as affinity matrix multiplied with the
-    //## target features.
-    FeatureMat correspondingFeatures = affinity * targetFeatures;
+    FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, NUM_FEATURES);
+
+    //## Compute symmetric wknn correspondences
+    wkkn_correspondences(floatingFeatures, targetFeatures, correspondingFeatures, numNearestNeighbours, true);
+
+    //# Inlier Detection
+    VecDynF inlierWeights = VecDynF::Ones(numFloatingVertices);
 
 
-
-
-    //TEST: ASSIGN FIRST NEIGHBOURS AS NEW LOCATIONS
-//    for (unsigned int i = 0 ; i < floatingFeatures.rows() ; i++) {
-//        floatingFeatures.row(i) = targetFeatures.row(neighbourIndices(i,0));
-//    }
-    //TEST
-    floatingFeatures = correspondingFeatures;
-    cout << "Final Floating Features: \n" << floatingFeatures << endl;
+    //# Compute the transformation
+    rigid_transformation(floatingFeatures, correspondingFeatures, inlierWeights, false);
 
     /*
     ############################################################################
@@ -546,7 +793,7 @@ int main()
     ############################################################################
     */
     //# Write result to file
-//    write_eigen_features_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
+    write_eigen_features_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
 
 
     return 0;
