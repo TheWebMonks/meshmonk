@@ -14,7 +14,7 @@ const int NUM_FEATURES = 6;
 typedef OpenMesh::TriMesh_ArrayKernelT<>  TriMesh;
 typedef Eigen::Matrix< unsigned int, Eigen::Dynamic, Eigen::Dynamic> MatDynInt; //matrix MxN of type unsigned int
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat; //matrix MxN of type float
-typedef Eigen::VectorXf VecDynF;
+typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Vector3f Vec3Float;
 typedef Eigen::Vector4f Vec4Float;
 typedef Eigen::Matrix3f Mat3Float;
@@ -570,7 +570,7 @@ void wkkn_correspondences(const FeatureMat &inFloatingFeatures,
 
 void rigid_transformation(FeatureMat &ioFeatures,
                             const FeatureMat &inCorrespondingFeatures,
-                            const VecDynF &inWeights,
+                            const VecDynFloat &inWeights,
                             const bool paramScaling = false) {
     /*
     # GOAL
@@ -596,13 +596,13 @@ void rigid_transformation(FeatureMat &ioFeatures,
     //# Info & Initialization
     const size_t numVertices = ioFeatures.rows();
     const size_t numFeatures = ioFeatures.cols();
-    FeatureMat featuresT = FeatureMat::Zero(numFeatures, numVertices);
-    FeatureMat correspondingFeaturesT = FeatureMat::Zero(numFeatures, numVertices);
+    MatDynFloat floatingPositions = MatDynFloat::Zero(3, numVertices);
+    MatDynFloat correspondingPositions = MatDynFloat::Zero(3, numVertices);
 
     //## Tranpose the data if necessary
     if ((numVertices > numFeatures) && (numFeatures == NUM_FEATURES)) { //this should normally be the case
-        featuresT = ioFeatures.transpose();
-        correspondingFeaturesT = inCorrespondingFeatures.transpose();
+        floatingPositions = ioFeatures.leftCols(3).transpose();
+        correspondingPositions = inCorrespondingFeatures.leftCols(3).transpose();
     }
     else {
         cerr<< "Warning: input of rigid transformation expects rows to correspond with elements, not features, and to have more elements than features per element." << endl;
@@ -615,8 +615,8 @@ void rigid_transformation(FeatureMat &ioFeatures,
     float sumWeights = 0.0;
     //### Weigh and sum all features
     for (size_t i = 0 ; i < numVertices ; i++) {
-        floatingCentroid += inWeights[i] * featuresT.col(i).segment(0,3);
-        correspondingCentroid += inWeights[i] * correspondingFeaturesT.col(i).segment(0,3);
+        floatingCentroid += inWeights[i] * floatingPositions.col(i).segment(0,3);
+        correspondingCentroid += inWeights[i] * correspondingPositions.col(i).segment(0,3);
         sumWeights += inWeights[i];
     }
     //### Divide by total weight
@@ -626,7 +626,7 @@ void rigid_transformation(FeatureMat &ioFeatures,
     //## 2. Compute the Cross Variance matrix
     Mat3Float crossVarianceMatrix = Mat3Float::Zero();
     for(size_t i = 0 ; i < numVertices ; i++) {
-        crossVarianceMatrix += inWeights[i] * featuresT.col(i) * correspondingFeaturesT.col(i).transpose();
+        crossVarianceMatrix += inWeights[i] * floatingPositions.col(i) * correspondingPositions.col(i).transpose();
     }
     crossVarianceMatrix = crossVarianceMatrix / sumWeights - floatingCentroid*correspondingCentroid.transpose();
 
@@ -686,9 +686,9 @@ void rigid_transformation(FeatureMat &ioFeatures,
         float denominator = 0.0;
         for (size_t i = 0 ; i < numVertices ; i++){
             //### Center and rotate the floating position
-            Vec3Float newFloatingPos = rotMatTemp * (featuresT.block<3,1>(0,i) - floatingCentroid.segment(0, 3));
+            Vec3Float newFloatingPos = rotMatTemp * (floatingPositions.block<3,1>(0,i) - floatingCentroid.segment(0, 3));
             //### Center the corresponding position
-            Vec3Float newCorrespondingPos = correspondingFeaturesT.block<3,1>(0,i) - correspondingCentroid.segment(0, 3);
+            Vec3Float newCorrespondingPos = correspondingPositions.block<3,1>(0,i) - correspondingCentroid.segment(0, 3);
 
             //### Increment numerator and denominator
             numerator += inWeights[i] * newCorrespondingPos.transpose() * newFloatingPos;
@@ -716,13 +716,13 @@ void rigid_transformation(FeatureMat &ioFeatures,
 
     //# Apply the transformation
     //## initialize the position in a [x y z 1] representation
-    Vec4Float featurePos = Vec4Float::Ones();
+    Vec4Float position4d = Vec4Float::Ones();
     for (size_t i = 0 ; i < numVertices ; i++) {
         //## Extraxt position from feature matrix
-        featurePos.segment(0, 3) = featuresT.block<3,1>(0,i);
-        //## Apply transformation and assign to 'featurePos' variable again
-        featurePos = transformationMatrix * featurePos;
-        ioFeatures.block<1,3>(i,0) = featurePos.segment(0, 3);
+        position4d.segment(0, 3) = floatingPositions.block<3,1>(0,i);
+        //## Apply transformation and assign to 'position4d' variable again
+        position4d = transformationMatrix * position4d;
+        ioFeatures.block<1,3>(i,0) = position4d.segment(0, 3);
     }
 }
 
@@ -773,7 +773,7 @@ int main()
     wkkn_correspondences(floatingFeatures, targetFeatures, correspondingFeatures, numNearestNeighbours, true);
 
     //# Inlier Detection
-    VecDynF inlierWeights = VecDynF::Ones(numFloatingVertices);
+    VecDynFloat inlierWeights = VecDynFloat::Ones(numFloatingVertices);
 
 
     //# Compute the transformation
