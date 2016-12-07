@@ -726,6 +726,93 @@ void rigid_transformation(FeatureMat &ioFeatures,
     }
 }
 
+
+
+
+
+
+void inlier_detection(const FeatureMat &inFeatures,
+                        const FeatureMat &inCorrespondingFeatures,
+                        const VecDynFloat &inCorrespondingFlags,
+                        VecDynFloat &ioProbability,
+                        const float paramKappa = 3.0) {
+    /*
+    # GOAL
+    Determine which elements are inliers ('normal') and which are outliers
+    ('abnormal'). There are different ways to to that, but they should all
+    result in a scalar assigmnent that represents the probability of an element
+    being an inlier.
+
+    # INPUTS
+    -features
+    -correspondingFeatures
+    -correspondingFlags
+    -inlierProbability:
+
+    # PARAMETERS
+    -paramKappa(=3): Mahalanobis distance that determines cut-off in- vs outliers
+
+    # OUTPUTS
+
+    # RETURNS
+    -inlierProbability
+    */
+
+    //# Info & Initialization
+    const size_t numElements = inFeatures.rows();
+
+
+    //# Flag based inlier/outlier classification
+    //## Do an element-wise multiplication
+    ioProbability = ioProbability.cwiseProduct(inCorrespondingFlags);
+
+
+    //# Distance based inlier/outlier classification
+    //## Re-calculate the parameters sigma and lambda
+    float sigmaa = 0.0;
+    float lambdaa = 0.0;
+    float sigmaNumerator = 0.0;
+    float sigmaDenominator = 0.0;
+    for (size_t i = 0 ; i < numElements ; i++) {
+        //### Compute distance (squared)
+        FeatureVec difVector = inCorrespondingFeatures.row(i) - inFeatures.row(i);
+        const float distanceSquared = difVector.squaredNorm();
+
+        sigmaNumerator += ioProbability[i] * distanceSquared;
+        sigmaDenominator += ioProbability[i];
+    }
+    //### sigma and lambda
+    sigmaa = std::sqrt(sigmaNumerator/sigmaDenominator);
+    lambdaa = 1.0/(std::sqrt(2.0 * 3.14159) * sigmaa) * std::exp(-0.5 * paramKappa * paramKappa);
+
+    //## Recalculate the distance-based probabilities
+    for (size_t i = 0 ; i < numElements ; i++) {
+        //### Get squared distance
+        FeatureVec difVector = inCorrespondingFeatures.row(i) - inFeatures.row(i);
+        const float distanceSquared = difVector.squaredNorm();
+        //### Compute probability
+        float probability = 1.0/(std::sqrt(2.0 * 3.14159) * sigmaa) * std::exp(-0.5 * distanceSquared / std::pow(sigmaa, 2.0));
+        probability /= (probability + lambdaa);
+        ioProbability[i] *= probability;
+    }
+
+
+    //#Gradient Based inlier/outlier classification
+    for (size_t i = 0 ; i < numElements ; i++) {
+        const Vec3Float normal = inFeatures.row(i).tail(3);
+        const Vec3Float correspondingNormal = inCorrespondingFeatures.row(i).tail(3);
+        //## Dot product gives an idea of how well they point in the same
+        //## direction. This gives a weight between -1.0 and +1.0
+        const float dotProduct = normal.dot(correspondingNormal);
+        //## Rescale this result so that it's continuous between 0.0 and +1.0
+        float probability = dotProduct / 2.0 + 0.5;
+        ioProbability[i] *= probability;
+    }
+
+}//end inlier_detection
+
+
+
 int main()
 {
 
@@ -747,14 +834,24 @@ int main()
     FeatureMat targetFeatures;
     load_obj_to_eigen_features(fuckedUpBunnyDir, fuckedUpBunny, floatingFeatures);
     load_obj_to_eigen_features(bunnyDir, bunny, targetFeatures);
-    //floatingFeatures = FeatureMat::Zero(3, NUM_FEATURES);
-    //targetFeatures = FeatureMat::Zero(3, NUM_FEATURES);
-    //floatingFeatures << 0.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
+    floatingFeatures = FeatureMat::Zero(8, NUM_FEATURES);
+    targetFeatures = FeatureMat::Zero(8, NUM_FEATURES);
+    floatingFeatures << 0.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
+                        0.1f, 1.1f, 0.1f, 0.0f, 0.0f, 1.0f,
                         1.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
-                        0.1f, 1.1f, 0.1f, 0.0f, 0.0f, 1.0f;
-    //targetFeatures << 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+                        1.1f, 1.1f, 0.1f, 0.0f, 0.0f, 1.0f,
+                        0.1f, 0.1f, 1.1f, 0.0f, 0.0f, 1.0f,
+                        0.1f, 1.1f, 1.1f, 0.0f, 0.0f, 1.0f,
+                        1.1f, 0.1f, 1.1f, 0.0f, 0.0f, 1.0f,
+                        1.1f, 1.1f, 1.1f, 0.0f, 0.0f, 1.0f;
+    targetFeatures << 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+                      0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
                       1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-                      0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f;
+                      1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+                      0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+                      0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+                      1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+                      1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f;
 
 
     /*
@@ -773,11 +870,15 @@ int main()
     wkkn_correspondences(floatingFeatures, targetFeatures, correspondingFeatures, numNearestNeighbours, true);
 
     //# Inlier Detection
-    VecDynFloat inlierWeights = VecDynFloat::Ones(numFloatingVertices);
+    VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
+    VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
+    correspondingFlags[3] = 0.0;
+    inlier_detection(floatingFeatures, correspondingFeatures,
+                    correspondingFlags, floatingWeights, 3.0);
 
-
+    cout << "Inlier Weights: \n" << floatingWeights << endl;
     //# Compute the transformation
-    rigid_transformation(floatingFeatures, correspondingFeatures, inlierWeights, false);
+    rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeights, false);
 
     /*
     ############################################################################
@@ -793,7 +894,7 @@ int main()
     ############################################################################
     */
     //# Write result to file
-    write_eigen_features_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
+//    write_eigen_features_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
 
 
     return 0;
