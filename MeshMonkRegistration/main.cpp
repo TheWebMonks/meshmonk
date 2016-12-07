@@ -466,7 +466,7 @@ void wknn_affinity(const FeatureMat &inFeatures1,
     normalize_sparse_matrix(outAffinity);
 }//end wknn_affinity()
 
-void fuse_affinities(SparseMat &ioAffinity1, const SparseMat &iAffinity2){
+void fuse_affinities(SparseMat &ioAffinity1, const SparseMat &inAffinity2){
     /*
     # GOAL
     Fuse the two affinity matrices together. The result is inserted into
@@ -474,7 +474,7 @@ void fuse_affinities(SparseMat &ioAffinity1, const SparseMat &iAffinity2){
 
     # INPUTS
     -ioAffinity1
-    -iAffinity2: dimensions should be transposed of ioAffinity1
+    -inAffinity2: dimensions should be transposed of ioAffinity1
 
     # PARAMETERS
 
@@ -486,9 +486,9 @@ void fuse_affinities(SparseMat &ioAffinity1, const SparseMat &iAffinity2){
     */
     //# Info and Initialization
     const size_t numRows1 = ioAffinity1.rows();
-    const size_t numRows2 = iAffinity2.rows();
+    const size_t numRows2 = inAffinity2.rows();
     const size_t numCols1 = ioAffinity1.rows();
-    const size_t numCols2 = iAffinity2.rows();
+    const size_t numCols2 = inAffinity2.rows();
     //## Safety check for input sizes
     if((numRows1 != numCols1) || (numCols1 != numRows2)) {
         cerr << "The sizes of the inputted matrices in fuse_affinities are wrong."
@@ -498,16 +498,70 @@ void fuse_affinities(SparseMat &ioAffinity1, const SparseMat &iAffinity2){
     //# Fusing is done by simple averaging
     //## Sum matrices. Note: because Eigen's Sparse matrices require storage
     //## orders to match (row- or column-major) we need to construct a new
-    //## temporary matrix of the tranpose of iAffinity2.
-    ioAffinity1 += SparseMat(iAffinity2.transpose());
+    //## temporary matrix of the tranpose of inAffinity2.
+    ioAffinity1 += SparseMat(inAffinity2.transpose());
     //## Normalize result
     normalize_sparse_matrix(ioAffinity1);
 
 }
 
+
+void affinity_to_correspondences(const FeatureMat &inTargetFeatures,
+                                    const VecDynFloat &inTargetFlags,
+                                    const MatDynFloat &inAffinity,
+                                    FeatureMat &outCorrespondingFeatures,
+                                    VecDynFloat &outCorrespondingFlags,
+                                    const float paramFlagRoundingLimit = 0.9){
+    /*
+    # GOAL
+    This function computes all the corresponding features and flags,
+    when the affinity for a set of features and flags is given.
+
+    # INPUTS
+    -inTargetFeatures
+    -inTargetFlags
+    -inAffinity
+
+    # PARAMETERS
+    -paramFlagRoundingLimit:
+    Flags are binary. Anything over this double is rounded up, whereas anything
+    under it is rounded down. A suggested cut-off is 0.9, which means that if
+    an element flagged zero contributes 10 percent or to the affinity, the
+    corresponding element should be flagged a zero as well.
+
+    # OUTPUT
+    -outCorrespondingFeatures
+    -outCorrespondingFlags
+    */
+
+    //# Info & Initialization
+    const size_t numElements = inTargetFeatures.rows();
+
+    //# Simple computation of corresponding features and flags
+    outCorrespondingFeatures = inAffinity * inTargetFeatures;
+    outCorrespondingFlags = inAffinity * inTargetFlags;
+
+    //# Flag correction.
+    //## Flags are binary. We will round them down if lower than the flag
+    //## rounding limit (see explanation in parameter description).
+    for (size_t i = 0 ; i < numElements ; i++) {
+        if (outCorrespondingFlags[i] > paramFlagRoundingLimit){
+            outCorrespondingFlags[i] = 1.0;
+        }
+        else {
+            outCorrespondingFlags[i] = 0.0;
+        }
+    }
+
+}
+
+
+
 void wkkn_correspondences(const FeatureMat &inFloatingFeatures,
                             const FeatureMat &inTargetFeatures,
+                            const VecDynFloat &inTargetFlags,
                             FeatureMat &outCorrespondingFeatures,
+                            VecDynFloat &outCorrespondingFlags,
                             const size_t paramK = 3,
                             const bool paramSymmetric = true) {
     /*
@@ -520,6 +574,7 @@ void wkkn_correspondences(const FeatureMat &inFloatingFeatures,
     # INPUTS
     -inFloatingFeatures
     -inTargetFeatures
+    -inTargetFlags
 
     # PARAMETERS
     -paramK(=3):
@@ -534,6 +589,7 @@ void wkkn_correspondences(const FeatureMat &inFloatingFeatures,
 
     # OUTPUT
     -outCorrespondingFeatures
+    -outCorrespondingFlags
     */
 
     //# Info & Initialization
@@ -558,8 +614,9 @@ void wkkn_correspondences(const FeatureMat &inFloatingFeatures,
 
     //## Compute corresponding features as affinity matrix multiplied with the
     //## target features.
-    outCorrespondingFeatures = affinity * inTargetFeatures;
-
+    affinity_to_correspondences(inTargetFeatures, inTargetFlags, affinity,
+                                outCorrespondingFeatures, outCorrespondingFlags,
+                                0.9);
 }//end wkkn_correspondences()
 
 
@@ -864,15 +921,16 @@ int main()
     size_t numFloatingVertices = floatingFeatures.rows();
     size_t numTargetVertices = targetFeatures.rows();
     const size_t numNearestNeighbours = 3;
+    VecDynFloat targetFlags = VecDynFloat::Ones(numTargetVertices);
     FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, NUM_FEATURES);
+    VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
 
     //## Compute symmetric wknn correspondences
-    wkkn_correspondences(floatingFeatures, targetFeatures, correspondingFeatures, numNearestNeighbours, true);
-
+    wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
+                        correspondingFeatures, correspondingFlags,
+                        numNearestNeighbours, true);
     //# Inlier Detection
     VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
-    VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
-    correspondingFlags[3] = 0.0;
     inlier_detection(floatingFeatures, correspondingFeatures,
                     correspondingFlags, floatingWeights, 3.0);
 
