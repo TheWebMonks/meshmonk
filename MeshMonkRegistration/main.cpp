@@ -28,9 +28,9 @@ typedef Eigen::SelfAdjointEigenSolver<Mat4Float> EigenVectorDecomposer;
 typedef nanoflann::KDTreeEigenMatrixAdaptor<FeatureMat, NUM_FEATURES, nanoflann::metric_L2>  NanoKDTree6D;
 
 
-
-void k_nearest_neighbours(const FeatureMat &inQueriedPoints,
-                        const FeatureMat &inSourcePoints,
+template <typename EigenMat>
+void k_nearest_neighbours(const EigenMat &inQueriedPoints,
+                        const EigenMat &inSourcePoints,
                         MatDynInt &outNeighbourIndices,
                         MatDynFloat &outNeighbourSquaredDistances,
                         const size_t paramK = 3,
@@ -1016,62 +1016,216 @@ void vector_block_average(const Vec3Mat &inVectors,
     outVector /= sumWeights;
 }
 
+template <typename VecType, typename VecMatType>
+void gaussian_interpolate_scalar_field(const VecType &inQueriedPosition,
+                            const VecDynFloat &inScalars,
+                            const VecMatType &inVectorPositions,
+                            const VecDynFloat &inVectorWeights,
+                            float &outQueriedScalar,
+                            const float paramSigma){
+    /*
+    GOAL
+    This function computes the gaussian average of a scalar field for a queried
+    position. (scalar field = collection of scalars at different vector positions).
 
-//void gaussian_smoothing_vector_field(const Vec3Mat &inFieldPositions,
-//                                    const Vec3Mat &inFieldVectors,
-//                                    const VecDynFloat &inFieldWeights,
-//                                    Vec3Mat &outSmoothVectors,
-//                                    const size_t numNeighbours,
-//                                    const size_t numIterations) {
-//    /*
-//    GOAL
-//    This function performs gaussian smoothing on an entire vector field.
-//
-//    INPUT
-//    -fieldPositions
-//    -fieldVectors:
-//    The vector field that should be smoothed.
-//    -fieldWeights
-//
-//    OUTPUT
-//    -regulatedFieldVectors:
-//    The resulting regulated displacement field.
-//
-//
-//    PARAMETERS
-//    -numNeighbours:
-//    For the smoothing, the nearest neighbours for each floating positions have
-//    to be found. The number should be high enough so that every significant
-//    contribution (up to a distance of e.g. 3*gaussianSigma) is included. But low
-//    enough to keep computational speed high.
-//    -gaussianSigma:
-//    The value for sigma of the gaussian used for the smoothing.
-//
-//    RETURNS
-//    */
-//    //# Info & Initialization
-//    numNodes = fieldPositions.shape[0]
-//    //# Determine for each field node the (closely) neighbouring nodes
-//    distances, neighbourIndices = nearest_neighbours(fieldPositions, fieldPositions, numNeighbours, 15, 0.0001, 2, 1000.0)
-//    //# Use the neighbouring field vectors to smooth each individual field vector
-//    for i in range(numNodes):
-//        position = fieldPositions[i,:]
-//        neighbourPositions = numpy.zeros((numNeighbours,3), dtype = float)
-//        neighbourVectors = numpy.zeros((numNeighbours,3), dtype = float)
-//        neighbourWeights = numpy.zeros((numNeighbours), dtype = float)
-//        //## For the current displacement, get all the neighbouring positions,
-//        //## vectors, and weights (needed for Gaussian smoothing!).
-//        for j in range(numNeighbours):
-//            neighbourIndex = neighbourIndices[i,j]
-//            neighbourPositions[j,:] = fieldPositions[neighbourIndex,:]
-//            neighbourVectors[j,:] = fieldVectors[neighbourIndex,:]
-//            neighbourWeights[j] = fieldWeights[neighbourIndex]
-//
-//        //## Gaussian averaging of neighbouring displacements
-//        smoothedVector = gaussian_vector_interpolation(position, neighbourPositions, neighbourVectors, neighbourWeights, gaussianSigma)
-//        regulatedFieldVectors[i,:] = smoothedVector
-//
-//}
+    INPUT
+    -inQueriedPosition:
+    location you want to compute the gaussian average for
+    -inScalars:
+    Values of the scalars of the vector field.
+    -inVectorPositions:
+    Locations of the vectors of the vector field.
+    -inVectorWeights:
+    The contribution of each vector field vector can be weighed.
+
+    PARAMETERS
+    -paramSigma:
+    The standard deviation of the Gaussian used.
+
+    OUTPUT
+    -outQueriedVector:
+    Computed through gaussian averaging, taking additional weights (see
+    inVectorWeights) into account.
+    */
+
+    //# Info & Initialization
+    size_t numVectors = inVectorPositions.rows();
+    size_t dimension = inVectorPositions.cols(); //Assumed to be 3
+    if (dimension != 3) {
+        cerr << "Dimension is not equal to 3 in scalar_gaussian_average() call!" << endl;
+    }
+    outQueriedScalar = 0.0;
+
+    //# Compute Gaussian average;
+    float sumWeights = 0.0;
+    for (size_t i = 0 ; i < numVectors ; i++) {
+        //## Compute distance
+        VecType sourceVectorPosition = inVectorPositions.row(i);
+        VecType distanceVector = sourceVectorPosition - inQueriedPosition;
+        const float distanceSquared = distanceVector.squaredNorm();
+
+        //## From the distance, we can compute the gaussian weight
+        const float gaussianWeight = std::exp(-0.5 * distanceSquared / std::pow(paramSigma, 2.0));
+
+        //## Let's take the user-defined weight into account
+        const float combinedWeight = gaussianWeight * inVectorWeights[i];
+
+        //## Weigh the current vector field vector and sum it
+        outQueriedScalar += combinedWeight * inScalars[i];
+
+        //## Add the weight to the total sum of weights for normalization after.
+        sumWeights += combinedWeight;
+    }
+
+    //# Normalize the vector
+    outQueriedScalar /= sumWeights;
+
+}//end vector_gaussian_average()
+
+
+
+template <typename VecType, typename VecMatType>
+void gaussian_interpolate_vector_field(const VecType &inQueriedPosition,
+                            const VecMatType &inVectors,
+                            const VecMatType &inVectorPositions,
+                            const VecDynFloat &inVectorWeights,
+                            VecType &outQueriedVector,
+                            const float paramSigma){
+    /*
+    GOAL
+    This function computes the gaussian average of a vector field for a queried
+    position. (vector field = collection of vectors at different vector positions).
+
+    INPUT
+    -inQueriedPosition:
+    location you want to compute the gaussian average for
+    -inVectors:
+    Values of the vectors of the vector field. The dimensions of this matrix
+    are numVectors x 3
+    -inVectorPositions:
+    Locations of the vectors of the vector field.
+    -inVectorWeights:
+    The contribution of each vector field vector can be weighed.
+
+    PARAMETERS
+    -paramSigma:
+    The standard deviation of the Gaussian used.
+
+    OUTPUT
+    -outQueriedVector:
+    Computed through gaussian averaging, taking additional weights (see
+    inVectorWeights) into account.
+    */
+
+    //# Info & Initialization
+    size_t numVectors = inVectors.rows();
+    size_t dimension = inVectors.cols(); //Assumed to be 3
+    if (dimension != 3) {
+        cerr << "Dimension is not equal to 3 in vector_gaussian_average() call!" << endl;
+    }
+    outQueriedVector = VecType::Zero();
+
+    //# Compute Gaussian average;
+    float sumWeights = 0.0;
+    for (size_t i = 0 ; i < numVectors ; i++) {
+        //## Compute distance
+        VecType sourceVectorPosition = inVectorPositions.row(i);
+        VecType distanceVector = sourceVectorPosition - inQueriedPosition;
+        const float distanceSquared = distanceVector.squaredNorm();
+
+        //## From the distance, we can compute the gaussian weight
+        const float gaussianWeight = std::exp(-0.5 * distanceSquared / std::pow(paramSigma, 2.0));
+
+        //## Let's take the user-defined weight into account
+        const float combinedWeight = gaussianWeight * inVectorWeights[i];
+
+        //## Weigh the current vector field vector and sum it
+        outQueriedVector += combinedWeight * inVectors.row(i);
+
+        //## Add the weight to the total sum of weights for normalization after.
+        sumWeights += combinedWeight;
+    }
+
+    //# Normalize the vector
+    outQueriedVector /= sumWeights;
+
+}//end vector_gaussian_average()
+
+
+template <typename VecType, typename VecMatType>
+void gaussian_smoothing_vector_field(const VecMatType &inVectors,
+                                    const VecMatType &inVectorPositions,
+                                    const VecDynFloat &inVectorWeights,
+                                    VecMatType &outSmoothedVectors,
+                                    const size_t paramNumNeighbours,
+                                    const float paramSigma) {
+    /*
+    GOAL
+    This function performs gaussian smoothing on an entire vector field.
+
+    INPUT
+    -inVectorPositions
+    -inVectors:
+    The vector field that should be smoothed.
+    -inVectorWeights
+
+    OUTPUT
+    -regulatedFieldVectors:
+    The resulting regulated displacement field.
+
+
+    PARAMETERS
+    -paramNumNeighbours:
+    For the smoothing, the nearest neighbours for each floating positions have
+    to be found. The number should be high enough so that every significant
+    contribution (up to a distance of e.g. 3*gaussianSigma) is included. But low
+    enough to keep computational speed high.
+    -paramSigma:
+    The value for sigma of the gaussian used for the smoothing.
+
+    RETURNS
+    */
+
+    //# Info & Initialization
+    const size_t numVectors = inVectorPositions.rows();
+    const size_t numDimensions = inVectorPositions.cols();
+    MatDynInt neighbourIndices = MatDynInt::Zero(numVectors, paramNumNeighbours);
+    MatDynFloat neighbourSquaredDistances = MatDynFloat::Zero(numVectors, paramNumNeighbours);
+
+    //# Determine for each field node the (closely) neighbouring nodes
+    k_nearest_neighbours(inVectorPositions, inVectorPositions, neighbourIndices,
+                        neighbourSquaredDistances, paramNumNeighbours, 15);
+
+    //# Use the neighbouring field vectors to smooth each individual field vector
+    for (size_t i = 0 ; i < numVectors ; i++) {
+        VecType position = inVectorPositions.row(i);
+
+         //## For the current displacement, get all the neighbouring positions,
+        //## vectors, and weights (needed for Gaussian smoothing!).
+        VecMatType neighbourPositions = VecMatType::Zero(paramNumNeighbours, numDimensions);
+        VecMatType neighbourVectors = VecMatType::Zero(paramNumNeighbours, numDimensions);
+        VecDynFloat neighbourWeights = VecDynFloat::Zero(paramNumNeighbours);
+        for (size_t j = 0 ; j < paramNumNeighbours ; j++) {
+            const size_t neighbourIndex = neighbourIndices(i,j);
+            neighbourPositions.row(j) = inVectorPositions.row(neighbourIndex);
+            neighbourVectors.row(j) = inVectors.row(neighbourIndex);
+            neighbourWeights[j] = inVectorWeights[neighbourIndex];
+        }
+
+        //## Gaussian averaging of neighbouring displacements
+        VecType smoothedVector = VecType::Zero();
+        gaussian_interpolate_vector_field(position, neighbourVectors, neighbourPositions,
+                                            neighbourWeights, smoothedVector, paramSigma);
+
+        outSmoothedVectors.row(i) = smoothedVector;
+    }
+
+}//end gaussian_smoothing_vector_field()
+
+
+
+
+
 
 int main()
 {
@@ -1094,24 +1248,24 @@ int main()
     FeatureMat targetFeatures;
     load_obj_to_eigen_features(fuckedUpBunnyDir, fuckedUpBunny, floatingFeatures);
     load_obj_to_eigen_features(bunnyDir, bunny, targetFeatures);
-    floatingFeatures = FeatureMat::Zero(8, NUM_FEATURES);
-    targetFeatures = FeatureMat::Zero(8, NUM_FEATURES);
-    floatingFeatures << 0.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
-                        0.1f, 1.1f, 0.1f, 0.0f, 0.0f, 1.0f,
-                        1.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
-                        1.1f, 1.1f, 0.1f, 0.0f, 0.0f, 1.0f,
-                        0.1f, 0.1f, 1.1f, 0.0f, 0.0f, 1.0f,
-                        0.1f, 1.1f, 1.1f, 0.0f, 0.0f, 1.0f,
-                        1.1f, 0.1f, 1.1f, 0.0f, 0.0f, 1.0f,
-                        1.1f, 1.1f, 1.1f, 0.0f, 0.0f, 1.0f;
-    targetFeatures << 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-                      0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-                      1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-                      1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-                      0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-                      0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-                      1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-                      1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f;
+//    floatingFeatures = FeatureMat::Zero(8, NUM_FEATURES);
+//    targetFeatures = FeatureMat::Zero(8, NUM_FEATURES);
+//    floatingFeatures << 0.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
+//                        0.1f, 1.1f, 0.1f, 0.0f, 0.0f, 1.0f,
+//                        1.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
+//                        1.1f, 1.1f, 0.1f, 0.0f, 0.0f, 1.0f,
+//                        0.1f, 0.1f, 1.1f, 0.0f, 0.0f, 1.0f,
+//                        0.1f, 1.1f, 1.1f, 0.0f, 0.0f, 1.0f,
+//                        1.1f, 0.1f, 1.1f, 0.0f, 0.0f, 1.0f,
+//                        1.1f, 1.1f, 1.1f, 0.0f, 0.0f, 1.0f;
+//    targetFeatures << 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+//                      0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+//                      1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+//                      1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+//                      0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+//                      0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+//                      1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+//                      1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f;
 
 
 
@@ -1121,11 +1275,11 @@ int main()
     ##############################  TEST SHIZZLE  ##############################
     ############################################################################
     */
-    MatDynInt indices;
-    MatDynFloat distancesSquared;
-    radius_nearest_neighbours(floatingFeatures, targetFeatures, indices, distancesSquared, 1.0, 15);
-    cout << "Indices found: \n" << indices << endl;
-    cout << "distances squared found: \n" << distancesSquared << endl;
+//    MatDynInt indices;
+//    MatDynFloat distancesSquared;
+//    radius_nearest_neighbours(floatingFeatures, targetFeatures, indices, distancesSquared, 1.0, 15);
+//    cout << "Indices found: \n" << indices << endl;
+//    cout << "distances squared found: \n" << distancesSquared << endl;
 
     /*
     ############################################################################
@@ -1175,7 +1329,7 @@ int main()
     ############################################################################
     */
     //# Write result to file
-//    write_eigen_features_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
+    write_eigen_features_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
 
 
     return 0;
