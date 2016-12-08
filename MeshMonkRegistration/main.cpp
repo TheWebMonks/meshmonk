@@ -12,7 +12,7 @@ using namespace std;
 const int NUM_FEATURES = 6;
 
 typedef OpenMesh::TriMesh_ArrayKernelT<>  TriMesh;
-typedef Eigen::Matrix< unsigned int, Eigen::Dynamic, Eigen::Dynamic> MatDynInt; //matrix MxN of type unsigned int
+typedef Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> MatDynInt; //matrix MxN of type unsigned int
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat; //matrix MxN of type float
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Vector3f Vec3Float;
@@ -102,6 +102,113 @@ void k_nearest_neighbours(const FeatureMat &inQueriedPoints,
 }//end k_nearest_neighbours()
 
 
+void radius_nearest_neighbours(const FeatureMat &inQueriedPoints,
+                                const FeatureMat &inSourcePoints,
+                                MatDynInt &outNeighbourIndices,
+                                MatDynFloat &outNeighbourSquaredDistances,
+                                const float paramRadius = 3.0,
+                                const size_t paramLeafsize = 15){
+    /*
+    GOAL
+    This function searches in a radius for the nearest neighbours in
+    'inSourcePoints' for each element in the 'inQueriedPoints' set. It outputs
+    the indices of each neighbour and the squared (!) distances between each
+    element of 'inQueriedPoints' and its neighbours.
+
+    INPUT
+    -inQueriedPoints:
+    -inSourcePoints:
+
+    PARAMETERS
+    -paramRadius(= 3.0): the radius in which neighbours are queried
+    -paramLeafsize(= 15): should be between 5 and 50 or so
+
+    OUTPUT
+    -outNeighbourIndices
+    -outNeighbourSquaredDistances.
+    NOTE: Not for every queried elements, the same number of neighbours will be
+    found. So, 'empty' elements in the output are represented by '-1'.
+
+    */
+
+    //# Info and Initialization
+    const size_t dimension = inSourcePoints.cols();
+    const size_t numSourceElements = inSourcePoints.rows();
+    const size_t numQueriedElements = inQueriedPoints.rows();
+
+
+    //# Construct kd-tree
+    NanoKDTree6D kdTree(dimension, inSourcePoints, paramLeafsize);
+    kdTree.index->buildIndex();
+
+    //# Query the kd-tree
+    //## Loop over the queried features
+    //### Initialize variables we'll need during the loop
+    std::vector<float> queriedFeature(dimension);
+    std::vector< std::vector<size_t> > neighbourIndices;
+    std::vector< std::vector<float> > neighbourSquaredDistances;
+    size_t maxNumNeighboursFound = 0;
+
+    //### Execute loop
+    for (size_t i = 0 ; i < numQueriedElements ; ++i ) {
+        //### convert input features to 'queriedFeature' std::vector structure
+        //### (required by nanoflann's kd-tree).
+        for (size_t j = 0 ; j < dimension ; ++j) {
+            queriedFeature[j] = inQueriedPoints(i,j);
+        }
+
+        //### Query the kd-tree
+        nanoflann::SearchParams searchParams;
+        std::vector<std::pair<size_t, float> > resultIndexAndDistancePairs;
+        nanoflann::RadiusResultSet<float,size_t> resultSet(paramRadius,resultIndexAndDistancePairs);
+        const size_t nMatches = kdTree.index->radiusSearchCustomCallback(&queriedFeature[0],resultSet,searchParams);
+        cout << "Number of matches: " << nMatches << endl;
+
+        //### Copy the result into neighbourIndices and neighbourSquaredDistances
+        //### by first copying it into single std::vector<float/int> and then
+        //### copying that std::vector into those std::vector<std::vector<>>.
+        std::vector<size_t> indices;
+        std::vector<float> squaredDistances;
+        for (size_t j = 0 ; j < nMatches ; ++j) {
+            indices.push_back(resultIndexAndDistancePairs[j].first);
+            squaredDistances.push_back(resultIndexAndDistancePairs[j].second);
+        }
+        neighbourIndices.push_back(indices);
+        neighbourSquaredDistances.push_back(squaredDistances);
+
+
+        //### Check if we found more neighbours than before
+        if (nMatches > maxNumNeighboursFound) {
+            maxNumNeighboursFound = nMatches;
+        }
+    }
+
+    //# Copy results into output
+    //## Now that we have found all the neighbours and know what the maximum
+    //## number of neighbours found was, we can finally initialize the output
+    //## matrix size.
+    outNeighbourIndices = -1 * MatDynInt::Ones(numQueriedElements, maxNumNeighboursFound);
+    outNeighbourSquaredDistances = -1.0 * MatDynFloat::Ones(numQueriedElements, maxNumNeighboursFound);
+
+    //## Loop over results
+    for (size_t i = 0 ; i < numQueriedElements ; i++ ) {
+        int numNeighbours = neighbourIndices[i].size();
+
+        //### Loop over neighbours
+        for (size_t j = 0 ; j < numNeighbours ; j++ ) {
+            outNeighbourIndices(i,j) = neighbourIndices[i][j];
+            outNeighbourSquaredDistances(i,j) = neighbourSquaredDistances[i][j];
+        }
+    }
+
+}//end k_nearest_neighbours()
+
+
+
+
+
+
+
 
 void openmesh_to_eigen_features(const TriMesh &inputMesh,
                                 FeatureMat &outputFeatures){
@@ -148,6 +255,7 @@ void openmesh_to_eigen_features(const TriMesh &inputMesh,
     }
 }
 
+
 void load_obj_to_eigen_features(const string inObjFilename,
                                 TriMesh &outMesh,
                                 FeatureMat &outFeatureMatrix){
@@ -182,6 +290,7 @@ void load_obj_to_eigen_features(const string inObjFilename,
     openmesh_to_eigen_features(outMesh, outFeatureMatrix);
 
 }
+
 
 void eigen_features_to_openmesh(const FeatureMat &inFeatures,
                                 TriMesh &outMesh){
@@ -231,6 +340,7 @@ void eigen_features_to_openmesh(const FeatureMat &inFeatures,
     }
 }
 
+
 void write_eigen_features_to_obj(const FeatureMat &inFeatures,
                                 TriMesh &inMesh,
                                 const string inObjFilename){
@@ -273,6 +383,7 @@ void write_eigen_features_to_obj(const FeatureMat &inFeatures,
         exit(1);
     }
 }//end write_eigen_features_to_obj()
+
 
 void update_normals_for_altered_positions(TriMesh &ioMesh,
                                         FeatureMat &ioFeatures){
@@ -339,6 +450,7 @@ void update_normals_for_altered_positions(TriMesh &ioMesh,
 
 }
 
+
 void normalize_sparse_matrix(SparseMat &ioMat) {
     /*
     # GOAL
@@ -382,6 +494,7 @@ void normalize_sparse_matrix(SparseMat &ioMat) {
         }
     }
 }//end normalize_sparse_matrix()
+
 
 void wknn_affinity(const FeatureMat &inFeatures1,
                     const FeatureMat &inFeatures2,
@@ -466,7 +579,9 @@ void wknn_affinity(const FeatureMat &inFeatures1,
     normalize_sparse_matrix(outAffinity);
 }//end wknn_affinity()
 
-void fuse_affinities(SparseMat &ioAffinity1, const SparseMat &inAffinity2){
+
+void fuse_affinities(SparseMat &ioAffinity1,
+                    const SparseMat &inAffinity2){
     /*
     # GOAL
     Fuse the two affinity matrices together. The result is inserted into
@@ -556,7 +671,6 @@ void affinity_to_correspondences(const FeatureMat &inTargetFeatures,
 }
 
 
-
 void wkkn_correspondences(const FeatureMat &inFloatingFeatures,
                             const FeatureMat &inTargetFeatures,
                             const VecDynFloat &inTargetFlags,
@@ -618,11 +732,6 @@ void wkkn_correspondences(const FeatureMat &inFloatingFeatures,
                                 outCorrespondingFeatures, outCorrespondingFlags,
                                 0.9);
 }//end wkkn_correspondences()
-
-
-
-
-
 
 
 void rigid_transformation(FeatureMat &ioFeatures,
@@ -784,10 +893,6 @@ void rigid_transformation(FeatureMat &ioFeatures,
 }
 
 
-
-
-
-
 void inlier_detection(const FeatureMat &inFeatures,
                         const FeatureMat &inCorrespondingFeatures,
                         const VecDynFloat &inCorrespondingFlags,
@@ -869,6 +974,104 @@ void inlier_detection(const FeatureMat &inFeatures,
 }//end inlier_detection
 
 
+void vector_block_average(const Vec3Mat &inVectors,
+                            const VecDynFloat &inWeights,
+                            Vec3Float &outVector){
+    /*
+    GOAL
+    This function computes the block average of input vectors (in other words,
+    using uniform weights for each contribution).
+
+    INPUT
+    -inVectors:
+    Values of the vectors of the vector field. The dimensions of this matrix
+    are numVectors x 3
+    -inWeights:
+    The contribution of each vector field vector can be weighed.
+
+    PARAMETERS
+
+    OUTPUT
+    -outVector:
+    Computed through uniform averaging, taking additional weights (see
+    fieldWeights) into account.
+    */
+
+    //# Info & Initialization
+    size_t numVectors = inVectors.rows();
+    size_t dimension = inVectors.cols(); //Assumed to be 3
+    if (dimension != 3) {
+        cerr << "Dimension is not equal to 3 in vector_block_average() call!" << endl;
+    }
+    outVector = Vec3Float::Zero();
+    float sumWeights = 0.0;
+
+    //# Sum all values
+    for (size_t i = 0 ; i < numVectors ; i++) {
+        outVector += inVectors.row(i);
+        sumWeights += inWeights[i];
+    }
+
+    //# Normalize the vector
+    outVector /= sumWeights;
+}
+
+
+//void gaussian_smoothing_vector_field(const Vec3Mat &inFieldPositions,
+//                                    const Vec3Mat &inFieldVectors,
+//                                    const VecDynFloat &inFieldWeights,
+//                                    Vec3Mat &outSmoothVectors,
+//                                    const size_t numNeighbours,
+//                                    const size_t numIterations) {
+//    /*
+//    GOAL
+//    This function performs gaussian smoothing on an entire vector field.
+//
+//    INPUT
+//    -fieldPositions
+//    -fieldVectors:
+//    The vector field that should be smoothed.
+//    -fieldWeights
+//
+//    OUTPUT
+//    -regulatedFieldVectors:
+//    The resulting regulated displacement field.
+//
+//
+//    PARAMETERS
+//    -numNeighbours:
+//    For the smoothing, the nearest neighbours for each floating positions have
+//    to be found. The number should be high enough so that every significant
+//    contribution (up to a distance of e.g. 3*gaussianSigma) is included. But low
+//    enough to keep computational speed high.
+//    -gaussianSigma:
+//    The value for sigma of the gaussian used for the smoothing.
+//
+//    RETURNS
+//    */
+//    //# Info & Initialization
+//    numNodes = fieldPositions.shape[0]
+//    //# Determine for each field node the (closely) neighbouring nodes
+//    distances, neighbourIndices = nearest_neighbours(fieldPositions, fieldPositions, numNeighbours, 15, 0.0001, 2, 1000.0)
+//    //# Use the neighbouring field vectors to smooth each individual field vector
+//    for i in range(numNodes):
+//        position = fieldPositions[i,:]
+//        neighbourPositions = numpy.zeros((numNeighbours,3), dtype = float)
+//        neighbourVectors = numpy.zeros((numNeighbours,3), dtype = float)
+//        neighbourWeights = numpy.zeros((numNeighbours), dtype = float)
+//        //## For the current displacement, get all the neighbouring positions,
+//        //## vectors, and weights (needed for Gaussian smoothing!).
+//        for j in range(numNeighbours):
+//            neighbourIndex = neighbourIndices[i,j]
+//            neighbourPositions[j,:] = fieldPositions[neighbourIndex,:]
+//            neighbourVectors[j,:] = fieldVectors[neighbourIndex,:]
+//            neighbourWeights[j] = fieldWeights[neighbourIndex]
+//
+//        //## Gaussian averaging of neighbouring displacements
+//        smoothedVector = gaussian_vector_interpolation(position, neighbourPositions, neighbourVectors, neighbourWeights, gaussianSigma)
+//        regulatedFieldVectors[i,:] = smoothedVector
+//
+//}
 
 int main()
 {
@@ -911,33 +1114,53 @@ int main()
                       1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f;
 
 
+
+
+     /*
+    ############################################################################
+    ##############################  TEST SHIZZLE  ##############################
+    ############################################################################
+    */
+    MatDynInt indices;
+    MatDynFloat distancesSquared;
+    radius_nearest_neighbours(floatingFeatures, targetFeatures, indices, distancesSquared, 1.0, 15);
+    cout << "Indices found: \n" << indices << endl;
+    cout << "distances squared found: \n" << distancesSquared << endl;
+
     /*
     ############################################################################
     ##############################  RIGID ICP  #################################
     ############################################################################
     */
-    //# Determine Correspondences
-    //## Info & Initialization
+
+    //# Info & Initialization
+    //## Data and matrices
     size_t numFloatingVertices = floatingFeatures.rows();
     size_t numTargetVertices = targetFeatures.rows();
-    const size_t numNearestNeighbours = 3;
     VecDynFloat targetFlags = VecDynFloat::Ones(numTargetVertices);
     FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, NUM_FEATURES);
     VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
+    //## Parameters
+    const size_t numNearestNeighbours = 3;
+    const size_t numIterations = 20;
 
-    //## Compute symmetric wknn correspondences
-    wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
-                        correspondingFeatures, correspondingFlags,
-                        numNearestNeighbours, true);
-    //# Inlier Detection
-    VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
-    inlier_detection(floatingFeatures, correspondingFeatures,
-                    correspondingFlags, floatingWeights, 3.0);
+    //# Loop ICP
+    for (size_t iteration = 0 ; iteration < numIterations ; iteration++) {
+        //# Determine Correspondences
+        //## Compute symmetric wknn correspondences
+        wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
+                            correspondingFeatures, correspondingFlags,
+                            numNearestNeighbours, true);
 
-    cout << "Inlier Weights: \n" << floatingWeights << endl;
-    //# Compute the transformation
-    rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeights, false);
 
+        //# Inlier Detection
+        VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
+        inlier_detection(floatingFeatures, correspondingFeatures,
+                        correspondingFlags, floatingWeights, 3.0);
+
+        //# Compute the transformation
+        rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeights, false);
+    }
     /*
     ############################################################################
     ##########################  NON-RIGID ICP  #################################
