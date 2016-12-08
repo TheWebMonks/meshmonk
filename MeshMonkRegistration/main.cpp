@@ -1222,9 +1222,94 @@ void gaussian_smoothing_vector_field(const VecMatType &inVectors,
 
 }//end gaussian_smoothing_vector_field()
 
+template <typename VecType, typename VecMatType>
+void viscoelastic_transformation(VecMatType &ioFloatingPositions,
+                                const VecMatType &inCorrespondingPositions,
+                                const VecDynFloat &inFloatingWeights,
+                                Vec3Mat &ioDisplacementField,
+                                const size_t paramNumNeighbourDisplacements,
+                                const float paramSigmaSmoothing = 1.0,
+                                const size_t paramNumViscousSmoothingIterations = 1,
+                                const size_t paramNumElasticSmoothingIterations = 1) {
+    /*
+    # GOAL
+    This function computes the viscoelastic transformation between a set a
+    features and a set of corresponding features. Each correspondence can be
+    weighed between 0.0 and 1.0.
+    The features are automatically transformed, and the function returns the
+    displacement field that was used.
+
+    # INPUTS
+    -ioFloatingPositions
+    -correspondingPositions
+    -inFloatingWeights
+
+    # OUTPUTS
+    -toBeUpdatedDisplacementField:
+    The current displacement field that should be updated.
+
+    # PARAMETERS
+    -paramNumNeighbourDisplacements:
+    For the regularization, the nearest neighbours for each floating positions
+    have to be found. The number should be high enough so that every significant
+    contribution (up to a distance of e.g. 3*paramSigmaSmoothing) is included. But low
+    enough to keep computational speed high.
+    -paramSigmaSmoothing:
+    The value for sigma of the gaussian used for the regularization.
+    -paramNumViscousSmoothingIterations:
+    Number of times the viscous deformation is smoothed.
+    -paramNumElasticSmoothingIterations:
+    Number of times the elastic deformation is smoothed
+
+    # RETURNS
+    */
+
+    //# Info and Initialization
+    const size_t numVertices = ioFloatingPositions.rows();
+
+    //# Viscous Part
+    //## The 'Force Field' is what drives the deformation: the difference between
+    //## the floating vertices and their correspondences. By regulating it,
+    //## viscous behaviour is obtained.
+    //### Compute the Force Field
+    Vec3Mat forceField = inCorrespondingPositions.leftCols(3) - ioFloatingPositions.leftCols(3);
+
+    //### Regulate the Force Field (Gaussian smoothing, iteratively)
+    Vec3Mat regulatedForceField = Vec3Mat::Zero(numVertices,3);
+    for (size_t i = 0 ; i < paramNumViscousSmoothingIterations ; i++) {
+        //### Smooth the force field and save result in 'regulatedForceField'
+        gaussian_smoothing_vector_field(forceField, ioFloatingPositions,
+                                        inFloatingWeights, regulatedForceField,
+                                        paramNumNeighbourDisplacements, paramSigmaSmoothing);
+
+        //### Copy the result into forceField again (in case of more iterations)
+        forceField = regulatedForceField;
+    }
 
 
+    //# Elastic Part
+    //## Add the regulated Force Field to the current Displacement Field that has
+    //## to be updated.
+    Vec3Mat unregulatedDisplacementField = ioDisplacementField + regulatedForceField;
 
+    //## Regulate the new Displacement Field (Gaussian smoothing, iteratively)
+    for (size_t i = 0 ; i < paramNumElasticSmoothingIterations ; i++) {
+        //### Smooth the force field and save result in 'ioDisplacementField'
+        gaussian_smoothing_vector_field(unregulatedDisplacementField, ioFloatingPositions,
+                                        inFloatingWeights, ioDisplacementField,
+                                        paramNumNeighbourDisplacements, paramSigmaSmoothing);
+
+        //### Copy the result into unregulatedDisplacementField again (in case
+        //### more iterations need to be performed)
+        unregulatedDisplacementField = ioDisplacementField;
+    }
+
+    //# Apply the transformation to the floating features
+    for (size_t i = 0 ; i < numVertices ; i++) {
+        ioFloatingPositions.block<3,1>(i,0) += unregulatedDisplacementField.row(i);
+    }
+
+}//end viscoelastic_transformation()
 
 
 int main()
@@ -1320,8 +1405,31 @@ int main()
     ##########################  NON-RIGID ICP  #################################
     ############################################################################
     */
-    //# Do non-rigid ICP
+    //# Determine Correspondences
+    //## Compute symmetric wknn correspondences
+    wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
+                        correspondingFeatures, correspondingFlags,
+                        numNearestNeighbours, true);
 
+
+    //# Inlier Detection
+    VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
+    inlier_detection(floatingFeatures, correspondingFeatures,
+                    correspondingFlags, floatingWeights, 3.0);
+
+    //# Visco-Elastic transformation
+    Vec3Mat displacementField = Vec3Mat::Zero(numFloatingVertices, 3);
+//    viscoelastic_transformation(floatingFeatures,correspondingFeatures,
+//                                floatingWeights, displacementField,
+//                                10, 1.0, 1, 1);
+//    viscoelastic_transformation(VecMatType &ioFloatingPositions,
+//                                const VecMatType &inCorrespondingPositions,
+//                                const VecDynFloat &inFloatingWeights,
+//                                Vec3Mat &ioDisplacementField,
+//                                const size_t paramNumNeighbourDisplacements,
+//                                const float paramSigmaSmoothing = 1.0,
+//                                const size_t paramNumViscousSmoothingIterations = 1,
+//                                const size_t paramNumElasticSmoothingIterations = 1)
 
     /*
     ############################################################################
