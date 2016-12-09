@@ -25,12 +25,12 @@ typedef Eigen::Matrix< float, 1, NUM_FEATURES> FeatureVec; //matrix Mx6 of type 
 typedef Eigen::SparseMatrix<float, 0, int> SparseMat;
 typedef Eigen::Triplet<float> Triplet;
 typedef Eigen::SelfAdjointEigenSolver<Mat4Float> EigenVectorDecomposer;
-typedef nanoflann::KDTreeEigenMatrixAdaptor<FeatureMat, NUM_FEATURES, nanoflann::metric_L2>  NanoKDTree6D;
 
 
-template <typename EigenMat>
-void k_nearest_neighbours(const EigenMat &inQueriedPoints,
-                        const EigenMat &inSourcePoints,
+
+template <typename VecMatType>
+void k_nearest_neighbours(const VecMatType &inQueriedPoints,
+                        const VecMatType &inSourcePoints,
                         MatDynInt &outNeighbourIndices,
                         MatDynFloat &outNeighbourSquaredDistances,
                         const size_t paramK = 3,
@@ -63,7 +63,7 @@ void k_nearest_neighbours(const EigenMat &inQueriedPoints,
     outNeighbourSquaredDistances = MatDynFloat::Zero(numQueriedElements,paramK);
 
     //# Construct kd-tree
-    NanoKDTree6D kdTree(dimension, inSourcePoints, paramLeafsize);
+    nanoflann::KDTreeEigenMatrixAdaptor<VecMatType> kdTree(dimension, inSourcePoints, paramLeafsize);
     kdTree.index->buildIndex();
 
     //# Query the kd-tree
@@ -101,9 +101,9 @@ void k_nearest_neighbours(const EigenMat &inQueriedPoints,
     }
 }//end k_nearest_neighbours()
 
-
-void radius_nearest_neighbours(const FeatureMat &inQueriedPoints,
-                                const FeatureMat &inSourcePoints,
+template <typename VecMatType>
+void radius_nearest_neighbours(const VecMatType &inQueriedPoints,
+                                const VecMatType &inSourcePoints,
                                 MatDynInt &outNeighbourIndices,
                                 MatDynFloat &outNeighbourSquaredDistances,
                                 const float paramRadius = 3.0,
@@ -133,12 +133,13 @@ void radius_nearest_neighbours(const FeatureMat &inQueriedPoints,
 
     //# Info and Initialization
     const size_t dimension = inSourcePoints.cols();
+    typedef nanoflann::KDTreeEigenMatrixAdaptor<VecMatType>  NanoKDTree;
     const size_t numSourceElements = inSourcePoints.rows();
     const size_t numQueriedElements = inQueriedPoints.rows();
 
 
     //# Construct kd-tree
-    NanoKDTree6D kdTree(dimension, inSourcePoints, paramLeafsize);
+    NanoKDTree kdTree(dimension, inSourcePoints, paramLeafsize);
     kdTree.index->buildIndex();
 
     //# Query the kd-tree
@@ -1197,6 +1198,7 @@ void gaussian_smoothing_vector_field(const VecMatType &inVectors,
                         neighbourSquaredDistances, paramNumNeighbours, 15);
 
     //# Use the neighbouring field vectors to smooth each individual field vector
+    VecType position = VecType::Zero(numDimensions);
     for (size_t i = 0 ; i < numVectors ; i++) {
         VecType position = inVectorPositions.row(i);
 
@@ -1222,7 +1224,7 @@ void gaussian_smoothing_vector_field(const VecMatType &inVectors,
 
 }//end gaussian_smoothing_vector_field()
 
-template <typename VecType, typename VecMatType>
+template <typename VecMatType>
 void viscoelastic_transformation(VecMatType &ioFloatingPositions,
                                 const VecMatType &inCorrespondingPositions,
                                 const VecDynFloat &inFloatingWeights,
@@ -1272,15 +1274,20 @@ void viscoelastic_transformation(VecMatType &ioFloatingPositions,
     //## the floating vertices and their correspondences. By regulating it,
     //## viscous behaviour is obtained.
     //### Compute the Force Field
+    Vec3Mat floatingPositions = ioFloatingPositions.leftCols(3);
     Vec3Mat forceField = inCorrespondingPositions.leftCols(3) - ioFloatingPositions.leftCols(3);
+
 
     //### Regulate the Force Field (Gaussian smoothing, iteratively)
     Vec3Mat regulatedForceField = Vec3Mat::Zero(numVertices,3);
     for (size_t i = 0 ; i < paramNumViscousSmoothingIterations ; i++) {
         //### Smooth the force field and save result in 'regulatedForceField'
-        gaussian_smoothing_vector_field(forceField, ioFloatingPositions,
-                                        inFloatingWeights, regulatedForceField,
-                                        paramNumNeighbourDisplacements, paramSigmaSmoothing);
+        gaussian_smoothing_vector_field<Vec3Float, Vec3Mat> (forceField,
+                                                            floatingPositions,
+                                                            inFloatingWeights,
+                                                            regulatedForceField,
+                                                            paramNumNeighbourDisplacements,
+                                                            paramSigmaSmoothing);
 
         //### Copy the result into forceField again (in case of more iterations)
         forceField = regulatedForceField;
@@ -1295,7 +1302,7 @@ void viscoelastic_transformation(VecMatType &ioFloatingPositions,
     //## Regulate the new Displacement Field (Gaussian smoothing, iteratively)
     for (size_t i = 0 ; i < paramNumElasticSmoothingIterations ; i++) {
         //### Smooth the force field and save result in 'ioDisplacementField'
-        gaussian_smoothing_vector_field(unregulatedDisplacementField, ioFloatingPositions,
+        gaussian_smoothing_vector_field<Vec3Float, Vec3Mat> (unregulatedDisplacementField, Vec3Mat(ioFloatingPositions.leftCols(3)),
                                         inFloatingWeights, ioDisplacementField,
                                         paramNumNeighbourDisplacements, paramSigmaSmoothing);
 
@@ -1306,7 +1313,7 @@ void viscoelastic_transformation(VecMatType &ioFloatingPositions,
 
     //# Apply the transformation to the floating features
     for (size_t i = 0 ; i < numVertices ; i++) {
-        ioFloatingPositions.block<3,1>(i,0) += unregulatedDisplacementField.row(i);
+        ioFloatingPositions.row(i).head(3) += unregulatedDisplacementField.row(i);
     }
 
 }//end viscoelastic_transformation()
@@ -1381,10 +1388,10 @@ int main()
     VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
     //## Parameters
     const size_t numNearestNeighbours = 3;
-    const size_t numIterations = 20;
+    const size_t numRigidIterations = 20;
 
     //# Loop ICP
-    for (size_t iteration = 0 ; iteration < numIterations ; iteration++) {
+    for (size_t iteration = 0 ; iteration < numRigidIterations ; iteration++) {
         //# Determine Correspondences
         //## Compute symmetric wknn correspondences
         wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
@@ -1405,31 +1412,28 @@ int main()
     ##########################  NON-RIGID ICP  #################################
     ############################################################################
     */
-    //# Determine Correspondences
-    //## Compute symmetric wknn correspondences
-    wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
-                        correspondingFeatures, correspondingFlags,
-                        numNearestNeighbours, true);
+    const size_t numNonrigidIterations = 10;
+    size_t smoothingIterations = numNonrigidIterations + 1;
+    for (size_t i = 0 ; i < numNonrigidIterations ; i++) {
+        //# Determine Correspondences
+        //## Compute symmetric wknn correspondences
+        wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
+                            correspondingFeatures, correspondingFlags,
+                            numNearestNeighbours, true);
 
 
-    //# Inlier Detection
-    VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
-    inlier_detection(floatingFeatures, correspondingFeatures,
-                    correspondingFlags, floatingWeights, 3.0);
+        //# Inlier Detection
+        VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
+        inlier_detection(floatingFeatures, correspondingFeatures,
+                        correspondingFlags, floatingWeights, 3.0);
 
-    //# Visco-Elastic transformation
-    Vec3Mat displacementField = Vec3Mat::Zero(numFloatingVertices, 3);
-//    viscoelastic_transformation(floatingFeatures,correspondingFeatures,
-//                                floatingWeights, displacementField,
-//                                10, 1.0, 1, 1);
-//    viscoelastic_transformation(VecMatType &ioFloatingPositions,
-//                                const VecMatType &inCorrespondingPositions,
-//                                const VecDynFloat &inFloatingWeights,
-//                                Vec3Mat &ioDisplacementField,
-//                                const size_t paramNumNeighbourDisplacements,
-//                                const float paramSigmaSmoothing = 1.0,
-//                                const size_t paramNumViscousSmoothingIterations = 1,
-//                                const size_t paramNumElasticSmoothingIterations = 1)
+        //# Visco-Elastic transformation
+        Vec3Mat displacementField = Vec3Mat::Zero(numFloatingVertices, 3);
+        viscoelastic_transformation(floatingFeatures,correspondingFeatures,
+                                    floatingWeights, displacementField,
+                                    10, 1.0, smoothingIterations, smoothingIterations);
+        smoothingIterations--;
+    }
 
     /*
     ############################################################################
