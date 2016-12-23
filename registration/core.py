@@ -26,16 +26,18 @@ import helpers
 
 
 
-def wknn_affinity(features1, features2, k = 3):
+def wknn_affinity(features1, features2, neighbourDistances, neighbourIndices, k = 3):
     """
     # GOAL
     For each element in features1, you're going to determine affinity weights
-    which link it to elements in features2. This is based on the Euclidean
+    with its neighbouring elements in features2. This is based on the Euclidean
     distance of k nearest neighbours found for each element of features1.
 
     # INPUTS
     -features1
     -features2
+    -neighbourDistances
+    -neighbourIndices
 
     # PARAMETERS
     -k(=3): number of nearest neighbours
@@ -47,15 +49,13 @@ def wknn_affinity(features1, features2, k = 3):
     numElements1 = features1.shape[0]
     numElements2 = features2.shape[0]
     affinity12 = numpy.zeros((numElements1, numElements2), dtype = float)
-    # Determine the nearest neighbours
-    distances, neighbourIndices = helpers.nearest_neighbours(features1, features2, k)
     # Compute the affinity matrix
     ## Loop over the first feature set to determine their affinity with the
     ## second set.
     for i in range(numElements1):
         if k == 1:
             idx = neighbourIndices[i]
-            dist = distances[i]
+            dist = neighbourDistances[i]
             if dist < 0.001:
                 dist = 0.001 #numeric stability
             ## The affinity is 1 over the squared distance
@@ -67,7 +67,7 @@ def wknn_affinity(features1, features2, k = 3):
             for j, idx in enumerate(neighbourIndices[i,:]):
                 ### idx now indicates the index of the second set element that was
                 ## determined a neighbour of the current first set element
-                distance = distances[i,j]
+                distance = neighbourDistances[i,j]
                 if distance < 0.001:
                     distance = 0.001 #numeric stability
                 ## The affinity is 1 over the squared distance
@@ -84,7 +84,8 @@ def wknn_affinity(features1, features2, k = 3):
     affinity12 = affinity12 / rowSums
     return affinity12
 
-def fuse_affinities(affinity12, affinity21, affinityFused):
+    
+def fuse_affinities(affinity12, affinity21):
     """
     # GOAL
     Fuse the two affinity matrices together.
@@ -105,7 +106,7 @@ def fuse_affinities(affinity12, affinity21, affinityFused):
     rowSums = affinityFused.sum(axis=1, keepdims=True)
     affinityFused = affinityFused / rowSums
 
-    return True
+    return affinityFused
 
 def affinity_to_correspondences(features2, flags2, affinity, flagRoundingLimit = 0.9):
     """
@@ -141,6 +142,98 @@ def affinity_to_correspondences(features2, flags2, affinity, flagRoundingLimit =
 
     return correspondingFeatures, correspondingFlags
 
+class CorrespondenceFilter(object):
+    #NOTE: we don't want this object to hold any data, just references to 
+    # input and output data, and perform processing on inputs to put those in 
+    # those outputs.
+    
+    def __init__(self, inFloatingFeatures, inTargetFeatures, inTargetFlags,
+                 outCorrespondingFeatures, outCorrespondingFlags,
+                 paramNumNeighbours = 3):
+        self.inFloatingFeatures = inFloatingFeatures
+        self.inTargetFeatures = inTargetFeatures
+        self.inTargetFlags = inTargetFlags
+        self.outCorrespondingFeatures = outCorrespondingFeatures
+        self.outCorrespondingFlags = outCorrespondingFlags
+        self.paramNumNeighbours = paramNumNeighbours
+        self._numFloatingElements = self.inFloatingFeatures.shape[0]
+        self._numTargetElements = self.inTargetFeatures.shape[0]
+        self._kdTree = None
+        self._kdTreeUpToDate = False
+        self._neighbourDistances = None
+        self._neighbourIndices = None
+        self._affinity = numpy.zeros([self._numFloatingElements,
+                                      self._numTargetElements],
+                                    dtype = float)
+        self._outputUpToDate = False
+        
+        
+    def set_floating_features(self, inFloatingFeatures):
+        self.inFloatingFeatures = inFloatingFeatures
+        self._outputUpToDate = False
+        
+    def set_target_features(self, inTargetFeatures, inTargetFlags):
+        self.inTargetFeatures = inTargetFeatures
+        self.inTargetFlags = inTargetFlags
+        self._kdTreeUpToDate = False
+        self._outputUpToDate = False
+        
+    def set_corresponding_features(self, outCorrespondingFeatures, outCorrespondingFlags):
+        self.outCorrespondingFeatures = outCorrespondingFeatures
+        self.outCorrespondingFlags = outCorrespondingFlags
+        self._outputUpToDate = False
+
+    def _nearest_neighbours(self):
+        # init kd-tree
+        if (self._kdTreeUpToDate == False):
+            self._kdTree = spatial.cKDTree(self.inTargetFeatures, 15)
+            self._kdTreeUpToDate = True
+        # Query the kd-tree (http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.spatial.KDTree.query.html#scipy.spatial.KDTree.query)
+        ## set some required parameters
+        paramEps = 0.0001
+        paramP = 2
+        paramMaxDistance = 1000
+        ## actual querying for each floating position
+        self._neighbourDistances, self._neighbourIndices = \
+                    self._kdTree.query(self.inFloatingFeatures,
+                                       self.paramNumNeighbours,
+                                       paramEps,
+                                       paramP,
+                                       paramMaxDistance)
+        
+    
+    def _construct_affinity(self):
+        # Compute affinity from floating to target features
+        self._affinity = wknn_affinity(self.inFloatingFeatures,
+                                       self.inTargetFeatures,
+                                       self._neighbourDistances,
+                                       self._neighbourIndices,
+                                       self.paramNumNeighbours)
+    
+    def _affinity_to_correspondences(self):
+        paramFlagRoundingLimit = 0.9
+        
+        correspondingFeatures, correspondingFlags = \
+            affinity_to_correspondences(self.inTargetFeatures,
+                                        self.inTargetFlags,
+                                        self._affinity, 
+                                        paramFlagRoundingLimit)
+        # Copy result into the user requested output
+        for i in range(self._numFloatingElements):
+            self.outCorrespondingFeatures[i,:] = correspondingFeatures[i,:]
+            self.outCorrespondingFlags[i] = correspondingFlags[i]
+            
+        self._outputUpToDate = True
+            
+    def update(self):
+        # Find nearest neighbours
+        self._nearest_neighbours()
+        # Use nearest neighbours to construct the affinity matrix
+        self._construct_affinity()
+        # Use the affinity matrix to determine corresponding features (& flags)
+        self._affinity_to_correspondences()
+    
+    
 def inlier_detection(features, correspondingFeatures, correspondingFlags, oldProbability, kappaa = 3.0):
     """
     # GOAL

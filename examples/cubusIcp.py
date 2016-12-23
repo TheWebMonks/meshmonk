@@ -4,7 +4,6 @@ sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
 import openmesh as om
 #Importing the rest of utilities
 import numpy as np
-from scipy import linalg
 
 from context import registration
 
@@ -81,6 +80,12 @@ for i, vh in enumerate(targetMesh.vertices()):
 floatingFeatures = np.hstack((floatingPositions,floatingNormals))
 targetFeatures = np.hstack((targetPositions,targetNormals))
 
+# Initialize corresponding features and flags
+correspondingFeatures = np.zeros((floatingFeatures.shape), dtype = float)
+correspondingFlags = np.ones((numFloatingVertices), dtype = float)
+targetFlags = np.ones((numTargetVertices), dtype = float)
+
+
 
 ##########
 # ICP
@@ -90,14 +95,20 @@ targetFeatures = np.hstack((targetPositions,targetNormals))
 """
 #for iteration in range(0,maxNumIterations):
 ##1) Determine Nearest neighbours. We'll simply use index correspondences for the bunny
-affinity = registration.core.wknn_affinity(floatingFeatures, targetFeatures, wknnNumNeighbours)
-correspondingFeatures, correspondingFlags = registration.core.affinity_to_correspondences(targetFeatures, targetFlags, affinity, 0.5)
-##2) Determine weights. A weight related to the gaussian distance distribution suffices.
-### Update the distribution parameters
-floatingWeights = registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, 3.0)
-##3) Determine and update transformation.
-transformationMatrix = registration.core.rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeights, False)
-
+correspondenceFilter = registration.core.CorrespondenceFilter(floatingFeatures,
+                                                              targetFeatures,
+                                                              targetFlags,
+                                                              correspondingFeatures,
+                                                              correspondingFlags,
+                                                              3)
+for iteration in range(10):
+    correspondenceFilter.set_floating_features(floatingFeatures)
+    correspondenceFilter.update()
+    ##2) Determine weights. A weight related to the gaussian distance distribution suffices.
+    ### Update the distribution parameters
+    floatingWeights = registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, 3.0)
+    ##3) Determine and update transformation.
+    transformationMatrix = registration.core.rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeights, False)
 
 
 ##########

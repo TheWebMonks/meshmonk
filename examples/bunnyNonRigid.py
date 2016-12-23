@@ -41,8 +41,7 @@ adjustScale = False
 # Transformation
 numNeighbourDisplacements = 6
 sigmaSmoothing = 0.01
-numViscousSmoothingIterationsList = [10, 5, 2, 1]
-numElasticSmoothingIterationsList = [10, 5, 2, 1]
+
 
 ##########
 # PREPARE DATA
@@ -53,20 +52,20 @@ targetMesh = openmesh.TriMesh()
 openmesh.read_mesh(floatingMesh, floatingMeshPath)
 openmesh.read_mesh(targetMesh, targetMeshPath)
 
-# Decimate the mesh
-# create decimater and module handle
-decimator = openmesh.PolyMeshDecimater(floatingMesh)
-modHandle = openmesh.PolyMeshModQuadricHandle()
-# add modules
-decimator.add(modHandle)
-decimator.module(modHandle).set_max_err(0.001)
-
-# decimate
-decimator.initialize()
-decimator.decimate_to(100)
-
-floatingMesh.garbage_collection()
-openmesh.write_mesh(m, "/home/jonatan/kuleuven-algorithms/examples/data/openmesh_decimated_bunny.obj")
+## Decimate the mesh
+## create decimater and module handle
+#decimator = openmesh.PolyMeshDecimater(floatingMesh)
+#modHandle = openmesh.PolyMeshModQuadricHandle()
+## add modules
+#decimator.add(modHandle)
+#decimator.module(modHandle).set_max_err(0.001)
+#
+## decimate
+#decimator.initialize()
+#decimator.decimate_to(100)
+#
+#floatingMesh.garbage_collection()
+#openmesh.write_mesh(floatingMesh, "/home/jonatan/kuleuven-algorithms/examples/data/openmesh_decimated_bunny.obj")
 
 
 # Obtain info and initialize matrices
@@ -82,6 +81,7 @@ targetFlags = numpy.ones((numTargetVertices), dtype = float)
 floatingFeatures = registration.helpers.openmesh_to_numpy_features(floatingMesh)
 targetFeatures = registration.helpers.openmesh_to_numpy_features(targetMesh)
 correspondingFeatures = numpy.zeros((floatingFeatures.shape), dtype = float)
+correspondingFlags = numpy.ones((floatingFlags.shape), dtype = float)
 
 
 ##########
@@ -93,14 +93,22 @@ correspondingFeatures = numpy.zeros((floatingFeatures.shape), dtype = float)
 ## Initialize
 originalFloatingPositions = numpy.copy(floatingFeatures[:,0:3])
 regulatedDisplacementField = numpy.zeros((numFloatingVertices,3), dtype = float)
+correspondenceFilter = registration.core.CorrespondenceFilter(floatingFeatures,
+                                                                  targetFeatures,
+                                                                  targetFlags,
+                                                                  correspondingFeatures,
+                                                                  correspondingFlags,
+                                                                  wknnNumNeighbours)
 
 ##TODO: HERE WE SHOULD START THE ANNEALING SCHEME
+numViscousSmoothingIterationsList = [10, 5, 2, 1]
+numElasticSmoothingIterationsList = [10, 5, 2, 1]
+numViscousSmoothingIterationsList = [50, 25, 12]
+numElasticSmoothingIterationsList = [50, 25, 12]
 for numViscousSmoothingIterations, numElasticSmoothingIterations in zip(numViscousSmoothingIterationsList, numElasticSmoothingIterationsList):
     ## 1) Determine Nearest neighbours.
-    affinity = registration.core.wknn_affinity(floatingFeatures, targetFeatures, wknnNumNeighbours)
-    ###TODO: REMOVE THIS HACK WHERE WE SET AFFINITY TO UNITY (BECAUSE BUNNIES CORRESPOND BY INDEX)
-    affinity = numpy.identity(numFloatingVertices, dtype = float)
-    correspondingFeatures, correspondingFlags = registration.core.affinity_to_correspondences(targetFeatures, targetFlags, affinity, 0.5)
+    correspondenceFilter.set_floating_features(floatingFeatures)
+    correspondenceFilter.update()
     ## 2) Determine inlier weights.
     floatingWeights = registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, kappaa)
     ## 3) Determine and update transformation.
