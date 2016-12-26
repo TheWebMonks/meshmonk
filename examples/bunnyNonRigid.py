@@ -94,11 +94,12 @@ correspondingFlags = numpy.ones((floatingFlags.shape), dtype = float)
 originalFloatingPositions = numpy.copy(floatingFeatures[:,0:3])
 regulatedDisplacementField = numpy.zeros((numFloatingVertices,3), dtype = float)
 correspondenceFilter = registration.core.CorrespondenceFilter(floatingFeatures,
-                                                                  targetFeatures,
-                                                                  targetFlags,
-                                                                  correspondingFeatures,
-                                                                  correspondingFlags,
-                                                                  wknnNumNeighbours)
+                                                              floatingFlags,
+                                                              targetFeatures,
+                                                              targetFlags,
+                                                              correspondingFeatures,
+                                                              correspondingFlags,
+                                                              wknnNumNeighbours)
 
 ##TODO: HERE WE SHOULD START THE ANNEALING SCHEME
 numViscousSmoothingIterationsList = [10, 5, 2, 1]
@@ -107,7 +108,7 @@ numViscousSmoothingIterationsList = [50, 25, 12]
 numElasticSmoothingIterationsList = [50, 25, 12]
 for numViscousSmoothingIterations, numElasticSmoothingIterations in zip(numViscousSmoothingIterationsList, numElasticSmoothingIterationsList):
     ## 1) Determine Nearest neighbours.
-    correspondenceFilter.set_floating_features(floatingFeatures)
+    correspondenceFilter.set_floating_features(floatingFeatures, floatingFlags)
     correspondenceFilter.update()
     ## 2) Determine inlier weights.
     floatingWeights = registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, kappaa)

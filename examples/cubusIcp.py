@@ -83,6 +83,7 @@ targetFeatures = np.hstack((targetPositions,targetNormals))
 # Initialize corresponding features and flags
 correspondingFeatures = np.zeros((floatingFeatures.shape), dtype = float)
 correspondingFlags = np.ones((numFloatingVertices), dtype = float)
+floatingFlags = np.ones((numFloatingVertices), dtype = float)
 targetFlags = np.ones((numTargetVertices), dtype = float)
 
 
@@ -95,15 +96,16 @@ targetFlags = np.ones((numTargetVertices), dtype = float)
 """
 #for iteration in range(0,maxNumIterations):
 ##1) Determine Nearest neighbours. We'll simply use index correspondences for the bunny
-correspondenceFilter = registration.core.CorrespondenceFilter(floatingFeatures,
+symCorrespondenceFilter = registration.core.SymCorrespondenceFilter(floatingFeatures,
+                                                              floatingFlags,
                                                               targetFeatures,
                                                               targetFlags,
                                                               correspondingFeatures,
                                                               correspondingFlags,
                                                               3)
 for iteration in range(10):
-    correspondenceFilter.set_floating_features(floatingFeatures)
-    correspondenceFilter.update()
+    symCorrespondenceFilter.set_floating_features(floatingFeatures, floatingFlags)
+    symCorrespondenceFilter.update()
     ##2) Determine weights. A weight related to the gaussian distance distribution suffices.
     ### Update the distribution parameters
     floatingWeights = registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, 3.0)

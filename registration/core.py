@@ -22,6 +22,7 @@ from openmesh import *
 import numpy
 from numpy import linalg
 from scipy import spatial
+from abc import ABCMeta, abstractmethod
 import helpers
 
 
@@ -142,46 +143,99 @@ def affinity_to_correspondences(features2, flags2, affinity, flagRoundingLimit =
 
     return correspondingFeatures, correspondingFlags
 
-class CorrespondenceFilter(object):
-    #NOTE: we don't want this object to hold any data, just references to 
-    # input and output data, and perform processing on inputs to put those in 
-    # those outputs.
+class GenericCorrespondenceFilter(object):
+    # A generic template class for correspondence filters
     
-    def __init__(self, inFloatingFeatures, inTargetFeatures, inTargetFlags,
-                 outCorrespondingFeatures, outCorrespondingFlags,
-                 paramNumNeighbours = 3):
+    __metaclass__ = ABCMeta
+    
+    def __init__(self, inFloatingFeatures, inFloatingFlags,
+                 inTargetFeatures, inTargetFlags,
+                 outCorrespondingFeatures, outCorrespondingFlags):
         self.inFloatingFeatures = inFloatingFeatures
+        self.inFloatingFlags = inFloatingFlags
         self.inTargetFeatures = inTargetFeatures
         self.inTargetFlags = inTargetFlags
         self.outCorrespondingFeatures = outCorrespondingFeatures
         self.outCorrespondingFlags = outCorrespondingFlags
-        self.paramNumNeighbours = paramNumNeighbours
         self._numFloatingElements = self.inFloatingFeatures.shape[0]
         self._numTargetElements = self.inTargetFeatures.shape[0]
-        self._kdTree = None
-        self._kdTreeUpToDate = False
-        self._neighbourDistances = None
-        self._neighbourIndices = None
         self._affinity = numpy.zeros([self._numFloatingElements,
                                       self._numTargetElements],
                                     dtype = float)
         self._outputUpToDate = False
         
-        
-    def set_floating_features(self, inFloatingFeatures):
+    def set_floating_features(self, inFloatingFeatures, inFloatingFlags):
         self.inFloatingFeatures = inFloatingFeatures
+        self.inFloatingFlags = inFloatingFlags
         self._outputUpToDate = False
         
     def set_target_features(self, inTargetFeatures, inTargetFlags):
         self.inTargetFeatures = inTargetFeatures
         self.inTargetFlags = inTargetFlags
-        self._kdTreeUpToDate = False
         self._outputUpToDate = False
         
     def set_corresponding_features(self, outCorrespondingFeatures, outCorrespondingFlags):
         self.outCorrespondingFeatures = outCorrespondingFeatures
         self.outCorrespondingFlags = outCorrespondingFlags
         self._outputUpToDate = False
+    
+    def _get_affinity(self):
+        # Use with care!
+        return self._affinity
+        
+    @abstractmethod
+    def _construct_affinity(self):
+        # This is the main method each correspondence filter should implement
+        # by itself!
+        pass
+    
+    def _affinity_to_correspondences(self):
+        paramFlagRoundingLimit = 0.9
+        
+        correspondingFeatures, correspondingFlags = \
+            affinity_to_correspondences(self.inTargetFeatures,
+                                        self.inTargetFlags,
+                                        self._affinity, 
+                                        paramFlagRoundingLimit)
+        # Copy result into the user requested output
+        for i in range(self._numFloatingElements):
+            self.outCorrespondingFeatures[i,:] = correspondingFeatures[i,:]
+            self.outCorrespondingFlags[i] = correspondingFlags[i]
+            
+        self._outputUpToDate = True
+    
+    def update(self):
+        # Construct the affinity
+        self._construct_affinity()
+        # Use the affinity matrix to determine corresponding features (& flags)
+        self._affinity_to_correspondences()
+    
+class CorrespondenceFilter(GenericCorrespondenceFilter):
+    #NOTE: we don't want this object to hold any data, just references to 
+    # input and output data, and perform processing on inputs to put those in 
+    # those outputs.
+    
+    def __init__(self, inFloatingFeatures, inFloatingFlags,
+                 inTargetFeatures, inTargetFlags,
+                 outCorrespondingFeatures, outCorrespondingFlags,
+                 paramNumNeighbours = 3):
+        GenericCorrespondenceFilter.__init__(self, inFloatingFeatures, inFloatingFlags,
+                                             inTargetFeatures, inTargetFlags,
+                                             outCorrespondingFeatures, outCorrespondingFlags)
+        self.paramNumNeighbours = paramNumNeighbours
+        self._kdTree = None
+        self._kdTreeUpToDate = False
+        self._neighbourDistances = None
+        self._neighbourIndices = None
+        
+        
+    def set_target_features(self, inTargetFeatures, inTargetFlags):
+        # When the target features are changed, this filter needs to 
+        # reconstruct its kd-tree.
+        GenericCorrespondenceFilter.set_target_features(self, inTargetFeatures,
+                                                        inTargetFlags)
+        self._kdTreeUpToDate = False
+        
 
     def _nearest_neighbours(self):
         # init kd-tree
@@ -203,35 +257,61 @@ class CorrespondenceFilter(object):
         
     
     def _construct_affinity(self):
-        # Compute affinity from floating to target features
+        # Compute nearest neighbours
+        self._nearest_neighbours()
+        # Compute affinity from floating to neighbouring target features
         self._affinity = wknn_affinity(self.inFloatingFeatures,
                                        self.inTargetFeatures,
                                        self._neighbourDistances,
                                        self._neighbourIndices,
                                        self.paramNumNeighbours)
     
-    def _affinity_to_correspondences(self):
-        paramFlagRoundingLimit = 0.9
         
-        correspondingFeatures, correspondingFlags = \
-            affinity_to_correspondences(self.inTargetFeatures,
-                                        self.inTargetFlags,
-                                        self._affinity, 
-                                        paramFlagRoundingLimit)
-        # Copy result into the user requested output
-        for i in range(self._numFloatingElements):
-            self.outCorrespondingFeatures[i,:] = correspondingFeatures[i,:]
-            self.outCorrespondingFlags[i] = correspondingFlags[i]
-            
-        self._outputUpToDate = True
-            
-    def update(self):
-        # Find nearest neighbours
-        self._nearest_neighbours()
-        # Use nearest neighbours to construct the affinity matrix
-        self._construct_affinity()
-        # Use the affinity matrix to determine corresponding features (& flags)
-        self._affinity_to_correspondences()
+        
+        
+class SymCorrespondenceFilter(GenericCorrespondenceFilter):
+    
+    def __init__(self, inFloatingFeatures, inFloatingFlags,
+                 inTargetFeatures, inTargetFlags,
+                 outCorrespondingFeatures, outCorrespondingFlags,
+                 paramNumNeighbours = 3):
+        self.paramNumNeighbours = paramNumNeighbours
+        GenericCorrespondenceFilter.__init__(self, inFloatingFeatures, inFloatingFlags,
+                                             inTargetFeatures, inTargetFlags,
+                                             outCorrespondingFeatures, outCorrespondingFlags)
+        self.pushFilter = CorrespondenceFilter(inFloatingFeatures, inFloatingFlags,
+                                               inTargetFeatures, inTargetFlags,
+                                               [], [],
+                                               self.paramNumNeighbours)
+        # The pull filter does the reverse of the push filter. It looks for
+        # correspondences for the target features in the floating features set
+        self.pullFilter = CorrespondenceFilter(inTargetFeatures, inTargetFlags,
+                                               inFloatingFeatures, inFloatingFlags,
+                                               [], [],
+                                               self.paramNumNeighbours)
+    
+    def set_floating_features(self, inFloatingFeatures, inFloatingFlags):
+        self.pushFilter.set_floating_features(inFloatingFeatures, inFloatingFlags)
+        self.pullFilter.set_target_features(inFloatingFeatures, inFloatingFlags)
+        self._outputUpToDate = False
+        
+    def set_target_features(self, inTargetFeatures, inTargetFlags):
+        self.pushFilter.set_target_features(inTargetFeatures, inTargetFlags)
+        self.pullFilter.set_floating_features(inTargetFeatures, inTargetFlags)
+        self._outputUpToDate = False
+        
+    def _construct_affinity(self):
+        # Compute affinities in both directions
+        self.pushFilter._construct_affinity()
+        self.pullFilter._construct_affinity()
+        
+        # Retrieve the affinities so that we can merge them
+        pushAffinity = self.pushFilter._get_affinity()
+        pullAffinity = self.pullFilter._get_affinity()
+        
+        # Merge the affinities
+        self._affinity = fuse_affinities(pushAffinity, pullAffinity)
+        
     
     
 def inlier_detection(features, correspondingFeatures, correspondingFlags, oldProbability, kappaa = 3.0):
