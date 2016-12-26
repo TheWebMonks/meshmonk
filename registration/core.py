@@ -341,7 +341,7 @@ def inlier_detection(features, correspondingFeatures, correspondingFlags, oldPro
     numElements = features.shape[0]
     # Flag based inlier/outlier classification
     ## Do an element-wise multiplication
-    newProbability = oldProbability * correspondingFlags
+    newProbability = correspondingFlags.astype(dtype = float, copy = True)
 
     # Distance based inlier/outlier classification
     ## Re-calculate the parameters sigma and lambda
@@ -376,6 +376,27 @@ def inlier_detection(features, correspondingFeatures, correspondingFlags, oldPro
 
     return newProbability
 
+class InlierFilter(object):
+    """
+    This filter object determines inlier weights
+    """
+    def __init__(self, inFeatures, inCorrespondingFeatures, inCorrespondingFlags,
+                 outWeights, paramKappaa = 3.0):
+        self.inFeatures = inFeatures
+        self.inCorrespondingFeatures = inCorrespondingFeatures
+        self.inCorrespondingFlags = inCorrespondingFlags
+        self.outWeights = outWeights
+        self.paramKappaa = paramKappaa
+        
+    def update(self):
+        # Compute new weights
+        newWeights = inlier_detection(self.inFeatures, self.inCorrespondingFeatures,
+                                      self.inCorrespondingFlags, self.outWeights,
+                                      self.paramKappaa)
+        # Copy new weights into the output
+        for i in range(len(self.outWeights)):
+            self.outWeights[i] = newWeights[i]
+    
 def rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeights, allowScaling = False):
     """
     # GOAL
@@ -551,3 +572,24 @@ def compute_viscoelastic_transformation(currentFloatingPositions, correspondingP
     for i in range(numElasticSmoothingIterations):
         helpers.gaussian_smoothing_vector_field(currentFloatingPositions, unregulatedDisplacementField, toBeUpdatedDisplacementField, floatingWeights, numNeighbourDisplacements, sigmaSmoothing)
         unregulatedDisplacementField = toBeUpdatedDisplacementField
+
+class TransformationFilter(object):
+    
+    __metaclass__ = ABCMeta
+    
+    def __init__(self, ioFloatingFeatures, inCorrespondingFeatures,
+                 inFloatingWeights):
+        self.ioFloatingFeatures = ioFloatingFeatures
+        self.inCorrespondingFeatures = inCorrespondingFeatures 
+        self.inFloatingWeights = inFloatingWeights
+    
+    @abstractmethod
+    def update():
+        pass
+    
+class RigidTransformationFilter(TransformationFilter):
+    
+    def update(self):
+        rigid_transformation(self.ioFloatingFeatures, self.inCorrespondingFeatures,
+                             self.inFloatingWeights, allowScaling = False)
+        

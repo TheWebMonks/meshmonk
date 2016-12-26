@@ -94,8 +94,7 @@ targetFlags = np.ones((numTargetVertices), dtype = float)
 """
 
 """
-#for iteration in range(0,maxNumIterations):
-##1) Determine Nearest neighbours. We'll simply use index correspondences for the bunny
+# Set up correspondence filter
 symCorrespondenceFilter = registration.core.SymCorrespondenceFilter(floatingFeatures,
                                                               floatingFlags,
                                                               targetFeatures,
@@ -103,15 +102,23 @@ symCorrespondenceFilter = registration.core.SymCorrespondenceFilter(floatingFeat
                                                               correspondingFeatures,
                                                               correspondingFlags,
                                                               3)
+# Set up inlier filter
+inlierFilter = registration.core.InlierFilter(floatingFeatures, correspondingFeatures,
+                                              correspondingFlags, floatingWeights,
+                                              3.0)
+# Set up rigid transformation filter
+transformFilter = registration.core.RigidTransformationFilter(floatingFeatures,
+                                                              correspondingFeatures,
+                                                              floatingWeights)
 for iteration in range(10):
     symCorrespondenceFilter.set_floating_features(floatingFeatures, floatingFlags)
     symCorrespondenceFilter.update()
     ##2) Determine weights. A weight related to the gaussian distance distribution suffices.
     ### Update the distribution parameters
-    floatingWeights = registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, 3.0)
+    inlierFilter.update()
+    print floatingWeights
     ##3) Determine and update transformation.
-    transformationMatrix = registration.core.rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeights, False)
-
+    transformFilter.update()
 
 ##########
 # EXPORT DATA

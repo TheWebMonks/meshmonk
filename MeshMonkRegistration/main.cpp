@@ -926,8 +926,8 @@ void inlier_detection(const FeatureMat &inFeatures,
 
 
     //# Flag based inlier/outlier classification
-    //## Do an element-wise multiplication
-    ioProbability = ioProbability.cwiseProduct(inCorrespondingFlags);
+    //## initialize the probabilities as a copy of the flags
+    ioProbability = inCorrespondingFlags;
 
 
     //# Distance based inlier/outlier classification

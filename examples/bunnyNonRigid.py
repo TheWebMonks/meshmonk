@@ -36,7 +36,7 @@ resultingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunnyNonRig
 # Correspondences
 wknnNumNeighbours = 3
 # Inlier Detection
-kappaa = 3
+kappaa = 3.0
 adjustScale = False
 # Transformation
 numNeighbourDisplacements = 6
@@ -100,6 +100,10 @@ symCorrespondenceFilter = registration.core.SymCorrespondenceFilter(floatingFeat
                                                               correspondingFeatures,
                                                               correspondingFlags,
                                                               wknnNumNeighbours)
+## Set up inlier filter
+inlierFilter = registration.core.InlierFilter(floatingFeatures, correspondingFeatures,
+                                              correspondingFlags, floatingWeights,
+                                              kappaa)
 
 ##TODO: HERE WE SHOULD START THE ANNEALING SCHEME
 numViscousSmoothingIterationsList = [10, 5, 2, 1]
@@ -111,7 +115,7 @@ for numViscousSmoothingIterations, numElasticSmoothingIterations in zip(numVisco
     symCorrespondenceFilter.set_floating_features(floatingFeatures, floatingFlags)
     symCorrespondenceFilter.update()
     ## 2) Determine inlier weights.
-    floatingWeights = registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, kappaa)
+    inlierFilter.update()
     ## 3) Determine and update transformation.
     ### Compute a viscoelastic transformation
     registration.core.compute_viscoelastic_transformation(floatingFeatures[:,0:3], correspondingFeatures[:,0:3], floatingWeights, regulatedDisplacementField, numNeighbourDisplacements, sigmaSmoothing, numViscousSmoothingIterations, numElasticSmoothingIterations)
