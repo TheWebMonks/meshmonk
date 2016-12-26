@@ -93,7 +93,7 @@ correspondingFlags = numpy.ones((floatingFlags.shape), dtype = float)
 ## Initialize
 originalFloatingPositions = numpy.copy(floatingFeatures[:,0:3])
 regulatedDisplacementField = numpy.zeros((numFloatingVertices,3), dtype = float)
-correspondenceFilter = registration.core.CorrespondenceFilter(floatingFeatures,
+symCorrespondenceFilter = registration.core.SymCorrespondenceFilter(floatingFeatures,
                                                               floatingFlags,
                                                               targetFeatures,
                                                               targetFlags,
@@ -108,8 +108,8 @@ numViscousSmoothingIterationsList = [50, 25, 12]
 numElasticSmoothingIterationsList = [50, 25, 12]
 for numViscousSmoothingIterations, numElasticSmoothingIterations in zip(numViscousSmoothingIterationsList, numElasticSmoothingIterationsList):
     ## 1) Determine Nearest neighbours.
-    correspondenceFilter.set_floating_features(floatingFeatures, floatingFlags)
-    correspondenceFilter.update()
+    symCorrespondenceFilter.set_floating_features(floatingFeatures, floatingFlags)
+    symCorrespondenceFilter.update()
     ## 2) Determine inlier weights.
     floatingWeights = registration.core.inlier_detection(floatingFeatures, correspondingFeatures, correspondingFlags, floatingWeights, kappaa)
     ## 3) Determine and update transformation.
