@@ -52,7 +52,6 @@ def nearest_neighbours(features1, features2, k = 3, leafsize = 15, eps = 0.0001,
     -neighbourIndices.
     """
     # Obtain info and initialize outputs
-    numElements1 = features1.shape[0]
     kdTree = spatial.cKDTree(features2, leafsize)
     # Query the kd-tree (http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.spatial.KDTree.query.html#scipy.spatial.KDTree.query)
     distances, neighbourIndices = kdTree.query(features1, k, eps, p, maxDistance)
@@ -243,7 +242,7 @@ def gaussian_smoothing_vector_field(fieldPositions, fieldVectors, regulatedField
 
 class GaussianInterpolator(object):
     
-    def __init(self, sigma):
+    def __init__(self, sigma):
         self.sigma = sigma
         self.xValues = sigma * numpy.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 1000.0], dtype = float)
         self.numValues = self.xValues.size
@@ -253,11 +252,11 @@ class GaussianInterpolator(object):
         
     def _construct_interpolator(self):  
         # Determine the peak value of the gaussian for the given sigma:
-        peak = 1.0/(numpy.sqrt(2.0 * 3.14159) * self.paramSigma)
+        peak = 1.0/(numpy.sqrt(2.0 * 3.14159) * self.sigma)
         # Now determine the gaussian values for each x-value
         for i in range(self.numValues):
             xVal = self.xValues[i]
-            self.yValues[i] = peak * numpy.exp(-(xVal**2/(2*self.paramSigma**2)))
+            self.yValues[i] = peak * numpy.exp(-(xVal**2/(2*self.sigma**2)))
             
         # Build interpolator using these discrete value pairs
         ## Use scipy's "interp1d" function
@@ -265,7 +264,7 @@ class GaussianInterpolator(object):
     
     def compute(self, xValue):
         # We interpolate the gaussian value for the given distance
-        interpolatedValue = self._gaussianInterpolator(xValue)
+        interpolatedValue = self.interpolator(xValue)
         
         return interpolatedValue
         
@@ -284,14 +283,18 @@ class VectorFieldSmoother(object):
         self._neighbourIndices = None
         self._neighbourIndicesUpToDate = False
         self._neighbourDistances = None
+        self._neighbourWeights = numpy.zeros((self._numVectors, self.numNeighbours), dtype = float)
+        self._neighbourWeightsUpToDate = False
         self._gaussianInterpolator = GaussianInterpolator(self.sigma)
         
-    def set_input(self, positions, vectors, weights):
-        self.positions = positions
-        self.vectors = vectors
-        self._numVectors = vectors.shape[0]
-        self.weights = weights
-    
+    def set_input(self, inPositions, inVectors, inWeights):
+        self.inPositions = inPositions
+        self.inVectors = inVectors
+        self._numVectors = inVectors.shape[0]
+        self.inWeights = inWeights # additional weight assigned to each vector by user (e.g. inlier weight)
+        self._neighbourWeights = numpy.zeros((self._numVectors, self.numNeighbours), dtype = float)
+        #self._neighbourWeightsUpToDate = False #TODO: add this line or not?
+        
     def set_output(self, outVectors):
         self.outVectors = outVectors
         
@@ -305,15 +308,16 @@ class VectorFieldSmoother(object):
         self._neighbourIndicesUpToDate = True
     
     def _update_neighbour_weights(self):
-        # First update the indices and distances of neighbours.
-        self._update_neighbour_indices()
-        
-        # Given the distance to each neighbour, we can compute the gaussian weight
-        for i in range(self._numFloatingElements):
-            for j in range(self.paramNumNeighbours):
-                distance = self._neighbourDistances[i,j]
-                gaussianWeight = self._gaussianInterpolator.compute(distance)
-                self._neighbourWeights[i,j] = gaussianWeight
+        if (self._neighbourWeightsUpToDate == False):
+            # First update the indices and distances of neighbours.
+            self._update_neighbour_indices()
+            
+            # Given the distance to each neighbour, we can compute the gaussian weight
+            for i in range(self._numVectors):
+                for j in range(self.numNeighbours):
+                    distance = self._neighbourDistances[i,j]
+                    gaussianWeight = self._gaussianInterpolator.compute(distance)
+                    self._neighbourWeights[i,j] = gaussianWeight
         
         self._neighbourWeightsUpToDate = True
         

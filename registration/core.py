@@ -261,6 +261,7 @@ class CorrespondenceFilter(GenericCorrespondenceFilter):
         # Compute nearest neighbours
         self._nearest_neighbours()
         # Compute affinity from floating to neighbouring target features
+        print self._affinity
         self._affinity = wknn_affinity(self.inFloatingFeatures,
                                        self.inTargetFeatures,
                                        self._neighbourDistances,
