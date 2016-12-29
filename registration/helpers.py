@@ -273,25 +273,33 @@ class GaussianInterpolator(object):
         
 class VectorFieldSmoother(object):
     
-    def __init__(self, positions, vectors, weights, numNeighbours, sigma):
+    def __init__(self, inPositions, inVectors, inWeights, outVectors, numNeighbours, sigma):
+        self.inPositions = inPositions
+        self.inVectors = inVectors
+        self._numVectors = inVectors.shape[0]
+        self.inWeights = inWeights # additional weight assigned to each vector by user (e.g. inlier weight)
+        self.outVectors = outVectors # The output containing the smoothed vectors!
+        self.numNeighbours = numNeighbours
+        self.sigma = sigma
+        self._neighbourIndices = None
+        self._neighbourIndicesUpToDate = False
+        self._neighbourDistances = None
+        self._gaussianInterpolator = GaussianInterpolator(self.sigma)
+        
+    def set_input(self, positions, vectors, weights):
         self.positions = positions
         self.vectors = vectors
         self._numVectors = vectors.shape[0]
-        self.weights = weights # additional weight assigned to each vector by user (e.g. inlier weight)
-        self.numNeighbours = numNeighbours
-        self.sigma = sigma
-        self.neighbourIndices = None
-        self.neighbourIndicesUpToDate = False
-        self.neighbourDistances = None
-        self._gaussianInterpolator = GaussianInterpolator(self.sigma)
-        self.smoothedVectors = numpy.zeros(vectors.shape, dtype = float)
-        
+        self.weights = weights
+    
+    def set_output(self, outVectors):
+        self.outVectors = outVectors
         
     def _update_neighbour_indices(self):
         if (self._neighbourIndicesUpToDate == False):
             self._neighbourDistances, self._neighbourIndices =  \
-                        nearest_neighbours(self.positions,
-                                                    self.positions,
+                        nearest_neighbours(self.inPositions,
+                                                    self.inPositions,
                                                     self.numNeighbours,
                                                     15, 0.0001, 2, 1000)
         self._neighbourIndicesUpToDate = True
@@ -304,8 +312,8 @@ class VectorFieldSmoother(object):
         for i in range(self._numFloatingElements):
             for j in range(self.paramNumNeighbours):
                 distance = self._neighbourDistances[i,j]
-                weight = self._gaussianInterpolator.compute(distance)
-                self._neighbourWeights[i,j] = weight
+                gaussianWeight = self._gaussianInterpolator.compute(distance)
+                self._neighbourWeights[i,j] = gaussianWeight
         
         self._neighbourWeightsUpToDate = True
         
@@ -320,25 +328,25 @@ class VectorFieldSmoother(object):
         
         # Loop over the vectors
         for i in range(self._numVectors):
-            ## Initialize result as zero
-            self.smoothedVectors[i,:] = numpy.zeros((1,self.vectors.shape[1]), dtype = float)
+            ## Initialize output as zero
+            self.outVectors[i,:] = numpy.zeros((1,self.inVectors.shape[1]), dtype = float)
             sumWeights = 0.0
             ## For this vector, loop over all its neighbours (to make a
             ## weighted average of the neighbouring vectors)
             for j in range(self.numNeighbours):
                 ### Compute the weight of the current neighbour as the combo
                 ### of a user defined weight with its gaussian weight.
-                neighbourIndex = self.neighbourIndices[i,j]
-                combinedWeight = self.weights[neighbourIndex] * self._neighbourWeights[i,j]
+                neighbourIndex = self._neighbourIndices[i,j]
+                combinedWeight = self.inWeights[neighbourIndex] * self._neighbourWeights[i,j]
                 ### Weigh the neighbour's vector and add it to the sum
-                neighbourVector = self.vectors[neighbourIndex]
-                self.smoothedVectors[i,:] += combinedWeight * neighbourVector
+                neighbourVector = self.inVectors[neighbourIndex]
+                self.outVectors[i,:] += combinedWeight * neighbourVector
                 sumWeights += combinedWeight
             
             ## Divide the sum of vectors by the sum of weights
-            self.smoothedVectors[i,:] /= sumWeights
+            self.outVectors[i,:] /= sumWeights
 
-        return self.smoothedVectors
+        return self.outVectors
     
     
 def openmesh_normals_from_positions(mesh, newPositions):

@@ -609,20 +609,14 @@ class ViscoElasticFilter(TransformationFilter):
         self._numFloatingElements = self.ioFloatingFeatures.shape[0]
         self.ioDisplacementField = numpy.zeros([self._numFloatingElements,3],
                                                dtype = float)
-        self._neighbourIndices = numpy.zeros([self._numFloatingElements,
-                                              self.paramNumNeighbours],
-                                              dtype = int)
-        self._neighbourDistances = numpy.zeros([self._numFloatingElements,
-                                              self.paramNumNeighbours],
-                                              dtype = float)
-        self._neighbourWeights = numpy.zeros([self._numFloatingElements,
-                                              self.paramNumNeighbours],
-                                              dtype = float)
-        self._neighbourIndicesUpToDate = False
-        self._neighbourWeightsUpToDate = False
+        self._oldDisplacementField = None
+        self._vectorFieldSmoother = helpers.VectorFieldSmoother(self.ioFloatingFeatures[:,0:3],
+                                                                self.ioDisplacementField,
+                                                                self.inFloatingWeights,
+                                                                self.ioDisplacementField,
+                                                                self.paramNumNeighbours,
+                                                                self.paramSigma)
         
-        self.gaussianInterpolator = helpers.GaussianInterpolator(self.paramSigma) ?!
-        self._update_neighbours()
     
     def set_parameters(self, numNeighbours = 10, sigma = 1.0,
                        numViscousIterations = 1, numElasticIterations = 1):
@@ -631,30 +625,65 @@ class ViscoElasticFilter(TransformationFilter):
         self.numViscousIterations = numViscousIterations
         self.numElasticIterations = numElasticIterations
         
-    
-
-    def 
-    
-    def update(self):
-        # Update the deformation and apply  it. Note that we should only apply
-        # the difference in deformation to the current floating positions. So,
-        # we'll follow the next steps:
-        ## 1. Save the current displacement field
-        displacementField = numpy.copy(self.ioDisplacementField)
-        ## 2. Update the displacement field
-        compute_viscoelastic_transformation(self.ioFloatingFeatures[:,0:3],
-                                            self.inCorrespondingFeatures[:,0:3],
-                                            self.inFloatingWeights,
-                                            self.ioDisplacementField,
-                                            self.paramNumNeighbours,
-                                            self.paramSigma,
-                                            self.numViscousIterations,
-                                            self.numElasticIterations)
-        ## 3. Compute the difference between the new and old displacement fields.
-        displacementField = self.ioDisplacementField - displacementField
+    def _update_transformation(self):
+        # Viscous Part
+        ## The 'Force Field' is what drives the deformation: the difference between
+        ## the floating vertices and their correspondences. By regulating it,
+        ## viscous behaviour is obtained.
+        ## 1. Compute the Force Field
+        unregulatedForceField = self.inCorrespondingFeatures[:,0:3] - self.ioFloatingFeatures[:,0:3]
         
-        ## 4. Apply the differential displacement field to the current floating
-        ## positions.
+        ## 2. Set up the vector field smoother
+        regulatedForceField = numpy.zeros(unregulatedForceField.shape, dtype = float)
+        self._vectorFieldSmoother.set_input(self.ioFloatingFeatures[:,0:3],
+                                            unregulatedForceField,
+                                            self.inFloatingWeights)
+        self._vectorFieldSmoother.set_output(regulatedForceField)
+        
+        ## 3. Use the Vector Field Smoother iteratively to regulate the Force Field
+        for i in range(self.numViscousIterations):
+            ### Smooth unregulatedForceField (input) and save result in regulatedForceField (output)
+            self._vectorFieldSmoother.update()
+            ### Copy output back into the input for next iteration
+            unregulatedForceField = numpy.copy(regulatedForceField)
+    
+            
+        # Elastic Part
+        ## Before computing the new displacement field, save the old one (which
+        ## we will need later to apply the difference between the new and the
+        ## old displacement field to the floating points)
+        self._oldDisplacementField = numpy.copy(self.ioDisplacementField)
+        ## 1. Add the regulated Force Field to the current Displacement Field
+        ## that has to be updated.
+        unregulatedDisplacementField = self.ioDisplacementField + regulatedForceField
+        
+        ## 2. Set up the Vector Field Smoother
+        self._vectorFieldSmoother.set_input(self.ioFloatingFeatures[:,0:3],
+                                            unregulatedDisplacementField,
+                                            self.inFloatingWeights)
+        self._vectorFieldSmoother.set_output(self.ioDisplacementField)
+        
+        ## 3. Use the Smoother iteratively to regulate the new Displacement Field
+        for i in range(self.numElasticIterations):
+            ### Smooth unregulatedDisplacementField (input) and save result in self.ioDisplacementField (output)
+            self._vectorFieldSmoother.update()
+            ### Copy output back into the input for next iteration
+            unregulatedDisplacementField = numpy.copy(self.ioDisplacementField)
+        
+    def _apply_transformation(self):        
+        # Apply the differential displacement field to the current floating
+        # positions.
         for i in range(self._numFloatingElements):
-            self.ioFloatingFeatures[i,0:3] = self.ioFloatingFeatures[i,0:3] + \
-                                                displacementField[i,:]
+            self.ioFloatingFeatures[i,0:3] = self.ioFloatingFeatures[i,0:3] - \
+                                            self._oldDisplacementField[i,:] + \
+                                            self.ioDisplacementField[i,:]
+
+        # Release the memory for the old displacement field
+        self._oldDisplacementField = []
+
+    def update(self):
+        self._update_transformation()
+        self._apply_transformation()
+        
+        
+        
