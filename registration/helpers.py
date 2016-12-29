@@ -21,6 +21,7 @@ import openmesh
 import numpy
 from numpy import linalg
 from scipy import spatial
+from scipy.interpolate import interp1d
 
 
 
@@ -58,6 +59,35 @@ def nearest_neighbours(features1, features2, k = 3, leafsize = 15, eps = 0.0001,
 
     return distances, neighbourIndices
 
+def weighted_average_vectors(self, vectors, weights):
+    """
+    GOAL
+    This function does does a weighted average of input vectors and weights
+
+    INPUT
+    -vectors:
+    -weights:
+    Contains a list of weights that correspond to each vector.
+
+    PARAMETERS
+
+    RETURNS
+    -averagedVector
+    """
+    # Compute weighted sum of vectors
+    ## Loop over vectors and weights, weigh each vector, sum them, and sum the individual weights
+    sumVector = numpy.zeros((1,vectors.shape[1]), dtype = float)
+    sumWeights = 0.0
+    for i in range(vectors.shape[0]):
+        weight = weights[i]
+        vector = vectors[i]
+        sumVector += weight * vector
+        sumWeights += weight
+    
+    ## Divide the sum of weighted vectors by the sum of weights
+    averagedVector = sumVector / sumWeights
+    return averagedVector
+    
 def gaussian_vector_interpolation(position, fieldPositions, fieldVectors, fieldWeights, sigmaa):
     """
     GOAL
@@ -211,7 +241,106 @@ def gaussian_smoothing_vector_field(fieldPositions, fieldVectors, regulatedField
         smoothedVector = gaussian_vector_interpolation(position, neighbourPositions, neighbourVectors, neighbourWeights, gaussianSigma)
         regulatedFieldVectors[i,:] = smoothedVector
 
+class GaussianInterpolator(object):
+    
+    def __init(self, sigma):
+        self.sigma = sigma
+        self.xValues = sigma * numpy.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 1000.0], dtype = float)
+        self.numValues = self.xValues.size
+        self.yValues = numpy.zeros((self.numValues), dtype = float)
+        self.interpolator = None
+        self._construct_interpolator()
+        
+    def _construct_interpolator(self):  
+        # Determine the peak value of the gaussian for the given sigma:
+        peak = 1.0/(numpy.sqrt(2.0 * 3.14159) * self.paramSigma)
+        # Now determine the gaussian values for each x-value
+        for i in range(self.numValues):
+            xVal = self.xValues[i]
+            self.yValues[i] = peak * numpy.exp(-(xVal**2/(2*self.paramSigma**2)))
+            
+        # Build interpolator using these discrete value pairs
+        ## Use scipy's "interp1d" function
+        self.interpolator = interp1d(self.xValues, self.yValues, kind = 'linear')
+    
+    def compute(self, xValue):
+        # We interpolate the gaussian value for the given distance
+        interpolatedValue = self._gaussianInterpolator(xValue)
+        
+        return interpolatedValue
+        
+        
+        
+class VectorFieldSmoother(object):
+    
+    def __init__(self, positions, vectors, weights, numNeighbours, sigma):
+        self.positions = positions
+        self.vectors = vectors
+        self._numVectors = vectors.shape[0]
+        self.weights = weights # additional weight assigned to each vector by user (e.g. inlier weight)
+        self.numNeighbours = numNeighbours
+        self.sigma = sigma
+        self.neighbourIndices = None
+        self.neighbourIndicesUpToDate = False
+        self.neighbourDistances = None
+        self._gaussianInterpolator = GaussianInterpolator(self.sigma)
+        self.smoothedVectors = numpy.zeros(vectors.shape, dtype = float)
+        
+        
+    def _update_neighbour_indices(self):
+        if (self._neighbourIndicesUpToDate == False):
+            self._neighbourDistances, self._neighbourIndices =  \
+                        nearest_neighbours(self.positions,
+                                                    self.positions,
+                                                    self.numNeighbours,
+                                                    15, 0.0001, 2, 1000)
+        self._neighbourIndicesUpToDate = True
+    
+    def _update_neighbour_weights(self):
+        # First update the indices and distances of neighbours.
+        self._update_neighbour_indices()
+        
+        # Given the distance to each neighbour, we can compute the gaussian weight
+        for i in range(self._numFloatingElements):
+            for j in range(self.paramNumNeighbours):
+                distance = self._neighbourDistances[i,j]
+                weight = self._gaussianInterpolator.compute(distance)
+                self._neighbourWeights[i,j] = weight
+        
+        self._neighbourWeightsUpToDate = True
+        
+        # We can free the memory belonging to the neighbour distances. If they
+        # don't change, we wouldn't update the weight neither. If they change,
+        # they have to be recomputed anyway.
+        self._neighbourDistances = []
 
+    def update(self):
+        # Update the gaussian weights
+        self._update_neighbour_weights()
+        
+        # Loop over the vectors
+        for i in range(self._numVectors):
+            ## Initialize result as zero
+            self.smoothedVectors[i,:] = numpy.zeros((1,self.vectors.shape[1]), dtype = float)
+            sumWeights = 0.0
+            ## For this vector, loop over all its neighbours (to make a
+            ## weighted average of the neighbouring vectors)
+            for j in range(self.numNeighbours):
+                ### Compute the weight of the current neighbour as the combo
+                ### of a user defined weight with its gaussian weight.
+                neighbourIndex = self.neighbourIndices[i,j]
+                combinedWeight = self.weights[neighbourIndex] * self._neighbourWeights[i,j]
+                ### Weigh the neighbour's vector and add it to the sum
+                neighbourVector = self.vectors[neighbourIndex]
+                self.smoothedVectors[i,:] += combinedWeight * neighbourVector
+                sumWeights += combinedWeight
+            
+            ## Divide the sum of vectors by the sum of weights
+            self.smoothedVectors[i,:] /= sumWeights
+
+        return self.smoothedVectors
+    
+    
 def openmesh_normals_from_positions(mesh, newPositions):
     """
     GOAL

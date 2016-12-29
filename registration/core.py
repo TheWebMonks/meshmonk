@@ -22,6 +22,7 @@ from openmesh import *
 import numpy
 from numpy import linalg
 from scipy import spatial
+from scipy.interpolate import interp1d
 from abc import ABCMeta, abstractmethod
 import helpers
 
@@ -584,7 +585,7 @@ class TransformationFilter(object):
         self.inFloatingWeights = inFloatingWeights
     
     @abstractmethod
-    def update():
+    def update(self):
         pass
     
 class RigidTransformationFilter(TransformationFilter):
@@ -593,3 +594,67 @@ class RigidTransformationFilter(TransformationFilter):
         rigid_transformation(self.ioFloatingFeatures, self.inCorrespondingFeatures,
                              self.inFloatingWeights, allowScaling = False)
         
+class ViscoElasticFilter(TransformationFilter):
+    
+    def __init__(self, ioFloatingFeatures, inCorrespondingFeatures,
+                 inFloatingWeights, paramNumNeighbours, paramSigma = 1.0,
+                 numViscousIterations = 1, numElasticIterations = 1):
+        self.ioFloatingFeatures = ioFloatingFeatures
+        self.inCorrespondingFeatures = inCorrespondingFeatures 
+        self.inFloatingWeights = inFloatingWeights
+        self.paramNumNeighbours = paramNumNeighbours
+        self.paramSigma = paramSigma
+        self.numViscousIterations = numViscousIterations
+        self.numElasticIterations = numElasticIterations
+        self._numFloatingElements = self.ioFloatingFeatures.shape[0]
+        self.ioDisplacementField = numpy.zeros([self._numFloatingElements,3],
+                                               dtype = float)
+        self._neighbourIndices = numpy.zeros([self._numFloatingElements,
+                                              self.paramNumNeighbours],
+                                              dtype = int)
+        self._neighbourDistances = numpy.zeros([self._numFloatingElements,
+                                              self.paramNumNeighbours],
+                                              dtype = float)
+        self._neighbourWeights = numpy.zeros([self._numFloatingElements,
+                                              self.paramNumNeighbours],
+                                              dtype = float)
+        self._neighbourIndicesUpToDate = False
+        self._neighbourWeightsUpToDate = False
+        
+        self.gaussianInterpolator = helpers.GaussianInterpolator(self.paramSigma) ?!
+        self._update_neighbours()
+    
+    def set_parameters(self, numNeighbours = 10, sigma = 1.0,
+                       numViscousIterations = 1, numElasticIterations = 1):
+        self.paramNumNeighbours = numNeighbours
+        self.paramSigma = sigma
+        self.numViscousIterations = numViscousIterations
+        self.numElasticIterations = numElasticIterations
+        
+    
+
+    def 
+    
+    def update(self):
+        # Update the deformation and apply  it. Note that we should only apply
+        # the difference in deformation to the current floating positions. So,
+        # we'll follow the next steps:
+        ## 1. Save the current displacement field
+        displacementField = numpy.copy(self.ioDisplacementField)
+        ## 2. Update the displacement field
+        compute_viscoelastic_transformation(self.ioFloatingFeatures[:,0:3],
+                                            self.inCorrespondingFeatures[:,0:3],
+                                            self.inFloatingWeights,
+                                            self.ioDisplacementField,
+                                            self.paramNumNeighbours,
+                                            self.paramSigma,
+                                            self.numViscousIterations,
+                                            self.numElasticIterations)
+        ## 3. Compute the difference between the new and old displacement fields.
+        displacementField = self.ioDisplacementField - displacementField
+        
+        ## 4. Apply the differential displacement field to the current floating
+        ## positions.
+        for i in range(self._numFloatingElements):
+            self.ioFloatingFeatures[i,0:3] = self.ioFloatingFeatures[i,0:3] + \
+                                                displacementField[i,:]
