@@ -261,7 +261,6 @@ class CorrespondenceFilter(GenericCorrespondenceFilter):
         # Compute nearest neighbours
         self._nearest_neighbours()
         # Compute affinity from floating to neighbouring target features
-        print self._affinity
         self._affinity = wknn_affinity(self.inFloatingFeatures,
                                        self.inTargetFeatures,
                                        self._neighbourDistances,
@@ -636,14 +635,15 @@ class ViscoElasticFilter(TransformationFilter):
         
         ## 2. Set up the vector field smoother
         regulatedForceField = numpy.zeros(unregulatedForceField.shape, dtype = float)
-        self._vectorFieldSmoother.set_input(self.ioFloatingFeatures[:,0:3],
-                                            unregulatedForceField,
-                                            self.inFloatingWeights)
+        
         self._vectorFieldSmoother.set_output(regulatedForceField)
         
         ## 3. Use the Vector Field Smoother iteratively to regulate the Force Field
         for i in range(self.numViscousIterations):
             ### Smooth unregulatedForceField (input) and save result in regulatedForceField (output)
+            self._vectorFieldSmoother.set_input(self.ioFloatingFeatures[:,0:3],
+                                            unregulatedForceField,
+                                            self.inFloatingWeights)
             self._vectorFieldSmoother.update()
             ### Copy output back into the input for next iteration
             unregulatedForceField = numpy.copy(regulatedForceField)

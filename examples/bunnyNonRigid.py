@@ -19,6 +19,7 @@ sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
 import openmesh
 #Importing the rest of utilities
 import numpy
+import time
 
 from context import registration
 
@@ -39,8 +40,7 @@ wknnNumNeighbours = 3
 kappaa = 3.0
 adjustScale = False
 # Transformation
-numNeighbourDisplacements = 6
-sigmaSmoothing = 0.01
+
 
 
 ##########
@@ -51,6 +51,7 @@ floatingMesh = openmesh.TriMesh()
 targetMesh = openmesh.TriMesh()
 openmesh.read_mesh(floatingMesh, floatingMeshPath)
 openmesh.read_mesh(targetMesh, targetMeshPath)
+
 
 ## Decimate the mesh
 ## create decimater and module handle
@@ -105,29 +106,44 @@ inlierFilter = registration.core.InlierFilter(floatingFeatures, correspondingFea
                                               correspondingFlags, floatingWeights,
                                               kappaa)
 
+
 ##TODO: HERE WE SHOULD START THE ANNEALING SCHEME
-numViscousSmoothingIterationsList = [10, 5, 2, 1]
-numElasticSmoothingIterationsList = [10, 5, 2, 1]
-numViscousSmoothingIterationsList = [50, 25, 12]
-numElasticSmoothingIterationsList = [50, 25, 12]
+numViscousSmoothingIterationsList = [55, 34, 21, 13, 8, 5, 3, 2, 1, 1]
+numElasticSmoothingIterationsList = [55, 34, 21, 13, 8, 5, 3, 2, 1, 1]
+## Set up transformation filter
+numNeighbourDisplacements = 10
+sigmaSmoothing = 10.0
+transformationFilter = registration.core.ViscoElasticFilter(floatingFeatures,
+                                                            correspondingFeatures,
+                                                            floatingWeights,
+                                                            10,
+                                                            sigmaSmoothing,
+                                                            numViscousIterations = 1,
+                                                            numElasticIterations = 1)
+iteration = 0
 for numViscousSmoothingIterations, numElasticSmoothingIterations in zip(numViscousSmoothingIterationsList, numElasticSmoothingIterationsList):
+    timeStart = time.time()
     ## 1) Determine Nearest neighbours.
     symCorrespondenceFilter.set_floating_features(floatingFeatures, floatingFlags)
     symCorrespondenceFilter.update()
     ## 2) Determine inlier weights.
     inlierFilter.update()
     ## 3) Determine and update transformation.
-    ### Compute a viscoelastic transformation
-    registration.core.compute_viscoelastic_transformation(floatingFeatures[:,0:3], correspondingFeatures[:,0:3], floatingWeights, regulatedDisplacementField, numNeighbourDisplacements, sigmaSmoothing, numViscousSmoothingIterations, numElasticSmoothingIterations)
-
-    ### Apply the computed displacement field
-    floatingFeatures[:,0:3] = originalFloatingPositions + regulatedDisplacementField
+    transformationFilter.set_parameters(numNeighbourDisplacements,
+                                            sigmaSmoothing,
+                                            numViscousSmoothingIterations,
+                                            numElasticSmoothingIterations)
+    transformationFilter.update()
 
     ## 4) Re-calculate the mesh's properties (like normals e.g.)
     floatingFeatures[:,3:6] = registration.helpers.openmesh_normals_from_positions(floatingMesh, floatingFeatures[:,0:3])
-
+    
+    timeEnd = time.time()
+    print "Iteration " + str(iteration) + " took " + str(timeEnd-timeStart) 
+    iteration = iteration + 1
 ##########
 # EXPORT DATA
 ##########
 # Save the mesh
 openmesh.write_mesh(floatingMesh, resultingMeshPath)
+print "Exported result."

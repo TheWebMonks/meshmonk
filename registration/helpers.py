@@ -292,7 +292,6 @@ class VectorFieldSmoother(object):
         self.inVectors = inVectors
         self._numVectors = inVectors.shape[0]
         self.inWeights = inWeights # additional weight assigned to each vector by user (e.g. inlier weight)
-        self._neighbourWeights = numpy.zeros((self._numVectors, self.numNeighbours), dtype = float)
         #self._neighbourWeightsUpToDate = False #TODO: add this line or not?
         
     def set_output(self, outVectors):
