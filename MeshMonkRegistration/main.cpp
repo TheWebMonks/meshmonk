@@ -6,10 +6,13 @@
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <nanoflann.hpp>
+#include <stdio.h>
+#include "InlierDetector.hpp"
+#include "global.hpp"
 
 using namespace std;
 
-const int NUM_FEATURES = 6;
+
 
 typedef OpenMesh::TriMesh_ArrayKernelT<>  TriMesh;
 typedef Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> MatDynInt; //matrix MxN of type unsigned int
@@ -20,13 +23,14 @@ typedef Eigen::Vector4f Vec4Float;
 typedef Eigen::Matrix3f Mat3Float;
 typedef Eigen::Matrix4f Mat4Float;
 typedef Eigen::Matrix< float, Eigen::Dynamic, 3> Vec3Mat; //matrix Mx3 of type float
-typedef Eigen::Matrix< float, Eigen::Dynamic, NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
-typedef Eigen::Matrix< float, 1, NUM_FEATURES> FeatureVec; //matrix Mx6 of type float
+typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
+typedef Eigen::Matrix< float, 1, registration::NUM_FEATURES> FeatureVec; //matrix Mx6 of type float
 typedef Eigen::SparseMatrix<float, 0, int> SparseMat;
 typedef Eigen::Triplet<float> Triplet;
 typedef Eigen::SelfAdjointEigenSolver<Mat4Float> EigenVectorDecomposer;
 
 
+namespace registration {
 
 template <typename VecMatType>
 void k_nearest_neighbours(const VecMatType &inQueriedPoints,
@@ -894,85 +898,7 @@ void rigid_transformation(FeatureMat &ioFeatures,
 }
 
 
-void inlier_detection(const FeatureMat &inFeatures,
-                        const FeatureMat &inCorrespondingFeatures,
-                        const VecDynFloat &inCorrespondingFlags,
-                        VecDynFloat &ioProbability,
-                        const float paramKappa = 3.0) {
-    /*
-    # GOAL
-    Determine which elements are inliers ('normal') and which are outliers
-    ('abnormal'). There are different ways to to that, but they should all
-    result in a scalar assigmnent that represents the probability of an element
-    being an inlier.
 
-    # INPUTS
-    -features
-    -correspondingFeatures
-    -correspondingFlags
-    -inlierProbability:
-
-    # PARAMETERS
-    -paramKappa(=3): Mahalanobis distance that determines cut-off in- vs outliers
-
-    # OUTPUTS
-
-    # RETURNS
-    -inlierProbability
-    */
-
-    //# Info & Initialization
-    const size_t numElements = inFeatures.rows();
-
-
-    //# Flag based inlier/outlier classification
-    //## initialize the probabilities as a copy of the flags
-    ioProbability = inCorrespondingFlags;
-
-
-    //# Distance based inlier/outlier classification
-    //## Re-calculate the parameters sigma and lambda
-    float sigmaa = 0.0;
-    float lambdaa = 0.0;
-    float sigmaNumerator = 0.0;
-    float sigmaDenominator = 0.0;
-    for (size_t i = 0 ; i < numElements ; i++) {
-        //### Compute distance (squared)
-        FeatureVec difVector = inCorrespondingFeatures.row(i) - inFeatures.row(i);
-        const float distanceSquared = difVector.squaredNorm();
-
-        sigmaNumerator += ioProbability[i] * distanceSquared;
-        sigmaDenominator += ioProbability[i];
-    }
-    //### sigma and lambda
-    sigmaa = std::sqrt(sigmaNumerator/sigmaDenominator);
-    lambdaa = 1.0/(std::sqrt(2.0 * 3.14159) * sigmaa) * std::exp(-0.5 * paramKappa * paramKappa);
-
-    //## Recalculate the distance-based probabilities
-    for (size_t i = 0 ; i < numElements ; i++) {
-        //### Get squared distance
-        FeatureVec difVector = inCorrespondingFeatures.row(i) - inFeatures.row(i);
-        const float distanceSquared = difVector.squaredNorm();
-        //### Compute probability
-        float probability = 1.0/(std::sqrt(2.0 * 3.14159) * sigmaa) * std::exp(-0.5 * distanceSquared / std::pow(sigmaa, 2.0));
-        probability /= (probability + lambdaa);
-        ioProbability[i] *= probability;
-    }
-
-
-    //#Gradient Based inlier/outlier classification
-    for (size_t i = 0 ; i < numElements ; i++) {
-        const Vec3Float normal = inFeatures.row(i).tail(3);
-        const Vec3Float correspondingNormal = inCorrespondingFeatures.row(i).tail(3);
-        //## Dot product gives an idea of how well they point in the same
-        //## direction. This gives a weight between -1.0 and +1.0
-        const float dotProduct = normal.dot(correspondingNormal);
-        //## Rescale this result so that it's continuous between 0.0 and +1.0
-        float probability = dotProduct / 2.0 + 0.5;
-        ioProbability[i] *= probability;
-    }
-
-}//end inlier_detection
 
 
 void vector_block_average(const Vec3Mat &inVectors,
@@ -1446,3 +1372,5 @@ int main()
 
     return 0;
 }
+
+} //namespace registration
