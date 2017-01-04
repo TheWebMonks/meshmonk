@@ -21,7 +21,7 @@ import openmesh
 import numpy
 from numpy import linalg
 from scipy import spatial
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, LinearNDInterpolator
 
 
 
@@ -240,7 +240,12 @@ def gaussian_smoothing_vector_field(fieldPositions, fieldVectors, regulatedField
         smoothedVector = gaussian_vector_interpolation(position, neighbourPositions, neighbourVectors, neighbourWeights, gaussianSigma)
         regulatedFieldVectors[i,:] = smoothedVector
 
-class GaussianInterpolator(object):
+class GaussianEvaluator(object):
+    """
+    This class evaluates a gaussian through 1D interpolation of a few gaussian
+    node-value pairs. This is meant to evaluate a Gaussian cheaper than 
+    computing 1/(2Pi*sigma) * exp(...).
+    """
     
     def __init__(self, sigma):
         self.sigma = sigma
@@ -262,13 +267,52 @@ class GaussianInterpolator(object):
         ## Use scipy's "interp1d" function
         self.interpolator = interp1d(self.xValues, self.yValues, kind = 'linear')
     
+    def set_params(self, sigma):
+        self.sigma = sigma
+        self._construct_interpolator()
+        
     def compute(self, xValue):
         # We interpolate the gaussian value for the given distance
         interpolatedValue = self.interpolator(xValue)
         
         return interpolatedValue
         
+
+
+# TODO: WRITE FUNCTION THAT TAKES INPUT VECTOR FIELD AND OUTPUTS INTERPOLATED
+# VECTOR FIELD.
+# THEN: REWRITE IT AS A CLASS
+
+def interpolate_vector_field(inSourcePositions, inSourceVectors,
+                             inTargetPositions, ioTargetVectors):
+    # Info & Initialization
+    numTargetPoints = inTargetPositions.shape[0]
+    numDimensions = inSourceVectors.shape[1]
+    
+    # We have to do the interpolation for each dimension separately!
+    for dim in range(numDimensions):
+        ## Build interpolator (from scipy package)
+        interpolator = LinearNDInterpolator(inSourcePositions, inSourceVectors[:,dim],
+                                            fill_value=0.0)
         
+        ## For each target positions, use the interpolator
+        for i in range(numTargetPoints):
+            position = inTargetPositions[i,:]
+            ioTargetVectors[i,dim] = interpolator.__call__(position)
+
+def interpolate_scalar_field(inSourcePositions, inSourceScalars,
+                             inTargetPositions, ioTargetScalars):
+    # Info & Initialization
+    numTargetPoints = inTargetPositions.shape[0]
+    
+    ## Build interpolator (from scipy package)
+    interpolator = LinearNDInterpolator(inSourcePositions, inSourceScalars,
+                                        fill_value=0.0)
+    
+    ## For each target positions, use the interpolator
+    for i in range(numTargetPoints):
+        position = inTargetPositions[i,:]
+        ioTargetScalars[i] = interpolator.__call__(position)
         
 class VectorFieldSmoother(object):
     
@@ -285,7 +329,7 @@ class VectorFieldSmoother(object):
         self._neighbourDistances = None
         self._neighbourWeights = numpy.zeros((self._numVectors, self.numNeighbours), dtype = float)
         self._neighbourWeightsUpToDate = False
-        self._gaussianInterpolator = GaussianInterpolator(self.sigma)
+        self._gaussianEvaluator = GaussianEvaluator(self.sigma)
         
     def set_input(self, inPositions, inVectors, inWeights):
         self.inPositions = inPositions
@@ -315,7 +359,7 @@ class VectorFieldSmoother(object):
             for i in range(self._numVectors):
                 for j in range(self.numNeighbours):
                     distance = self._neighbourDistances[i,j]
-                    gaussianWeight = self._gaussianInterpolator.compute(distance)
+                    gaussianWeight = self._gaussianEvaluator.compute(distance)
                     self._neighbourWeights[i,j] = gaussianWeight
         
         self._neighbourWeightsUpToDate = True
