@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <stdio.h>
-#include "global.hpp"
+#include "../global.hpp"
 
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
@@ -39,8 +39,8 @@ class InlierDetector
     private:
         //# Inputs
         const FeatureMat * _inFeatures = NULL;
-        const FeatureMat *_inCorrespondingFeatures = NULL;
-        const VecDynFloat *_inCorrespondingFlags = NULL;
+        const FeatureMat * _inCorrespondingFeatures = NULL;
+        const VecDynFloat * _inCorrespondingFlags = NULL;
 
         //# Outputs
         VecDynFloat *_ioProbability = NULL;
