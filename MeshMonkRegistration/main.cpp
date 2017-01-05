@@ -1245,6 +1245,10 @@ void viscoelastic_transformation(VecMatType &ioFloatingPositions,
 }//end viscoelastic_transformation()
 
 
+
+
+} //namespace registration
+
 int main()
 {
 
@@ -1264,8 +1268,8 @@ int main()
     TriMesh bunny;
     FeatureMat floatingFeatures;
     FeatureMat targetFeatures;
-    load_obj_to_eigen_features(fuckedUpBunnyDir, fuckedUpBunny, floatingFeatures);
-    load_obj_to_eigen_features(bunnyDir, bunny, targetFeatures);
+    registration::load_obj_to_eigen_features(fuckedUpBunnyDir, fuckedUpBunny, floatingFeatures);
+    registration::load_obj_to_eigen_features(bunnyDir, bunny, targetFeatures);
 //    floatingFeatures = FeatureMat::Zero(8, NUM_FEATURES);
 //    targetFeatures = FeatureMat::Zero(8, NUM_FEATURES);
 //    floatingFeatures << 0.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
@@ -1310,56 +1314,62 @@ int main()
     size_t numFloatingVertices = floatingFeatures.rows();
     size_t numTargetVertices = targetFeatures.rows();
     VecDynFloat targetFlags = VecDynFloat::Ones(numTargetVertices);
-    FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, NUM_FEATURES);
+    FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
     VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
     //## Parameters
     const size_t numNearestNeighbours = 3;
     const size_t numRigidIterations = 20;
+    //## Set up Inlier Detector
+    VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
+    registration::InlierDetector inlierDetector;
+    inlierDetector.set_input(&floatingFeatures, &correspondingFeatures,
+                                &correspondingFlags);
+    inlierDetector.set_output(&floatingWeights);
+    inlierDetector.set_parameters(3.0);
 
     //# Loop ICP
     for (size_t iteration = 0 ; iteration < numRigidIterations ; iteration++) {
         //# Determine Correspondences
         //## Compute symmetric wknn correspondences
-        wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
+        registration::wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
                             correspondingFeatures, correspondingFlags,
                             numNearestNeighbours, true);
 
 
         //# Inlier Detection
-        VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
-        inlier_detection(floatingFeatures, correspondingFeatures,
-                        correspondingFlags, floatingWeights, 3.0);
+        inlierDetector.update();
 
         //# Compute the transformation
-        rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeights, false);
+        registration::rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeights, false);
     }
+
     /*
     ############################################################################
     ##########################  NON-RIGID ICP  #################################
     ############################################################################
     */
-    const size_t numNonrigidIterations = 10;
-    size_t smoothingIterations = numNonrigidIterations + 1;
-    for (size_t i = 0 ; i < numNonrigidIterations ; i++) {
-        //# Determine Correspondences
-        //## Compute symmetric wknn correspondences
-        wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
-                            correspondingFeatures, correspondingFlags,
-                            numNearestNeighbours, true);
-
-
-        //# Inlier Detection
-        VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
-        inlier_detection(floatingFeatures, correspondingFeatures,
-                        correspondingFlags, floatingWeights, 3.0);
-
-        //# Visco-Elastic transformation
-        Vec3Mat displacementField = Vec3Mat::Zero(numFloatingVertices, 3);
-        viscoelastic_transformation(floatingFeatures,correspondingFeatures,
-                                    floatingWeights, displacementField,
-                                    10, 1.0, smoothingIterations, smoothingIterations);
-        smoothingIterations--;
-    }
+//    const size_t numNonrigidIterations = 10;
+//    size_t smoothingIterations = numNonrigidIterations + 1;
+//    for (size_t i = 0 ; i < numNonrigidIterations ; i++) {
+//        //# Determine Correspondences
+//        //## Compute symmetric wknn correspondences
+//        wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
+//                            correspondingFeatures, correspondingFlags,
+//                            numNearestNeighbours, true);
+//
+//
+//        //# Inlier Detection
+//        VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
+//        inlier_detection(floatingFeatures, correspondingFeatures,
+//                        correspondingFlags, floatingWeights, 3.0);
+//
+//        //# Visco-Elastic transformation
+//        Vec3Mat displacementField = Vec3Mat::Zero(numFloatingVertices, 3);
+//        viscoelastic_transformation(floatingFeatures,correspondingFeatures,
+//                                    floatingWeights, displacementField,
+//                                    10, 1.0, smoothingIterations, smoothingIterations);
+//        smoothingIterations--;
+//    }
 
     /*
     ############################################################################
@@ -1367,10 +1377,8 @@ int main()
     ############################################################################
     */
     //# Write result to file
-    write_eigen_features_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
+    registration::write_eigen_features_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
 
 
     return 0;
 }
-
-} //namespace registration
