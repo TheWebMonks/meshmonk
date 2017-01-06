@@ -2,6 +2,7 @@
 #define NEIGHBOURFINDER_HPP
 
 #include <Eigen/Dense>
+#include <nanoflann.hpp>
 
 typedef Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> MatDynInt; //matrix MxN of type unsigned int
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat;
@@ -11,14 +12,35 @@ namespace registration {
 template <typename VecMatType>
 class NeighbourFinder
 {
+    /*
+    GOAL
+    This class searches for the k nearest neighbours in 'inSourcePoints' for
+    each element in the 'inQueriedPoints' set. It outputs the indices of each
+    neighbour and the squared (!) distances between each element of
+    'inQueriedPoints' and its neighbours.
+
+    INPUT
+    -inQueriedPoints:
+    -inSourcePoints:
+
+    PARAMETERS
+    -numNeighbours(= 3): number of nearest neighbours
+    -leafSize(= 15): should be between 5 and 50 or so
+
+    OUTPUT
+    -outNeighbourIndices
+    -outNeighbourSquaredDistances.
+    */
+
     public:
         NeighbourFinder();
+        ~NeighbourFinder(); //destructor
 
-        void set_input(const VecMatType * const _inQueriedPoints,
-                        const VecMatType * const _inSourcePoints);
+        void set_source_points(const VecMatType * const inQueriedPoints);
+        void set_queried_points(const VecMatType * const _inSourcePoints);
         const MatDynInt * const get_indices() { return _outNeighbourIndices;}
         const MatDynFloat * const get_distances() { return _outNeighbourSquaredDistances;}
-        void set_parameters(const float kappa);
+        void set_parameters(const size_t numNeighbours);
         void update();
 
     protected:
@@ -34,8 +56,12 @@ class NeighbourFinder
         //# User parameters
 
         //# Internal Data structures
+        nanoflann::KDTreeEigenMatrixAdaptor<VecMatType> *_kdTree = NULL;
 
         //# Interal parameters
+        size_t _numDimensions = 0;
+        size_t _numSourceElements = 0;
+        size_t _numQueriedElements = 0;
         size_t _numNeighbours = 3;
         size_t _leafSize = 15;
 
