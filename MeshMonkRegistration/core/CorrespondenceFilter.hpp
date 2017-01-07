@@ -5,6 +5,7 @@
 #include <Eigen/SparseCore>
 #include <stdio.h>
 #include "../global.hpp"
+#include <NeighbourFinder.hpp>
 
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
@@ -12,6 +13,8 @@ typedef Eigen::Matrix< float, 1, registration::NUM_FEATURES> FeatureVec; //matri
 typedef Eigen::Vector3f Vec3Float;
 typedef Eigen::SparseMatrix<float, 0, int> SparseMat;
 typedef Eigen::Triplet<float> Triplet;
+typedef Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> MatDynInt; //matrix MxN of type unsigned int
+typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat;
 
 namespace registration {
 
@@ -49,9 +52,9 @@ class CorrespondenceFilter
         CorrespondenceFilter(); //default constructor
         ~CorrespondenceFilter(); //destructor
 
-        void set_input(const FeatureMat * const inFloatingFeatures,
-                        const FeatureMat * const inTargetFeatures,
-                        const VecDynFloat * const inTargetFlags);
+        void set_floating_input(const FeatureMat * const inFloatingFeatures);
+        void set_target_input(const FeatureMat * const inTargetFeatures,
+                            const VecDynFloat * const inTargetFlags);
         void set_output(FeatureMat * const ioCorrespondingFeatures,
                         VecDynFloat * const ioCorrespondingFlags);
         void set_parameters(const size_t numNeighbours);
@@ -73,11 +76,17 @@ class CorrespondenceFilter
         size_t _numNeighbours = 3;
 
         //# Internal Data structures
-        SparseMat *affinity = NULL;
+        NeighbourFinder<FeatureMat> _neighbourFinder;
+        SparseMat _affinity = NULL;
+
+
         //# Internal Parameters
         size_t _numFloatingElements = 0;
         size_t _numTargetElements = 0;
         size_t _numAffinityElements = 0;
+
+        //# Internal functions
+        void _update_affinity();
 };
 
 

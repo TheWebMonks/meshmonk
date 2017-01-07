@@ -51,12 +51,12 @@ class NeighbourFinder
         const VecMatType * _inSourcePoints = NULL;
 
         //# Outputs
-        MatDynInt * _outNeighbourIndices = NULL;
-        MatDynFloat * _outNeighbourSquaredDistances = NULL;
+        MatDynInt _outNeighbourIndices;
+        MatDynFloat _outNeighbourSquaredDistances;
         //# User parameters
 
         //# Internal Data structures
-        nanoflann::KDTreeEigenMatrixAdaptor<VecMatType> *_kdTree = NULL;
+        nanoflann::KDTreeEigenMatrixAdaptor<VecMatType> _kdTree;
 
         //# Interal parameters
         size_t _numDimensions = 0;
