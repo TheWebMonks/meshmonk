@@ -7,12 +7,6 @@ NeighbourFinder<VecMatType>::~NeighbourFinder()
 {
     //destructor
     if (_kdTree != NULL) { delete _kdTree; _kdTree = NULL;}
-    if (_outNeighbourIndices != NULL) {
-        delete _outNeighbourIndices;
-        _outNeighbourIndices = NULL;}
-    if (_outNeighbourSquaredDistances != NULL) {
-        delete _outNeighbourSquaredDistances;
-        _outNeighbourSquaredDistances = NULL;}
 }
 
 template <typename VecMatType>
@@ -44,8 +38,8 @@ void NeighbourFinder<VecMatType>::set_queried_points(const VecMatType * const in
 
     //# Adjust internal data structures
     //## The indices and distance matrices have to be resized.
-    _outNeighbourIndices->setZero(_numQueriedElements,_numNeighbours);
-    _outNeighbourSquaredDistances->setZero(_numQueriedElements,_numNeighbours);
+    _outNeighbourIndices.setZero(_numQueriedElements,_numNeighbours);
+    _outNeighbourSquaredDistances.setZero(_numQueriedElements,_numNeighbours);
 
 }
 
@@ -61,8 +55,8 @@ void NeighbourFinder<VecMatType>::set_parameters(const size_t numNeighbours){
 
     //# Resize the output matrices if the parameter is changed
     if (parameterChanged == true) {
-        _outNeighbourIndices->setZero(_numQueriedElements,_numNeighbours);
-        _outNeighbourSquaredDistances->setZero(_numQueriedElements,_numNeighbours);
+        _outNeighbourIndices.setZero(_numQueriedElements,_numNeighbours);
+        _outNeighbourSquaredDistances.setZero(_numQueriedElements,_numNeighbours);
     }
 }
 
@@ -98,8 +92,8 @@ void NeighbourFinder<VecMatType>::update(){
         //### Copy the result into the outputs by looping over the k nearest
         //### neighbours
         for (j = 0 ; j < _numNeighbours ; ++j) {
-            (*_outNeighbourIndices)(i,j) = neighbourIndices[j];
-            (*_outNeighbourSquaredDistances)(i,j) = neighbourSquaredDistances[j];
+            _outNeighbourIndices(i,j) = neighbourIndices[j];
+            _outNeighbourSquaredDistances(i,j) = neighbourSquaredDistances[j];
         }
     }
 }//end k_nearest_neighbours()

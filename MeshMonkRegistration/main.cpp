@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <InlierDetector.hpp>
 #include "global.hpp"
+#include <helper_functions.hpp>
 
 using namespace std;
 
@@ -385,133 +386,6 @@ void update_normals_for_altered_positions(TriMesh &ioMesh,
 }
 
 
-void normalize_sparse_matrix(SparseMat &ioMat) {
-    /*
-    # GOAL
-    Normalize each row of the inputted sparse matrix.
-
-    # INPUTS
-    -ioMat
-
-    # PARAMETERS
-
-    # OUTPUT
-    -ioMat
-    */
-
-    //# Normalize the rows of the affinity matrix
-    //## Initialize a vector that will contain the sum of each row
-    const size_t numRows = ioMat.rows();
-    std::vector<float> sumRows(numRows, 0.0f);
-
-    //## Loop over the rows and compute the total sum of its elements
-    for (size_t i = 0 ; i < ioMat.outerSize() ; i++) {
-        for (SparseMat::InnerIterator innerIt(ioMat,i) ; innerIt ; ++innerIt) {
-            //### Get index of current row we're in
-            const unsigned int currentRowIndex = innerIt.row();
-            //### Add current element to the sum of this row.
-            const float currentElement = innerIt.value();
-            sumRows[currentRowIndex] += currentElement;
-        }
-    }
-
-    //## Loop over the rows and divide each row by the sum of its elements
-    for (size_t i = 0 ; i < ioMat.outerSize() ; i++) {
-        for (SparseMat::InnerIterator innerIt(ioMat,i) ; innerIt ; ++innerIt) {
-            //### Get index and sum of the current row we're in
-            const unsigned int currentRowIndex = innerIt.row();
-            const float currentRowSum = sumRows[currentRowIndex];
-
-            //### Get current element and divide it by the sum of its row.
-            const float currentElement = innerIt.value();
-            innerIt.valueRef() = currentElement / currentRowSum;
-        }
-    }
-}//end normalize_sparse_matrix()
-
-
-void wknn_affinity(const FeatureMat &inFeatures1,
-                    const FeatureMat &inFeatures2,
-                    SparseMat &outAffinity,
-                    const size_t paramK = 3) {
-    /*
-    # GOAL
-    For each element in inFeatures1, you're going to determine affinity weights
-    which link it to elements in inFeatures2. This is based on the Euclidean
-    distance of k nearest neighbours found for each element of inFeatures1.
-
-    # INPUTS
-    -inFeatures1
-    -inFeatures2
-
-    # PARAMETERS
-    -paramK(=3):
-    number of nearest neighbours
-
-    # OUTPUT
-    -outAffinity
-    */
-
-    //# Info and Initialization
-    //## Number of elements in each feature matrix
-    const size_t numVertices1 = inFeatures1.rows();
-    const size_t numVertices2 = inFeatures2.rows();
-    //## Initialize matrices to save k-nn results
-    MatDynInt neighbourIndices = MatDynInt::Zero(numVertices1, paramK);
-    MatDynFloat neighbourSquaredDistances = MatDynFloat::Zero(numVertices1, paramK);
-    //## Initialize affinity matrix
-    outAffinity = SparseMat(numVertices1, numVertices2);
-    outAffinity.setZero();
-    //## Initialize a vector of triplets which is used to insert elements into
-    //## the affinity matrix later.
-    const size_t numAffinityElements = numVertices1 * paramK;
-    std::vector<Triplet> affinityElements(numAffinityElements, Triplet(0,0,0.0f));
-    //## Parameters for the k-nn search
-    const size_t maxLeafsize = 15;
-
-
-    //# Determine the nearest neighbours
-    k_nearest_neighbours(inFeatures1, inFeatures2, neighbourIndices,
-                        neighbourSquaredDistances, paramK, maxLeafsize);
-
-    //# Compute the affinity matrix
-    //## Loop over the first feature set to determine their affinity with the
-    //## second set.
-    size_t i = 0;
-    size_t j = 0;
-    unsigned int counter = 0;
-    for ( ; i < numVertices1 ; i++) {
-        //### Loop over each found neighbour
-        for ( j = 0 ; j < paramK ; j++) {
-            //### Get index of neighbour and squared distance to it
-            const int neighbourIndex = neighbourIndices(i,j);
-            float distanceSquared = neighbourSquaredDistances(i,j);
-
-            //### For numerical stability, check if the distance is very small
-            const float eps1 = 0.000001f;
-            if (distanceSquared < eps1) {distanceSquared = eps1;}
-
-            //### Compute the affinity element as 1/distance*distance
-            float affinityElement = 1.0f / distanceSquared;
-            const float eps2 = 0.0001f;
-            //### Check for numerical stability (the affinity elements will be
-            //### normalized later, so dividing by a sum of tiny elements might
-            //### go wrong.
-            if (affinityElement < eps2) {affinityElement = eps2;}
-
-            //### Write result to the affinity triplet list
-            affinityElements[counter] = Triplet(i,neighbourIndex,affinityElement);
-            counter++;
-        }
-    }
-
-    //## Construct the sparse matrix with the computed element list
-    outAffinity.setFromTriplets(affinityElements.begin(),
-                                affinityElements.end());
-
-    //# Normalize the rows of the affinity matrix
-    normalize_sparse_matrix(outAffinity);
-}//end wknn_affinity()
 
 
 void fuse_affinities(SparseMat &ioAffinity1,

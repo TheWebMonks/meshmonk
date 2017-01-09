@@ -1,11 +1,12 @@
-#ifndef CORRESPONDENCEFILTER_H
-#define CORRESPONDENCEFILTER_H
+#ifndef CORRESPONDENCEFILTER_HPP
+#define CORRESPONDENCEFILTER_HPP
 
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <stdio.h>
 #include "../global.hpp"
 #include <NeighbourFinder.hpp>
+#include <helper_functions.hpp>
 
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
@@ -77,16 +78,21 @@ class CorrespondenceFilter
 
         //# Internal Data structures
         NeighbourFinder<FeatureMat> _neighbourFinder;
-        SparseMat _affinity = NULL;
+        SparseMat _affinity;
 
 
         //# Internal Parameters
         size_t _numFloatingElements = 0;
         size_t _numTargetElements = 0;
         size_t _numAffinityElements = 0;
+        float _flagRoundingLimit = 0.9;
 
         //# Internal functions
+        //## Function to update the sparse affinity matrix
         void _update_affinity();
+        //## Function to convert the sparse affinity weights into corresponding
+        //## features and flags
+        void _affinity_to_correspondences();
 };
 
 
@@ -94,4 +100,4 @@ class CorrespondenceFilter
 
 }//namespace registration
 
-#endif // CORRESPONDENCEFILTER_H
+#endif // CORRESPONDENCEFILTER_HPP

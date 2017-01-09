@@ -2,7 +2,6 @@
 #define INLIERDETECTOR_HPP
 
 #include <Eigen/Dense>
-#include <Eigen/SparseCore>
 #include <stdio.h>
 #include "../global.hpp"
 

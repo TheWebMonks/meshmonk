@@ -33,13 +33,13 @@ class NeighbourFinder
     */
 
     public:
-        NeighbourFinder();
+        //NeighbourFinder();
         ~NeighbourFinder(); //destructor
 
         void set_source_points(const VecMatType * const inQueriedPoints);
         void set_queried_points(const VecMatType * const _inSourcePoints);
-        const MatDynInt * const get_indices() { return _outNeighbourIndices;}
-        const MatDynFloat * const get_distances() { return _outNeighbourSquaredDistances;}
+        const MatDynInt &get_indices() const { return _outNeighbourIndices;}
+        const MatDynFloat &get_distances() const { return _outNeighbourSquaredDistances;}
         void set_parameters(const size_t numNeighbours);
         void update();
 
@@ -56,7 +56,7 @@ class NeighbourFinder
         //# User parameters
 
         //# Internal Data structures
-        nanoflann::KDTreeEigenMatrixAdaptor<VecMatType> _kdTree;
+        nanoflann::KDTreeEigenMatrixAdaptor<VecMatType> * _kdTree = NULL;
 
         //# Interal parameters
         size_t _numDimensions = 0;
