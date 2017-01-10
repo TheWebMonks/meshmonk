@@ -1002,9 +1002,9 @@ int main()
     */
     //# IO variables
 //    const string fuckedUpBunnyDir = "/home/jonatan/kuleuven-algorithms/examples/data/bunny_slightly_rotated.obj";
-    const string fuckedUpBunnyDir = "/home/jonatan/kuleuven-algorithms/examples/data/fucked_up_bunny.obj";
-    const string bunnyDir = "/home/jonatan/kuleuven-algorithms/examples/data/bunny90.obj";
-    const string fuckedUpBunnyResultDir = "/home/jonatan/kuleuven-algorithms/examples/data/fucked_up_bunny_result.obj";
+    const string fuckedUpBunnyDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/fucked_up_bunny.obj";
+    const string bunnyDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/bunny90.obj";
+    const string fuckedUpBunnyResultDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/fucked_up_bunny_result.obj";
 
     //# Load meshes and convert to feature matrices
     TriMesh fuckedUpBunny;

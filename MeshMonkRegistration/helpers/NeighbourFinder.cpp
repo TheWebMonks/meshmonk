@@ -2,14 +2,24 @@
 
 namespace registration {
 
-NeighbourFinder::~NeighbourFinder()
+/*
+See http://stackoverflow.com/questions/495021/why-can-templates-only-be-implemented-in-the-header-file
+for an explanation why we instantiate our templated class with every matrix type we will use here.
+*/
+//
+template class NeighbourFinder<FeatureMat>;
+//
+
+
+template <typename VecMatType>
+NeighbourFinder<VecMatType>::~NeighbourFinder()
 {
     //destructor
     if (_kdTree != NULL) { delete _kdTree; _kdTree = NULL;}
 }
 
-
-void NeighbourFinder::set_source_points(const FeatureMat * const inSourcePoints){
+template <typename VecMatType>
+void NeighbourFinder<VecMatType>::set_source_points(const VecMatType * const inSourcePoints){
     //# Set input
     _inSourcePoints = inSourcePoints;
 
@@ -20,15 +30,15 @@ void NeighbourFinder::set_source_points(const FeatureMat * const inSourcePoints)
     //# Update internal data structures
     //## The kd-tree has to be rebuilt.
     if (_kdTree != NULL) { delete _kdTree; _kdTree = NULL;}
-    _kdTree = new nanoflann::KDTreeEigenMatrixAdaptor<FeatureMat>(_numDimensions,
+    _kdTree = new nanoflann::KDTreeEigenMatrixAdaptor<VecMatType>(_numDimensions,
                                                                 *_inSourcePoints,
                                                                 _leafSize);
     _kdTree->index->buildIndex();
 }
 
 
-
-void NeighbourFinder::set_queried_points(const FeatureMat * const inQueriedPoints){
+template <typename VecMatType>
+void NeighbourFinder<VecMatType>::set_queried_points(const VecMatType * const inQueriedPoints){
     //# Set input
     _inQueriedPoints = inQueriedPoints;
 
@@ -43,8 +53,8 @@ void NeighbourFinder::set_queried_points(const FeatureMat * const inQueriedPoint
 }
 
 
-
-void NeighbourFinder::set_parameters(const size_t numNeighbours){
+template <typename VecMatType>
+void NeighbourFinder<VecMatType>::set_parameters(const size_t numNeighbours){
     //# Check if what user requests, changes the parameter value
     bool parameterChanged = false;
     if (_numNeighbours != numNeighbours){ parameterChanged = true;}
@@ -59,8 +69,8 @@ void NeighbourFinder::set_parameters(const size_t numNeighbours){
     }
 }
 
-
-void NeighbourFinder::update(){
+template <typename VecMatType>
+void NeighbourFinder<VecMatType>::update(){
 
     //# Query the kd-tree
     //## Loop over the queried features

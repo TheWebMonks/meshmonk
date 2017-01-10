@@ -77,7 +77,7 @@ class CorrespondenceFilter
         size_t _numNeighbours = 3;
 
         //# Internal Data structures
-        NeighbourFinder _neighbourFinder;
+        NeighbourFinder<FeatureMat> _neighbourFinder;
         SparseMat _affinity;
 
 
