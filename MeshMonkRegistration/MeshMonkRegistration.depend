@@ -1,8 +1,8 @@
 # depslib dependency file v1.0
-1483972741 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/CorrespondenceFilter.cpp
+1484051059 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/CorrespondenceFilter.cpp
 	"CorrespondenceFilter.hpp"
 
-1484048616 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/CorrespondenceFilter.hpp
+1484050725 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/CorrespondenceFilter.hpp
 	<Eigen/Dense>
 	<Eigen/SparseCore>
 	<stdio.h>
@@ -10,7 +10,7 @@
 	<NeighbourFinder.hpp>
 	<helper_functions.hpp>
 
-1483969335 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/global.hpp
+1484065098 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/global.hpp
 
 1484048631 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/NeighbourFinder.hpp
 	<Eigen/Dense>
@@ -31,10 +31,10 @@
 1483972741 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.cpp
 	<helper_functions.hpp>
 
-1484044706 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/NeighbourFinder.cpp
+1484049909 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/NeighbourFinder.cpp
 	"NeighbourFinder.hpp"
 
-1484044855 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/main.cpp
+1484066022 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/main.cpp
 	<iostream>
 	<OpenMesh/Core/IO/MeshIO.hh>
 	<OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
@@ -45,6 +45,8 @@
 	<nanoflann.hpp>
 	<stdio.h>
 	<InlierDetector.hpp>
+	<CorrespondenceFilter.hpp>
+	<RigidTransformer.hpp>
 	"global.hpp"
 	<helper_functions.hpp>
 
@@ -532,4 +534,14 @@
 	<OpenMesh/Core/Mesh/TriMeshT.hh>
 	<OpenMesh/Core/System/omstream.hh>
 	<vector>
+
+1484065843 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/RigidTransformer.cpp
+	"RigidTransformer.hpp"
+
+1484065858 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/RigidTransformer.hpp
+	<Eigen/Dense>
+	<Eigen/SparseCore>
+	<stdio.h>
+	<iostream>
+	"../global.hpp"
 
