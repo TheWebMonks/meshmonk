@@ -35,10 +35,19 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="core/CorrespondenceFilter.cpp" />
+		<Unit filename="core/CorrespondenceFilter.hpp" />
+		<Unit filename="core/InlierDetector.cpp" />
+		<Unit filename="core/InlierDetector.hpp" />
+		<Unit filename="helpers/NeighbourFinder.cpp" />
+		<Unit filename="helpers/NeighbourFinder.hpp" />
+		<Unit filename="helpers/helper_functions.cpp" />
+		<Unit filename="helpers/helper_functions.hpp" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<code_completion />
 			<debugger />
+			<envvars />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

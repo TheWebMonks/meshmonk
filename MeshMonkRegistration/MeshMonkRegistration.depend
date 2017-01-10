@@ -1,0 +1,49 @@
+# depslib dependency file v1.0
+1483972741 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/CorrespondenceFilter.cpp
+	"CorrespondenceFilter.hpp"
+
+1483972741 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/CorrespondenceFilter.hpp
+	<Eigen/Dense>
+	<Eigen/SparseCore>
+	<stdio.h>
+	"../global.hpp"
+	<NeighbourFinder.hpp>
+	<helper_functions.hpp>
+
+1483969335 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/global.hpp
+
+1483972741 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/NeighbourFinder.hpp
+	<Eigen/Dense>
+	<nanoflann.hpp>
+
+1483972741 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.hpp
+	<Eigen/SparseCore>
+
+1483969335 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/InlierDetector.cpp
+	"InlierDetector.hpp"
+
+1483972741 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/InlierDetector.hpp
+	<Eigen/Dense>
+	<stdio.h>
+	"../global.hpp"
+
+1483972741 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.cpp
+	<helper_functions.hpp>
+
+1483972741 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/NeighbourFinder.cpp
+	"NeighbourFinder.hpp"
+
+1483972741 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/main.cpp
+	<iostream>
+	<OpenMesh/Core/IO/MeshIO.hh>
+	<OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
+	<OpenMesh/Core/IO/reader/OBJReader.hh>
+	<OpenMesh/Core/IO/writer/OBJWriter.hh>
+	<Eigen/Dense>
+	<Eigen/SparseCore>
+	<nanoflann.hpp>
+	<stdio.h>
+	<InlierDetector.hpp>
+	"global.hpp"
+	<helper_functions.hpp>
+
