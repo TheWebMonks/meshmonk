@@ -14,9 +14,7 @@ void CorrespondenceFilter::set_floating_input(const FeatureMat * const inFloatin
     _numAffinityElements = _numFloatingElements * _numNeighbours;
 
     //# Update the neighbour finder
-    //NeighbourFinder<FeatureMat> testje = NeighbourFinder<FeatureMat>();
-    //testje.set_queried_points(_inFloatingFeatures);
-    //_neighbourFinder.set_queried_points(_inFloatingFeatures);
+    _neighbourFinder.set_queried_points(_inFloatingFeatures);
 }
 
 void CorrespondenceFilter::set_target_input(const FeatureMat * const inTargetFeatures,
@@ -31,7 +29,7 @@ void CorrespondenceFilter::set_target_input(const FeatureMat * const inTargetFea
     _numAffinityElements = _numFloatingElements * _numNeighbours;
 
     //# Update the neighbour finder
-    //_neighbourFinder.set_source_points(_inTargetFeatures);
+    _neighbourFinder.set_source_points(_inTargetFeatures);
 }
 
 void CorrespondenceFilter::set_output(FeatureMat * const ioCorrespondingFeatures,
@@ -48,7 +46,7 @@ void CorrespondenceFilter::set_parameters(const size_t numNeighbours)
 
 void CorrespondenceFilter::_update_affinity() {
     /*
-    # GOAL
+    # GOALthe
     For each element in _inFloatingFeatures, we're going to determine affinity weights
     which link it to elements in _inTargetFeatures. This is based on the Euclidean
     distance of k nearest neighbours found for each element of _inFloatingFeatures.
@@ -144,6 +142,7 @@ void CorrespondenceFilter::_affinity_to_correspondences(){
 void CorrespondenceFilter::update() {
 
     //# Update the neighbour indices and distances
+    _neighbourFinder.set_queried_points(_inFloatingFeatures);
     _neighbourFinder.update();
 
     //# Update the (sparse) affinity matrix

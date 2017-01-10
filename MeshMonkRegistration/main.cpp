@@ -8,6 +8,8 @@
 #include <nanoflann.hpp>
 #include <stdio.h>
 #include <InlierDetector.hpp>
+#include <CorrespondenceFilter.hpp>
+#include <RigidTransformer.hpp>
 #include "global.hpp"
 #include <helper_functions.hpp>
 
@@ -1056,19 +1058,31 @@ int main()
     //## Data and matrices
     size_t numFloatingVertices = floatingFeatures.rows();
     size_t numTargetVertices = targetFeatures.rows();
+    VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
     VecDynFloat targetFlags = VecDynFloat::Ones(numTargetVertices);
     FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
     VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
     //## Parameters
     const size_t numNearestNeighbours = 3;
-    const size_t numRigidIterations = 20;
+    const size_t numRigidIterations = 10;
+    //## Set up Correspondence Filter
+    registration::CorrespondenceFilter correspondenceFilter;
+    correspondenceFilter.set_floating_input(&floatingFeatures);
+    correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
+    correspondenceFilter.set_output(&correspondingFeatures, &correspondingFlags);
+    correspondenceFilter.set_parameters(numNearestNeighbours);
     //## Set up Inlier Detector
-    VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
+
     registration::InlierDetector inlierDetector;
     inlierDetector.set_input(&floatingFeatures, &correspondingFeatures,
                                 &correspondingFlags);
     inlierDetector.set_output(&floatingWeights);
     inlierDetector.set_parameters(3.0);
+    //## Set up the rigid transformer
+    registration::RigidTransformer rigidTransformer;
+    rigidTransformer.set_input(&correspondingFeatures, &floatingWeights);
+    rigidTransformer.set_output(&floatingFeatures);
+    rigidTransformer.set_parameters(false);
 
     //# Loop ICP
     for (size_t iteration = 0 ; iteration < numRigidIterations ; iteration++) {
@@ -1077,13 +1091,14 @@ int main()
         //registration::wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
         //                    correspondingFeatures, correspondingFlags,
         //                    numNearestNeighbours, true);
+        correspondenceFilter.update();
 
 
         //# Inlier Detection
         inlierDetector.update();
 
         //# Compute the transformation
-        registration::rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeights, false);
+        rigidTransformer.update();
     }
 
     /*

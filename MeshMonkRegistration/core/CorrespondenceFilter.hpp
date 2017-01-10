@@ -50,8 +50,8 @@ class CorrespondenceFilter
     */
 
     public:
-        CorrespondenceFilter(); //default constructor
-        ~CorrespondenceFilter(); //destructor
+        //CorrespondenceFilter(); //default constructor
+        //~CorrespondenceFilter(); //destructor
 
         void set_floating_input(const FeatureMat * const inFloatingFeatures);
         void set_target_input(const FeatureMat * const inTargetFeatures,
