@@ -12,9 +12,10 @@
 
 1483969335 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/global.hpp
 
-1483972741 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/NeighbourFinder.hpp
+1484044452 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/NeighbourFinder.hpp
 	<Eigen/Dense>
 	<nanoflann.hpp>
+	"../global.hpp"
 
 1483972741 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.hpp
 	<Eigen/SparseCore>

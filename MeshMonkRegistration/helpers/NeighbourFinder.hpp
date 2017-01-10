@@ -3,9 +3,11 @@
 
 #include <Eigen/Dense>
 #include <nanoflann.hpp>
+#include "../global.hpp"
 
 typedef Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> MatDynInt; //matrix MxN of type unsigned int
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat;
+typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat;
 
 namespace registration {
 
