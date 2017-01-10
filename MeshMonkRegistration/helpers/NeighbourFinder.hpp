@@ -11,7 +11,6 @@ typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> Featur
 
 namespace registration {
 
-template <typename VecMatType>
 class NeighbourFinder
 {
     /*
@@ -38,8 +37,8 @@ class NeighbourFinder
         //NeighbourFinder();
         ~NeighbourFinder(); //destructor
 
-        void set_source_points(const VecMatType * const inQueriedPoints);
-        void set_queried_points(const VecMatType * const _inSourcePoints);
+        void set_source_points(const FeatureMat * const inQueriedPoints);
+        void set_queried_points(const FeatureMat * const _inSourcePoints);
         const MatDynInt &get_indices() const { return _outNeighbourIndices;}
         const MatDynFloat &get_distances() const { return _outNeighbourSquaredDistances;}
         void set_parameters(const size_t numNeighbours);
@@ -49,8 +48,8 @@ class NeighbourFinder
 
     private:
         //# Inputs
-        const VecMatType * _inQueriedPoints = NULL;
-        const VecMatType * _inSourcePoints = NULL;
+        const FeatureMat * _inQueriedPoints = NULL;
+        const FeatureMat * _inSourcePoints = NULL;
 
         //# Outputs
         MatDynInt _outNeighbourIndices;
@@ -58,7 +57,7 @@ class NeighbourFinder
         //# User parameters
 
         //# Internal Data structures
-        nanoflann::KDTreeEigenMatrixAdaptor<VecMatType> * _kdTree = NULL;
+        nanoflann::KDTreeEigenMatrixAdaptor<FeatureMat> * _kdTree = NULL;
 
         //# Interal parameters
         size_t _numDimensions = 0;

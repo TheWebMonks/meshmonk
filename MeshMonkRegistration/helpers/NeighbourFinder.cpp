@@ -2,15 +2,14 @@
 
 namespace registration {
 
-template <typename VecMatType>
-NeighbourFinder<VecMatType>::~NeighbourFinder()
+NeighbourFinder::~NeighbourFinder()
 {
     //destructor
     if (_kdTree != NULL) { delete _kdTree; _kdTree = NULL;}
 }
 
-template <typename VecMatType>
-void NeighbourFinder<VecMatType>::set_source_points(const VecMatType * const inSourcePoints){
+
+void NeighbourFinder::set_source_points(const FeatureMat * const inSourcePoints){
     //# Set input
     _inSourcePoints = inSourcePoints;
 
@@ -21,15 +20,15 @@ void NeighbourFinder<VecMatType>::set_source_points(const VecMatType * const inS
     //# Update internal data structures
     //## The kd-tree has to be rebuilt.
     if (_kdTree != NULL) { delete _kdTree; _kdTree = NULL;}
-    _kdTree = new nanoflann::KDTreeEigenMatrixAdaptor<VecMatType>(_numDimensions,
+    _kdTree = new nanoflann::KDTreeEigenMatrixAdaptor<FeatureMat>(_numDimensions,
                                                                 *_inSourcePoints,
                                                                 _leafSize);
     _kdTree->index->buildIndex();
 }
 
 
-template <typename VecMatType>
-void NeighbourFinder<VecMatType>::set_queried_points(const VecMatType * const inQueriedPoints){
+
+void NeighbourFinder::set_queried_points(const FeatureMat * const inQueriedPoints){
     //# Set input
     _inQueriedPoints = inQueriedPoints;
 
@@ -44,8 +43,8 @@ void NeighbourFinder<VecMatType>::set_queried_points(const VecMatType * const in
 }
 
 
-template <typename VecMatType>
-void NeighbourFinder<VecMatType>::set_parameters(const size_t numNeighbours){
+
+void NeighbourFinder::set_parameters(const size_t numNeighbours){
     //# Check if what user requests, changes the parameter value
     bool parameterChanged = false;
     if (_numNeighbours != numNeighbours){ parameterChanged = true;}
@@ -60,8 +59,8 @@ void NeighbourFinder<VecMatType>::set_parameters(const size_t numNeighbours){
     }
 }
 
-template <typename VecMatType>
-void NeighbourFinder<VecMatType>::update(){
+
+void NeighbourFinder::update(){
 
     //# Query the kd-tree
     //## Loop over the queried features
