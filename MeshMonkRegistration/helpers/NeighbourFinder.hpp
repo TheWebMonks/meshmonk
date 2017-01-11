@@ -8,6 +8,7 @@
 typedef Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> MatDynInt; //matrix MxN of type unsigned int
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat;
+typedef Eigen::Matrix< float, Eigen::Dynamic, 3> Vec3Mat;
 
 namespace registration {
 
@@ -40,8 +41,8 @@ class NeighbourFinder
 
         void set_source_points(const VecMatType * const inQueriedPoints);
         void set_queried_points(const VecMatType * const _inSourcePoints);
-        const MatDynInt &get_indices() const { return _outNeighbourIndices;}
-        const MatDynFloat &get_distances() const { return _outNeighbourSquaredDistances;}
+        MatDynInt get_indices() const { return _outNeighbourIndices;}
+        MatDynFloat get_distances() const { return _outNeighbourSquaredDistances;}
         void set_parameters(const size_t numNeighbours);
         void update();
 

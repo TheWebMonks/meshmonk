@@ -8,6 +8,7 @@ for an explanation why we instantiate our templated class with every matrix type
 */
 //
 template class NeighbourFinder<FeatureMat>;
+template class NeighbourFinder<Vec3Mat>;
 //
 
 
