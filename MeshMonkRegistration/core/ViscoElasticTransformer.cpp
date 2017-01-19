@@ -17,6 +17,11 @@ void ViscoElasticTransformer::set_output(FeatureMat * const ioFloatingPositions)
     _neighboursOutdated = true; //if the user sets new floating positions, we need to update our neighbours, and hence our smoothing weights.
     _weightsOutdated = true;
 
+    _numElements = _ioFloatingPositions->rows();
+    _displacementField = Vec3Mat::Zero(_numElements,3);
+    _oldDisplacementField = Vec3Mat::Zero(_numElements,3);
+    _smoothingWeights = MatDynFloat::Zero(_numElements,_numNeighbours);
+
 }//end set_output()
 
 void ViscoElasticTransformer::set_parameters(size_t numNeighbours, float sigma,
@@ -34,6 +39,8 @@ void ViscoElasticTransformer::set_parameters(size_t numNeighbours, float sigma,
     _sigma = sigma;
     _viscousIterations = viscousIterations;
     _elasticIterations = elasticIterations;
+
+    _smoothingWeights = MatDynFloat::Zero(_numElements,_numNeighbours);
 }
 
 
@@ -205,6 +212,7 @@ void ViscoElasticTransformer::_apply_transformation(){
 
 
 void ViscoElasticTransformer::update(){
+    //std::cout << "neighbours before:\n" << _neighbourFinder.get_indices().topLeftCorner(3,10) << std::endl;
     if (_neighboursOutdated == true) {
         _update_neighbours();
         _weightsOutdated = true;

@@ -695,24 +695,8 @@ int main()
     ##############################  TEST SHIZZLE  ##############################
     ############################################################################
     */
-    Mat3Float test;
-    test << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0;
-    std::cout << test << std::endl;
 
-    float factor = -0.5 / std::pow(1.0, 2.0);
-    test *= factor;
-    std::cout << test << std::endl;
-    //## compute the exponent of the factored squared distance
-    test = test.array().exp();
-    std::cout << test << std::endl;
-    for (size_t i = 0 ; i < 3 ; i++){
-        float sum = 0.0f;
-        for (size_t j = 0 ; j < 3 ; j++){
-              sum += test(i,j);
-        }
-        test.row(i) /= sum;
-    }
-    std::cout << test << std::endl;
+
 
 //    MatDynInt indices;
 //    MatDynFloat distancesSquared;
@@ -785,7 +769,6 @@ int main()
     registration::ViscoElasticTransformer transformer;
     transformer.set_input(&correspondingFeatures, &floatingWeights);
     transformer.set_output(&floatingFeatures);
-    transformer.set_parameters(10, 3.0, smoothingIterations, smoothingIterations);
 
 
     for (size_t i = 0 ; i < numNonrigidIterations ; i++) {
@@ -798,8 +781,10 @@ int main()
         inlierDetector.update();
 
         //# Visco-Elastic transformation
-        transformer.set_parameters(10, 3.0, smoothingIterations,smoothingIterations);
+        std::cout << "floating positions before:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
+        transformer.set_parameters(10, 2.0, smoothingIterations,smoothingIterations);
         transformer.update();
+        std::cout << "floating positions after:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
         smoothingIterations--;
     }
 

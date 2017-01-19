@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 #include <NeighbourFinder.hpp>
+#include <iostream>
 
 typedef Eigen::Vector3f Vec3Float;
 typedef Eigen::VectorXf VecDynFloat;

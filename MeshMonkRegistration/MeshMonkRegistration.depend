@@ -12,13 +12,21 @@
 
 1484065098 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/global.hpp
 
-1484048631 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/NeighbourFinder.hpp
+1484139949 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/NeighbourFinder.hpp
 	<Eigen/Dense>
 	<nanoflann.hpp>
 	"../global.hpp"
 
-1483972741 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.hpp
+1484130255 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.hpp
+	<iostream>
+	<OpenMesh/Core/IO/MeshIO.hh>
+	<OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
+	<OpenMesh/Core/IO/reader/OBJReader.hh>
+	<OpenMesh/Core/IO/writer/OBJWriter.hh>
+	<nanoflann.hpp>
+	<Eigen/Dense>
 	<Eigen/SparseCore>
+	"../global.hpp"
 
 1483969335 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/InlierDetector.cpp
 	"InlierDetector.hpp"
@@ -28,13 +36,13 @@
 	<stdio.h>
 	"../global.hpp"
 
-1483972741 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.cpp
+1484130357 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.cpp
 	<helper_functions.hpp>
 
-1484049909 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/NeighbourFinder.cpp
+1484136838 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/NeighbourFinder.cpp
 	"NeighbourFinder.hpp"
 
-1484066022 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/main.cpp
+1484846785 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/main.cpp
 	<iostream>
 	<OpenMesh/Core/IO/MeshIO.hh>
 	<OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
@@ -47,6 +55,7 @@
 	<InlierDetector.hpp>
 	<CorrespondenceFilter.hpp>
 	<RigidTransformer.hpp>
+	<ViscoElasticTransformer.hpp>
 	"global.hpp"
 	<helper_functions.hpp>
 
@@ -544,4 +553,12 @@
 	<stdio.h>
 	<iostream>
 	"../global.hpp"
+
+1484852281 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/ViscoElasticTransformer.cpp
+	"ViscoElasticTransformer.hpp"
+
+1484849322 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/ViscoElasticTransformer.hpp
+	<Eigen/Dense>
+	<NeighbourFinder.hpp>
+	<iostream>
 
