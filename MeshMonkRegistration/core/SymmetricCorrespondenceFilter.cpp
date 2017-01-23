@@ -43,6 +43,8 @@ void SymmetricCorrespondenceFilter::set_output(FeatureMat * const ioCorrespondin
 void SymmetricCorrespondenceFilter::set_parameters(const size_t numNeighbours)
 {
     _numNeighbours = numNeighbours;
+    _pushFilter.set_parameters(_numNeighbours);
+    _pullFilter.set_parameters(_numNeighbours);
 }
 
 void SymmetricCorrespondenceFilter::_update_affinity() {

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <InlierDetector.hpp>
 #include <CorrespondenceFilter.hpp>
+#include <SymmetricCorrespondenceFilter.hpp>
 #include <RigidTransformer.hpp>
 #include <ViscoElasticTransformer.hpp>
 #include "global.hpp"
@@ -677,6 +678,7 @@ int main()
     size_t numFloatingVertices = floatingFeatures.rows();
     size_t numTargetVertices = targetFeatures.rows();
     VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
+    VecDynFloat floatingFlags = VecDynFloat::Ones(numFloatingVertices);
     VecDynFloat targetFlags = VecDynFloat::Ones(numTargetVertices);
     FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
     VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
@@ -684,8 +686,8 @@ int main()
     const size_t numNearestNeighbours = 3;
     const size_t numRigidIterations = 10;
     //## Set up Correspondence Filter
-    registration::CorrespondenceFilter correspondenceFilter;
-    correspondenceFilter.set_floating_input(&floatingFeatures);
+    registration::SymmetricCorrespondenceFilter correspondenceFilter;
+    correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
     correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
     correspondenceFilter.set_output(&correspondingFeatures, &correspondingFlags);
     correspondenceFilter.set_parameters(numNearestNeighbours);
@@ -709,6 +711,8 @@ int main()
         //registration::wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
         //                    correspondingFeatures, correspondingFlags,
         //                    numNearestNeighbours, true);
+        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
+        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
         correspondenceFilter.update();
 
 
@@ -736,6 +740,8 @@ int main()
     for (size_t i = 0 ; i < numNonrigidIterations ; i++) {
         //# Determine Correspondences
         //## Compute symmetric wknn correspondences
+        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
+        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
         correspondenceFilter.update();
 
 

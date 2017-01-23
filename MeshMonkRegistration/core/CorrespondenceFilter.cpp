@@ -148,8 +148,16 @@ void CorrespondenceFilter::update() {
     //# Update the (sparse) affinity matrix
     _update_affinity();
 
-    //# Use the affinity weights to determine corresponding features and flags.
-    _affinity_to_correspondences();
+    if (_ioCorrespondingFeatures != NULL) {
+        //# Use the affinity weights to determine corresponding features and flags.
+        _affinity_to_correspondences();
+    }
+    else {
+        /*
+        affinity is computed and get be requested from the filter, but output correspondences
+        are not generated if the filter doesn't know where to write the output.
+        */
+    }
 
 
 //    //# Compute the affinity for inFloatingFeatures towards inTargetFeatures
