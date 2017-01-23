@@ -19,6 +19,9 @@ typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> Featur
 
 namespace registration {
 
+void fuse_affinities(SparseMat &ioAffinity1,
+                    const SparseMat &inAffinity2);
+
 void normalize_sparse_matrix(SparseMat &ioMat);
 
 template <typename VecMatType>

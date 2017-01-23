@@ -1,11 +1,11 @@
-#ifndef CORRESPONDENCEFILTER_HPP
-#define CORRESPONDENCEFILTER_HPP
+#ifndef SYMMETRICCORRESPONDENCEFILTER_HPP
+#define SYMMETRICCORRESPONDENCEFILTER_HPP
 
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <stdio.h>
 #include "../global.hpp"
-#include <NeighbourFinder.hpp>
+#include <CorrespondenceFilter.hpp>
 #include <helper_functions.hpp>
 
 typedef Eigen::VectorXf VecDynFloat;
@@ -19,14 +19,19 @@ typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat;
 
 namespace registration {
 
-class CorrespondenceFilter
+class SymmetricCorrespondenceFilter
 {
-
     /*
     # GOAL
     For each element in inFloatingFeatures, we're going to find corresponding
     features in the elements of inTargetFeatures.
-    The used weight is one over the distance squared.
+
+    A push-pull approach is used to find correspondences. Not only
+    will we look for correspondences for inFloatingFeatures in the
+    inTargetFeatures set, we'll also do the opposite: find correspondences for
+    the inTargetFeatures set in the inFloatingFeatures set. These findings are
+    combined which creates an effect where the inTargetFeatures sort of attract
+    the inFloatingFeatures towards itself.
 
     # INPUTS
     -inFloatingFeatures
@@ -46,12 +51,12 @@ class CorrespondenceFilter
         //CorrespondenceFilter(); //default constructor
         //~CorrespondenceFilter(); //destructor
 
-        void set_floating_input(const FeatureMat * const inFloatingFeatures);
+        void set_floating_input(const FeatureMat * const inFloatingFeatures,
+                                const VecDynFloat * const inFloatingFlags);
         void set_target_input(const FeatureMat * const inTargetFeatures,
                             const VecDynFloat * const inTargetFlags);
         void set_output(FeatureMat * const ioCorrespondingFeatures,
                         VecDynFloat * const ioCorrespondingFlags);
-        SparseMat get_affinity() const {return _affinity;}
         void set_parameters(const size_t numNeighbours);
         void update();
 
@@ -61,6 +66,7 @@ class CorrespondenceFilter
         //# Inputs
         const FeatureMat * _inFloatingFeatures = NULL;
         const FeatureMat * _inTargetFeatures = NULL;
+        const VecDynFloat * _inFloatingFlags = NULL;
         const VecDynFloat * _inTargetFlags = NULL;
 
         //# Outputs
@@ -71,14 +77,14 @@ class CorrespondenceFilter
         size_t _numNeighbours = 3;
 
         //# Internal Data structures
-        NeighbourFinder<FeatureMat> _neighbourFinder;
+        CorrespondenceFilter _pushFilter;
+        CorrespondenceFilter _pullFilter;
         SparseMat _affinity;
 
 
         //# Internal Parameters
         size_t _numFloatingElements = 0;
         size_t _numTargetElements = 0;
-        size_t _numAffinityElements = 0;
         float _flagRoundingLimit = 0.9;
 
         //# Internal functions
@@ -89,9 +95,6 @@ class CorrespondenceFilter
         void _affinity_to_correspondences();
 };
 
-
-
-
 }//namespace registration
 
-#endif // CORRESPONDENCEFILTER_HPP
+#endif // SYMMETRICCORRESPONDENCEFILTER_HPP

@@ -3,6 +3,48 @@
 
 namespace registration {
 
+
+void fuse_affinities(SparseMat &ioAffinity1,
+                    const SparseMat &inAffinity2){
+    /*
+    # GOAL
+    Fuse the two affinity matrices together. The result is normalized
+    and inserted into ioAffinity1.
+
+    # INPUTS
+    -ioAffinity1
+    -inAffinity2: dimensions should be transposed of ioAffinity1
+
+    # PARAMETERS
+
+    # OUTPUT
+    -ioAffinity1
+
+    # RETURNS
+    """
+    */
+    //# Info and Initialization
+    const size_t numRows1 = ioAffinity1.rows();
+    const size_t numRows2 = inAffinity2.rows();
+    const size_t numCols1 = ioAffinity1.rows();
+    const size_t numCols2 = inAffinity2.rows();
+    //## Safety check for input sizes
+    if((numRows1 != numCols1) || (numCols1 != numRows2)) {
+        std::cerr << "The sizes of the inputted matrices in fuse_affinities are wrong."
+        << "Their sizes should be the transpose of each other!" << std::endl;
+    }
+
+    //# Fusing is done by simple averaging
+    //## Sum matrices. Note: because Eigen's Sparse matrices require storage
+    //## orders to match (row- or column-major) we need to construct a new
+    //## temporary matrix of the tranpose of inAffinity2.
+    ioAffinity1 += SparseMat(inAffinity2.transpose());
+    //## Normalize result
+    normalize_sparse_matrix(ioAffinity1);
+
+}
+
+
 void normalize_sparse_matrix(SparseMat &ioMat) {
     /*
     # GOAL

@@ -45,6 +45,8 @@
 		<Unit filename="core/InlierDetector.hpp" />
 		<Unit filename="core/RigidTransformer.cpp" />
 		<Unit filename="core/RigidTransformer.hpp" />
+		<Unit filename="core/SymmetricCorrespondenceFilter.cpp" />
+		<Unit filename="core/SymmetricCorrespondenceFilter.hpp" />
 		<Unit filename="core/ViscoElasticTransformer.cpp" />
 		<Unit filename="core/ViscoElasticTransformer.hpp" />
 		<Unit filename="global.hpp" />

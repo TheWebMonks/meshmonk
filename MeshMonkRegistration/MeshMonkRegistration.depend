@@ -2,7 +2,7 @@
 1484051059 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/CorrespondenceFilter.cpp
 	"CorrespondenceFilter.hpp"
 
-1484050725 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/CorrespondenceFilter.hpp
+1485186098 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/CorrespondenceFilter.hpp
 	<Eigen/Dense>
 	<Eigen/SparseCore>
 	<stdio.h>
@@ -17,7 +17,7 @@
 	<nanoflann.hpp>
 	"../global.hpp"
 
-1484130255 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.hpp
+1485186341 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.hpp
 	<iostream>
 	<OpenMesh/Core/IO/MeshIO.hh>
 	<OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
@@ -36,13 +36,13 @@
 	<stdio.h>
 	"../global.hpp"
 
-1484130357 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.cpp
+1485184977 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.cpp
 	<helper_functions.hpp>
 
 1484136838 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/NeighbourFinder.cpp
 	"NeighbourFinder.hpp"
 
-1484846785 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/main.cpp
+1485184920 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/main.cpp
 	<iostream>
 	<OpenMesh/Core/IO/MeshIO.hh>
 	<OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
@@ -561,4 +561,15 @@
 	<Eigen/Dense>
 	<NeighbourFinder.hpp>
 	<iostream>
+
+1485184512 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/SymmetricCorrespondenceFilter.cpp
+	"SymmetricCorrespondenceFilter.hpp"
+
+1485184952 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/SymmetricCorrespondenceFilter.hpp
+	<Eigen/Dense>
+	<Eigen/SparseCore>
+	<stdio.h>
+	"../global.hpp"
+	<CorrespondenceFilter.hpp>
+	<helper_functions.hpp>
 
