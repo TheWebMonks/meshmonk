@@ -620,9 +620,12 @@ int main()
     */
     //# IO variables
 //    const string fuckedUpBunnyDir = "/home/jonatan/kuleuven-algorithms/examples/data/bunny_slightly_rotated.obj";
-    const string fuckedUpBunnyDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/fucked_up_bunny.obj";
-    const string bunnyDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/bunny90.obj";
-    const string fuckedUpBunnyResultDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/fucked_up_bunny_result.obj";
+//    const string fuckedUpBunnyDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/fucked_up_bunny.obj";
+//    const string bunnyDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/bunny90.obj";
+//    const string fuckedUpBunnyResultDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/fucked_up_bunny_result.obj";
+    const string fuckedUpBunnyDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/kul_gezichten/Outliers/Alspac/4707_template.obj";
+    const string bunnyDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/kul_gezichten/Outliers/Alspac/4707_mevislab.obj";
+    const string fuckedUpBunnyResultDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/kul_gezichten/Outliers/Alspac/4707_Monk.obj";
 
     //# Load meshes and convert to feature matrices
     TriMesh fuckedUpBunny;
@@ -683,7 +686,7 @@ int main()
     FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
     VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
     //## Parameters
-    const size_t numNearestNeighbours = 3;
+    const size_t numNearestNeighbours = 5;
     const size_t numRigidIterations = 10;
     //## Set up Correspondence Filter
     //registration::CorrespondenceFilter correspondenceFilter;
@@ -733,8 +736,9 @@ int main()
     */
 
     //## Set up viscoelastic transformer
-    const size_t numNonrigidIterations = 10;
-    size_t smoothingIterations = numNonrigidIterations + 1; //we will use this for the number of smoothing iterations
+    const size_t numNonrigidIterations = 12;
+    size_t smoothingIterations[12] = {144,89,55,34,21,13,8,5,3,2,1,1};
+    //size_t smoothingIterations = numNonrigidIterations + 1; //we will use this for the number of smoothing iterations
     registration::ViscoElasticTransformer transformer;
     transformer.set_input(&correspondingFeatures, &floatingWeights);
     transformer.set_output(&floatingFeatures);
@@ -754,10 +758,10 @@ int main()
 
         //# Visco-Elastic transformation
         std::cout << "floating positions before:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
-        transformer.set_parameters(10, 2.0, smoothingIterations,smoothingIterations);
+        transformer.set_parameters(10, 2.0, smoothingIterations[i],smoothingIterations[i]);
         transformer.update();
         std::cout << "floating positions after:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
-        smoothingIterations--;
+        //smoothingIterations--;
     }
 
     /*

@@ -42,6 +42,7 @@ void CorrespondenceFilter::set_output(FeatureMat * const ioCorrespondingFeatures
 void CorrespondenceFilter::set_parameters(const size_t numNeighbours)
 {
     _numNeighbours = numNeighbours;
+    _neighbourFinder.set_parameters(_numNeighbours);
 }
 
 void CorrespondenceFilter::_update_affinity() {

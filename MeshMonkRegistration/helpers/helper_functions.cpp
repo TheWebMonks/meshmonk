@@ -25,13 +25,15 @@ void fuse_affinities(SparseMat &ioAffinity1,
     */
     //# Info and Initialization
     const size_t numRows1 = ioAffinity1.rows();
+    const size_t numCols1 = ioAffinity1.cols();
     const size_t numRows2 = inAffinity2.rows();
-    const size_t numCols1 = ioAffinity1.rows();
-    const size_t numCols2 = inAffinity2.rows();
+    const size_t numCols2 = inAffinity2.cols();
     //## Safety check for input sizes
     if((numRows1 != numCols1) || (numCols1 != numRows2)) {
-        std::cerr << "The sizes of the inputted matrices in fuse_affinities are wrong."
+        std::cerr << "The sizes of the inputted matrices in fuse_affinities are wrong. "
         << "Their sizes should be the transpose of each other!" << std::endl;
+        std::cout << " Affinity 1 : num rows - " << numRows1 << " | num cols - " << numCols1 << std::endl;
+        std::cout << " Affinity 2 : num rows - " << numRows2 << " | num cols - " << numCols2 << std::endl;
     }
 
     //# Fusing is done by simple averaging
