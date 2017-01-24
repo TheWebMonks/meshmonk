@@ -58,7 +58,7 @@ void SymmetricCorrespondenceFilter::_update_affinity() {
     const SparseMat pullAffinity = _pullFilter.get_affinity();
 
     //# Fuse the affinities
-    fuse_affinities(_affinity, pullAffinity);
+    fuse_affinities(_affinity, pullAffinity); //helper function to combine affinity matrices
 
 }//end wknn_affinity()
 
@@ -102,8 +102,9 @@ void SymmetricCorrespondenceFilter::update() {
     //# Update the I/O for the push- and pull-filters
     _pushFilter.set_floating_input(_inFloatingFeatures);
     _pushFilter.set_target_input(_inTargetFeatures, _inTargetFlags);
-    _pullFilter.set_target_input(_inFloatingFeatures, _inFloatingFlags);
     _pullFilter.set_floating_input(_inTargetFeatures);
+    _pullFilter.set_target_input(_inFloatingFeatures, _inFloatingFlags);
+
 
     //# Update the (sparse) affinity matrix
     _update_affinity();

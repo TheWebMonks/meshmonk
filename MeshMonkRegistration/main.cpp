@@ -686,8 +686,10 @@ int main()
     const size_t numNearestNeighbours = 3;
     const size_t numRigidIterations = 10;
     //## Set up Correspondence Filter
+    //registration::CorrespondenceFilter correspondenceFilter;
     registration::SymmetricCorrespondenceFilter correspondenceFilter;
     correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
+    //correspondenceFilter.set_floating_input(&floatingFeatures);
     correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
     correspondenceFilter.set_output(&correspondingFeatures, &correspondingFlags);
     correspondenceFilter.set_parameters(numNearestNeighbours);
@@ -711,6 +713,7 @@ int main()
         //registration::wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
         //                    correspondingFeatures, correspondingFlags,
         //                    numNearestNeighbours, true);
+        //correspondenceFilter.set_floating_input(&floatingFeatures);
         correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
         correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
         correspondenceFilter.update();
@@ -741,6 +744,7 @@ int main()
         //# Determine Correspondences
         //## Compute symmetric wknn correspondences
         correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
+        //correspondenceFilter.set_floating_input(&floatingFeatures);
         correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
         correspondenceFilter.update();
 
