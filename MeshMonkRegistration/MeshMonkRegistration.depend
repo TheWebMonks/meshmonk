@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1485190364 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/CorrespondenceFilter.cpp
+1485270777 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/CorrespondenceFilter.cpp
 	"CorrespondenceFilter.hpp"
 
 1485186098 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/CorrespondenceFilter.hpp
@@ -36,18 +36,20 @@
 	<stdio.h>
 	"../global.hpp"
 
-1485185837 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.cpp
+1485269807 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/helper_functions.cpp
 	<helper_functions.hpp>
 
 1484136838 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/helpers/NeighbourFinder.cpp
 	"NeighbourFinder.hpp"
 
-1485189803 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/main.cpp
+1485535888 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/main.cpp
 	<iostream>
 	<OpenMesh/Core/IO/MeshIO.hh>
 	<OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 	<OpenMesh/Core/IO/reader/OBJReader.hh>
 	<OpenMesh/Core/IO/writer/OBJWriter.hh>
+	<OpenMesh/Tools/Decimater/DecimaterT.hh>
+	<OpenMesh/Tools/Decimater/ModQuadricT.hh>
 	<Eigen/Dense>
 	<Eigen/SparseCore>
 	<nanoflann.hpp>
@@ -563,7 +565,7 @@
 	<NeighbourFinder.hpp>
 	<iostream>
 
-1485190389 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/SymmetricCorrespondenceFilter.cpp
+1485264769 source:/home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/SymmetricCorrespondenceFilter.cpp
 	"SymmetricCorrespondenceFilter.hpp"
 
 1485190391 /home/jonatan/projects/kuleuven-algorithms/MeshMonkRegistration/core/SymmetricCorrespondenceFilter.hpp
@@ -573,4 +575,69 @@
 	"../global.hpp"
 	<CorrespondenceFilter.hpp>
 	<helper_functions.hpp>
+
+1475741785 /home/jonatan/projects/OpenMesh/src/OpenMesh/Tools/Decimater/DecimaterT.hh
+	<memory>
+	<OpenMesh/Core/Utils/Property.hh>
+	<OpenMesh/Tools/Utils/HeapT.hh>
+	<OpenMesh/Tools/Decimater/BaseDecimaterT.hh>
+	"DecimaterT.cc"
+
+1475741785 /home/jonatan/projects/OpenMesh/src/OpenMesh/Tools/Utils/HeapT.hh
+	"Config.hh"
+	<vector>
+	<OpenMesh/Core/System/omstream.hh>
+	<utility>
+
+1475741785 /home/jonatan/projects/OpenMesh/src/OpenMesh/Tools/Decimater/BaseDecimaterT.hh
+	<memory>
+	<OpenMesh/Core/Utils/Property.hh>
+	<OpenMesh/Tools/Decimater/ModBaseT.hh>
+	<OpenMesh/Core/Utils/Noncopyable.hh>
+	<OpenMesh/Tools/Decimater/Observer.hh>
+	"BaseDecimaterT.cc"
+
+1475741785 /home/jonatan/projects/OpenMesh/src/OpenMesh/Tools/Decimater/ModBaseT.hh
+	<OpenMesh/Core/Utils/Noncopyable.hh>
+	<OpenMesh/Tools/Decimater/CollapseInfoT.hh>
+	<string>
+
+1475741785 /home/jonatan/projects/OpenMesh/src/OpenMesh/Core/Utils/Noncopyable.hh
+	<OpenMesh/Core/System/config.h>
+
+1475741785 /home/jonatan/projects/OpenMesh/src/OpenMesh/Tools/Decimater/CollapseInfoT.hh
+
+1475741785 /home/jonatan/projects/OpenMesh/src/OpenMesh/Tools/Decimater/Observer.hh
+	<cstddef>
+	<OpenMesh/Core/System/config.h>
+
+1475741785 /home/jonatan/projects/OpenMesh/src/OpenMesh/Tools/Decimater/BaseDecimaterT.cc
+	<vector>
+	<float.h>
+	<cfloat>
+
+1475741785 /home/jonatan/projects/OpenMesh/src/OpenMesh/Tools/Decimater/DecimaterT.cc
+	<OpenMesh/Tools/Decimater/DecimaterT.hh>
+	<vector>
+	<float.h>
+	<cfloat>
+
+1475741785 /home/jonatan/projects/OpenMesh/src/OpenMesh/Tools/Decimater/ModQuadricT.hh
+	<float.h>
+	<OpenMesh/Tools/Decimater/ModBaseT.hh>
+	<OpenMesh/Core/Utils/Property.hh>
+	<OpenMesh/Core/Utils/vector_cast.hh>
+	<OpenMesh/Core/Geometry/QuadricT.hh>
+	"ModQuadricT.cc"
+
+1475741785 /home/jonatan/projects/OpenMesh/src/OpenMesh/Core/Geometry/QuadricT.hh
+	"Config.hh"
+	<OpenMesh/Core/Geometry/VectorT.hh>
+	<OpenMesh/Core/Utils/GenProg.hh>
+
+1475741785 /home/jonatan/projects/OpenMesh/src/OpenMesh/Core/Geometry/Config.hh
+	<OpenMesh/Core/System/config.h>
+
+1475741785 /home/jonatan/projects/OpenMesh/src/OpenMesh/Tools/Decimater/ModQuadricT.cc
+	<OpenMesh/Tools/Decimater/ModQuadricT.hh>
 

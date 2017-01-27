@@ -29,9 +29,12 @@
 				<Compiler>
 					<Add option="-O2" />
 					<Add directory="core" />
+					<Add directory="helpers" />
+					<Add directory="../../OpenMesh/src" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add library="../../OpenMesh/build/Build/lib/libOpenMeshCore.a" />
 				</Linker>
 			</Target>
 		</Build>

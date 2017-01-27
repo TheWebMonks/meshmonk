@@ -3,6 +3,8 @@
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 #include <OpenMesh/Core/IO/reader/OBJReader.hh>
 #include <OpenMesh/Core/IO/writer/OBJWriter.hh>
+#include <OpenMesh/Tools/Decimater/DecimaterT.hh>
+#include <OpenMesh/Tools/Decimater/ModQuadricT.hh>
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <nanoflann.hpp>
@@ -18,8 +20,10 @@
 using namespace std;
 
 
-
-typedef OpenMesh::TriMesh_ArrayKernelT<>  TriMesh;
+typedef OpenMesh::DefaultTraits MyTraits;
+typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits>  TriMesh;
+typedef OpenMesh::Decimater::DecimaterT<TriMesh>    DecimaterType;
+typedef OpenMesh::Decimater::ModQuadricT<TriMesh>::Handle HModQuadric;
 typedef Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> MatDynInt; //matrix MxN of type unsigned int
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat; //matrix MxN of type float
 typedef Eigen::VectorXf VecDynFloat;
@@ -670,99 +674,151 @@ int main()
 //    cout << "Indices found: \n" << indices << endl;
 //    cout << "distances squared found: \n" << distancesSquared << endl;
 
+
+    /*
+    ############################################################################
+    ##############################  DECIMATION  ################################
+    ############################################################################
+    */
+
+    //# block boundary vertices
+    fuckedUpBunny.request_vertex_status();
+    //## Get an iterator over all halfedges
+    TriMesh::HalfedgeIter he_it, he_end=fuckedUpBunny.halfedges_end();
+    //## If halfedge is boundary, lock the corresponding vertices
+    for (he_it = fuckedUpBunny.halfedges_begin(); he_it != he_end ; ++he_it) {
+      if (fuckedUpBunny.is_boundary(*he_it)) {
+         fuckedUpBunny.status(fuckedUpBunny.to_vertex_handle(*he_it)).set_locked(true);
+         fuckedUpBunny.status(fuckedUpBunny.from_vertex_handle(*he_it)).set_locked(true);
+      }
+    }
+    //# Make sure mesh has necessary normals etc
+    fuckedUpBunny.request_face_normals();
+    fuckedUpBunny.update_face_normals();
+
+    //# Set up the decimator
+    DecimaterType decimater(fuckedUpBunny);  // a decimater object, connected to a mesh
+    HModQuadric hModQuadric;      // use a quadric module
+    decimater.add( hModQuadric ); // register module at the decimater
+
+    std::cout << decimater.module( hModQuadric ).name() << std::endl;
+    decimater.module(hModQuadric).unset_max_err();
+
+    //# Initialize the decimater
+    bool rc = decimater.initialize();
+    std::cout  << "Decimater Initialization: " << decimater.is_initialized() << std::endl;
+    if (!rc){
+        std::cerr << "  initializing failed!" << std::endl;
+        std::cerr << "  maybe no priority module or more than one were defined!" << std::endl;
+        return false;
+    }
+
+
+    std::cout << "Decimater Observer: \n" << decimater.observer() << std::endl;
+
+
+
+    //# Run the decimater
+    rc = decimater.decimate_to(size_t(10));
+
+    //# Collect garbage
+    fuckedUpBunny.garbage_collection();
+
+
     /*
     ############################################################################
     ##############################  RIGID ICP  #################################
     ############################################################################
     */
 
-    //# Info & Initialization
-    //## Data and matrices
-    size_t numFloatingVertices = floatingFeatures.rows();
-    size_t numTargetVertices = targetFeatures.rows();
-    VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
-    VecDynFloat floatingFlags = VecDynFloat::Ones(numFloatingVertices);
-    VecDynFloat targetFlags = VecDynFloat::Ones(numTargetVertices);
-    FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
-    VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
-    //## Parameters
-    const size_t numNearestNeighbours = 5;
-    const size_t numRigidIterations = 10;
-    //## Set up Correspondence Filter
-    //registration::CorrespondenceFilter correspondenceFilter;
-    registration::SymmetricCorrespondenceFilter correspondenceFilter;
-    correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
-    //correspondenceFilter.set_floating_input(&floatingFeatures);
-    correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
-    correspondenceFilter.set_output(&correspondingFeatures, &correspondingFlags);
-    correspondenceFilter.set_parameters(numNearestNeighbours);
-    //## Set up Inlier Detector
-
-    registration::InlierDetector inlierDetector;
-    inlierDetector.set_input(&floatingFeatures, &correspondingFeatures,
-                                &correspondingFlags);
-    inlierDetector.set_output(&floatingWeights);
-    inlierDetector.set_parameters(3.0);
-    //## Set up the rigid transformer
-    registration::RigidTransformer rigidTransformer;
-    rigidTransformer.set_input(&correspondingFeatures, &floatingWeights);
-    rigidTransformer.set_output(&floatingFeatures);
-    rigidTransformer.set_parameters(false);
-
-    //# Loop ICP
-    for (size_t iteration = 0 ; iteration < numRigidIterations ; iteration++) {
-        //# Determine Correspondences
-        //## Compute symmetric wknn correspondences
-        //registration::wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
-        //                    correspondingFeatures, correspondingFlags,
-        //                    numNearestNeighbours, true);
-        //correspondenceFilter.set_floating_input(&floatingFeatures);
-        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
-        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
-        correspondenceFilter.update();
-
-
-        //# Inlier Detection
-        inlierDetector.update();
-
-        //# Compute the transformation
-        rigidTransformer.update();
-    }
-
-    /*
-    ############################################################################
-    ##########################  NON-RIGID ICP  #################################
-    ############################################################################
-    */
-
-    //## Set up viscoelastic transformer
-    const size_t numNonrigidIterations = 12;
-    size_t smoothingIterations[12] = {144,89,55,34,21,13,8,5,3,2,1,1};
-    //size_t smoothingIterations = numNonrigidIterations + 1; //we will use this for the number of smoothing iterations
-    registration::ViscoElasticTransformer transformer;
-    transformer.set_input(&correspondingFeatures, &floatingWeights);
-    transformer.set_output(&floatingFeatures);
-
-
-    for (size_t i = 0 ; i < numNonrigidIterations ; i++) {
-        //# Determine Correspondences
-        //## Compute symmetric wknn correspondences
-        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
-        //correspondenceFilter.set_floating_input(&floatingFeatures);
-        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
-        correspondenceFilter.update();
-
-
-        //# Inlier Detection
-        inlierDetector.update();
-
-        //# Visco-Elastic transformation
-        std::cout << "floating positions before:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
-        transformer.set_parameters(10, 2.0, smoothingIterations[i],smoothingIterations[i]);
-        transformer.update();
-        std::cout << "floating positions after:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
-        //smoothingIterations--;
-    }
+//    //# Info & Initialization
+//    //## Data and matrices
+//    size_t numFloatingVertices = floatingFeatures.rows();
+//    size_t numTargetVertices = targetFeatures.rows();
+//    VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
+//    VecDynFloat floatingFlags = VecDynFloat::Ones(numFloatingVertices);
+//    VecDynFloat targetFlags = VecDynFloat::Ones(numTargetVertices);
+//    FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
+//    VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
+//
+//    //## Parameters
+//    const size_t numNearestNeighbours = 5;
+//    const size_t numRigidIterations = 10;
+//    //## Set up Correspondence Filter
+//    //registration::CorrespondenceFilter correspondenceFilter;
+//    registration::SymmetricCorrespondenceFilter correspondenceFilter;
+//    correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
+//    //correspondenceFilter.set_floating_input(&floatingFeatures);
+//    correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
+//    correspondenceFilter.set_output(&correspondingFeatures, &correspondingFlags);
+//    correspondenceFilter.set_parameters(numNearestNeighbours);
+//    //## Set up Inlier Detector
+//
+//    registration::InlierDetector inlierDetector;
+//    inlierDetector.set_input(&floatingFeatures, &correspondingFeatures,
+//                                &correspondingFlags);
+//    inlierDetector.set_output(&floatingWeights);
+//    inlierDetector.set_parameters(3.0);
+//    //## Set up the rigid transformer
+//    registration::RigidTransformer rigidTransformer;
+//    rigidTransformer.set_input(&correspondingFeatures, &floatingWeights);
+//    rigidTransformer.set_output(&floatingFeatures);
+//    rigidTransformer.set_parameters(false);
+//
+//    //# Loop ICP
+//    for (size_t iteration = 0 ; iteration < numRigidIterations ; iteration++) {
+//        //# Determine Correspondences
+//        //## Compute symmetric wknn correspondences
+//        //registration::wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
+//        //                    correspondingFeatures, correspondingFlags,
+//        //                    numNearestNeighbours, true);
+//        //correspondenceFilter.set_floating_input(&floatingFeatures);
+//        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
+//        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
+//        correspondenceFilter.update();
+//
+//
+//        //# Inlier Detection
+//        inlierDetector.update();
+//
+//        //# Compute the transformation
+//        rigidTransformer.update();
+//    }
+//
+//    /*
+//    ############################################################################
+//    ##########################  NON-RIGID ICP  #################################
+//    ############################################################################
+//    */
+//
+//    //## Set up viscoelastic transformer
+//    const size_t numNonrigidIterations = 12;
+//    size_t smoothingIterations[12] = {144,89,55,34,21,13,8,5,3,2,1,1};
+//    //size_t smoothingIterations = numNonrigidIterations + 1; //we will use this for the number of smoothing iterations
+//    registration::ViscoElasticTransformer transformer;
+//    transformer.set_input(&correspondingFeatures, &floatingWeights);
+//    transformer.set_output(&floatingFeatures);
+//
+//
+//    for (size_t i = 0 ; i < numNonrigidIterations ; i++) {
+//        //# Determine Correspondences
+//        //## Compute symmetric wknn correspondences
+//        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
+//        //correspondenceFilter.set_floating_input(&floatingFeatures);
+//        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
+//        correspondenceFilter.update();
+//
+//
+//        //# Inlier Detection
+//        inlierDetector.update();
+//
+//        //# Visco-Elastic transformation
+//        std::cout << "floating positions before:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
+//        transformer.set_parameters(10, 2.0, smoothingIterations[i],smoothingIterations[i]);
+//        transformer.update();
+//        std::cout << "floating positions after:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
+//        //smoothingIterations--;
+//    }
 
     /*
     ############################################################################

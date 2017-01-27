@@ -2,49 +2,19 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Debug" />
-	<File name="helpers/NeighbourFinder.hpp" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="core/InlierDetector.hpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1458" topLine="19" />
+			<Cursor1 position="0" topLine="14" />
 		</Cursor>
 	</File>
-	<File name="helpers/NeighbourFinder.cpp" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="helpers/helper_functions.cpp" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="1" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="351" topLine="54" />
+			<Cursor1 position="7713" topLine="361" />
 		</Cursor>
 	</File>
-	<File name="core/ViscoElasticTransformer.hpp" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="core/SymmetricCorrespondenceFilter.cpp" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="1" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="905" topLine="18" />
-		</Cursor>
-	</File>
-	<File name="core/SymmetricCorrespondenceFilter.hpp" open="1" top="1" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2212" topLine="15" />
-		</Cursor>
-	</File>
-	<File name="core/SymmetricCorrespondenceFilter.cpp" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="1" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="3017" topLine="55" />
-		</Cursor>
-	</File>
-	<File name="global.hpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="37" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="main.cpp" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1443" topLine="664" />
-		</Cursor>
-	</File>
-	<File name="core/RigidTransformer.hpp" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1068" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="core/CorrespondenceFilter.cpp" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="6532" topLine="118" />
+			<Cursor1 position="1559" topLine="27" />
 		</Cursor>
 	</File>
 	<File name="core/ViscoElasticTransformer.cpp" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -52,29 +22,68 @@
 			<Cursor1 position="9027" topLine="185" />
 		</Cursor>
 	</File>
-	<File name="core/InlierDetector.hpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="global.hpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="0" topLine="14" />
+			<Cursor1 position="37" topLine="0" />
 		</Cursor>
+	</File>
+	<File name="core/RigidTransformer.hpp" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1068" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="core/CorrespondenceFilter.cpp" open="0" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1436" topLine="24" />
+		</Cursor>
+	</File>
+	<File name="core/CorrespondenceFilter.hpp" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="162" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="helpers/helper_functions.hpp" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="97" topLine="6" />
+		</Cursor>
+	</File>
+	<File name="helpers/NeighbourFinder.cpp" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="351" topLine="54" />
+		</Cursor>
+	</File>
+	<File name="helpers/NeighbourFinder.hpp" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1458" topLine="19" />
+		</Cursor>
+	</File>
+	<File name="core/ViscoElasticTransformer.hpp" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="905" topLine="18" />
+		</Cursor>
+	</File>
+	<File name="core/SymmetricCorrespondenceFilter.hpp" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2269" topLine="25" />
+		</Cursor>
+	</File>
+	<File name="main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="28689" topLine="183" />
+		</Cursor>
+		<Folding>
+			<Collapse line="58" />
+			<Collapse line="109" />
+			<Collapse line="270" />
+			<Collapse line="316" />
+			<Collapse line="384" />
+			<Collapse line="452" />
+			<Collapse line="525" />
+		</Folding>
 	</File>
 	<File name="core/RigidTransformer.cpp" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="7097" topLine="114" />
-		</Cursor>
-	</File>
-	<File name="core/CorrespondenceFilter.hpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="192" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="helpers/helper_functions.hpp" open="0" top="0" tabpos="9" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="934" topLine="4" />
-		</Cursor>
-	</File>
-	<File name="helpers/helper_functions.cpp" open="0" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="156" topLine="0" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>
