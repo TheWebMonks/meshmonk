@@ -1,0 +1,19 @@
+package:
+  name: meshmonk
+  version: "0.0.1"
+
+source:
+  git_rev: v0.0.1
+  git_url: https://bitbucket.org/webmonks/kuleuven-algorithms.git
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+
+about:
+  home: https://bitbucket.org/webmonks/kuleuven-algorithms
+  license: MIT
+  license_file: LICENSE.txt
