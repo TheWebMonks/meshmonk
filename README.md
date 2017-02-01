@@ -49,3 +49,6 @@ etcetera.
 
 ####3.1 Troubleshooting
 If you get something like `/usr/lib/x86_64-linux-gnu/libstdc++.so.6: version 'GLIBCXX_3.4.20' not found` then follow instructions [here](http://askubuntu.com/questions/575505/glibcxx-3-4-20-not-found-how-to-fix-this-error). In most cases, you have to go to your environment (e.g. `source activate py27`) and run `$ conda install libgcc`
+
+## License
+This project is licensed under the terms of the MIT license.
