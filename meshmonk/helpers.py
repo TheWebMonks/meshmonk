@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
+# sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
 import openmesh
 #Importing the rest of utilities
 import numpy

@@ -1,7 +1,7 @@
 #Linking to the OpenMesh bindings. (Check out http://stackoverflow.com/questions/33637373/openmesh-with-python-3-4 for troubleshooting)
 #if problems with libstdc++ : http://askubuntu.com/questions/575505/glibcxx-3-4-20-not-found-how-to-fix-this-error
 import sys
-sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
+# sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
 from openmesh import *
 #Importing the rest of utilities
 import numpy
