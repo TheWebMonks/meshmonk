@@ -14,6 +14,7 @@
 typedef OpenMesh::TriMesh_ArrayKernelT<>  TriMesh;
 typedef Eigen::SparseMatrix<float, 0, int> SparseMat;
 typedef Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> MatDynInt; //matrix MxN of type unsigned int
+typedef Eigen::Matrix< int, Eigen::Dynamic, 3> MatDyn3Int; //matrix Mx3 of type unsigned int
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat; //matrix MxN of type float
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
 
@@ -37,7 +38,9 @@ void radius_nearest_neighbours(const VecMatType &inQueriedPoints,
 
 
 
-
+void convert_openmesh_to_eigen(const TriMesh &inMesh,
+                                FeatureMat &outFeatures,
+                                MatDyn3Int &outFaces);
 
 void openmesh_to_eigen_features(const TriMesh &inputMesh,
                                 FeatureMat &outputFeatures);

@@ -25,6 +25,7 @@ typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits>  TriMesh;
 typedef OpenMesh::Decimater::DecimaterT<TriMesh>    DecimaterType;
 typedef OpenMesh::Decimater::ModQuadricT<TriMesh>::Handle HModQuadric;
 typedef Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> MatDynInt; //matrix MxN of type unsigned int
+typedef Eigen::Matrix< int, Eigen::Dynamic, 3> MatDyn3Int; //matrix Mx3 of type unsigned int
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat; //matrix MxN of type float
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Vector3f Vec3Float;
@@ -665,8 +666,11 @@ int main()
     ##############################  TEST SHIZZLE  ##############################
     ############################################################################
     */
-
-
+    FeatureMat testFeatures;
+    MatDyn3Int testFaces;
+    registration::convert_openmesh_to_eigen(fuckedUpBunny, testFeatures, testFaces);
+    std::cout << "test features: \n" << testFeatures.topRows(10) << std::endl;
+    std::cout << "test faces: \n" << testFaces.topRows(10) << std::endl;
 
 //    MatDynInt indices;
 //    MatDynFloat distancesSquared;

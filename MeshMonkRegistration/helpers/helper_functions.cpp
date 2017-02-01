@@ -199,7 +199,56 @@ void radius_nearest_neighbours(const VecMatType &inQueriedPoints,
 
 
 
+void convert_openmesh_to_eigen(const TriMesh &inMesh,
+                                FeatureMat &outFeatures,
+                                MatDyn3Int &outFaces){
+    /*
+    GOAL
+    This function converts an openmesh data structure to a feature matrix
+    and a matrix containing the indices of the vertices belonging to each face
 
+    INPUT
+    -inMesh:
+    this has to be a mesh of openmesh's TriMesh type
+
+    PARAMETERS
+
+    OUTPUT
+    -outFeatures:
+    a numVertices x 6 Eigen dense matrix where the first three columns are made
+    up of the positions of the vertices, and the last three columns the normals
+    of those vertices.
+    -outFaces:
+    a numFaces x 3 Eigen dense matrix where each row contains the corresponding
+    indices of the vertices belonging to that face.
+    */
+
+    //# Info and Initialization
+    const int numVertices = inMesh.n_vertices();
+    const int numFaces = inMesh.n_faces();
+    outFeatures = FeatureMat::Zero(numVertices,NUM_FEATURES);
+    outFaces = MatDyn3Int::Zero(numFaces,3);
+
+    //# Convert the vertex normals and positions to eigen feature matrices
+    openmesh_to_eigen_features(inMesh, outFeatures);
+
+    //# Build the matrix containing the faces
+    //## Initialize the face iterator
+    TriMesh::FaceIter faceIt(inMesh.faces_begin());
+    TriMesh::FaceIter faceEnd(inMesh.faces_end());
+    //## Loop over every face
+    for (size_t i = 0 ; faceIt != faceEnd ; i++, faceIt++) {
+
+        //## For this face, loop over all its vertices
+        //### Initialize the face-vertex iterator
+        TriMesh::FaceVertexIter fvIt(inMesh, faceIt);
+        //### Loop
+        for (size_t j = 0 ; fvIt ; j++, fvIt++) {
+            outFaces(i,j) = fvIt->idx();
+        }
+    }
+
+}//end convert_openmesh_to_eigen()
 
 
 void openmesh_to_eigen_features(const TriMesh &inputMesh,
