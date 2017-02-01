@@ -9,7 +9,7 @@ setup(name='meshmonk',
       license='MIT',
       packages=['meshmonk'],
       install_requires=[
-            "numpy==1.7.1",
+            "numpy==1.11.0",
             "scipy==0.18.1"
       ],
       zip_safe=False)
