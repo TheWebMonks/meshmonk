@@ -1,9 +1,9 @@
 package:
   name: meshmonk
-  version: "0.0.2"
+  version: "0.0.3"
 
 source:
-  git_rev: v0.0.2
+  git_rev: v0.0.3
   git_url: https://bitbucket.org/webmonks/kuleuven-algorithms.git
 
 requirements:
