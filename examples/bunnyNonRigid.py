@@ -1,5 +1,5 @@
-import sys
-sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
+#import sys
+#sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
 import openmesh
 #Importing the rest of utilities
 import numpy
@@ -15,9 +15,9 @@ In this example, we will perform nonrigid registration of the stanford bunny.
 # SET PARAMETERS
 ##########
 # Data I/O
-floatingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/fucked_up_bunny.obj"
-targetMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunny90.obj"
-resultingMeshPath = "/home/jonatan/kuleuven-algorithms/examples/data/bunnyNonRigid.obj"
+floatingMeshPath = "/home/jonatan/projects/kuleuven-algorithms/examples/data/fucked_up_bunny.obj"
+targetMeshPath = "/home/jonatan/projects/kuleuven-algorithms/examples/data/bunny90.obj"
+resultingMeshPath = "/home/jonatan/projects/kuleuven-algorithms/examples/data/bunnyNonRigid.obj"
 # Correspondences
 wknnNumNeighbours = 3
 # Inlier Detection

@@ -8,3 +8,13 @@ __pycache__/
 
 .idea
 venv/
+
+MeshMonkRegistration/bin/*
+MeshMonkRegistration/obj/*
+*.cbp
+*.depend
+*.layout
+
+
+ examples/data/
+ 
