@@ -1,4 +1,15 @@
-# KULeuven Algoritms
+# Meshmonk
+
+## Install with Anaconda
+
+Pre-requisites: download and install [Anaconda](https://www.continuum.io/downloads).
+
+```bash
+$ conda install -c conda-forge openmesh=6.3
+$ conda install -c lukin0110 meshmonk=0.0.3
+```
+
+# KULeuven Algorithms (deprecated)
 
 ## How to
 
