@@ -230,7 +230,7 @@ void convert_openmesh_to_eigen(const TriMesh &inMesh,
     outFaces = MatDyn3Int::Zero(numFaces,3);
 
     //# Convert the vertex normals and positions to eigen feature matrices
-    openmesh_to_eigen_features(inMesh, outFeatures);
+    convert_openmesh_to_eigen(inMesh, outFeatures);
 
     //# Build the matrix containing the faces
     //## Initialize the face iterator
@@ -251,7 +251,7 @@ void convert_openmesh_to_eigen(const TriMesh &inMesh,
 }//end convert_openmesh_to_eigen()
 
 
-void openmesh_to_eigen_features(const TriMesh &inputMesh,
+void convert_openmesh_to_eigen(const TriMesh &inputMesh,
                                 FeatureMat &outputFeatures){
     /*
     GOAL
@@ -297,43 +297,68 @@ void openmesh_to_eigen_features(const TriMesh &inputMesh,
 }
 
 
-void load_obj_to_eigen_features(const std::string inObjFilename,
-                                TriMesh &outMesh,
-                                FeatureMat &outFeatureMatrix){
+void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
+                            const MatDyn3Int &inFaces,
+                            TriMesh &outMesh) {
     /*
     GOAL
-    This function loads an OBJ file given by a filename and converts it to
-    OpenMesh's TriMesh type and feature matrices we use internally.
+    This function converts a mesh representation using eigen matrices
+    into a mesh representation using OpenMesh's TriMesh.
 
     INPUT
-    -inObjFilename:
+    -inFeatures:
+    a numVertices x 6 Eigen dense matrix where the first three columns are made
+    up of the positions of the vertices, and the last three columns the normals
+    of those vertices.
+    -inFaces:
+    a numFaces x 3 Eigen dense matrix where each row contains the corresponding
+    indices of the vertices belonging to that face.
 
     PARAMETERS
 
     OUTPUT
-    -outMesh
-    -outFeatureMatrix
+    -outMesh:
+    this has to be a mesh of openmesh's TriMesh type. The function expects this
+    to be an empty mesh !!
     */
 
-    OpenMesh::IO::_OBJReader_(); //NOTE: this issue should only appear when STATICALLY linking OpenMesh
-    if (!OpenMesh::IO::read_mesh(outMesh,inObjFilename)){
-        std::cerr << "Read error \n";
-        exit(1);
-    };
+    //# Info and Initialization
+    const size_t numVertices = inFeatures.rows();
+    const size_t numFaces = inFaces.rows();
+    if (outMesh.n_vertices() > 0) { std::cerr<< "convert_eigen_to_openmesh expects an empty mesh as input!" << std::endl; }
 
-    // Update Normals
-    outMesh.request_face_normals();
-    outMesh.request_vertex_normals();
-    outMesh.update_face_normals();
-    outMesh.update_vertex_normals();
+    //# Add each vertex and save the vertex handles for adding the faces later
+    TriMesh::VertexHandle vertexHandle;
+    std::vector<TriMesh::VertexHandle>  vertexHandles;
+    for (size_t i = 0 ; i < numVertices ; i++) {
+        vertexHandle = outMesh.add_vertex(TriMesh::Point(inFeatures(i,0),inFeatures(i,2),inFeatures(i,2)));
+        vertexHandles.push_back(vertexHandle);
+    }
 
-    // Convert to Eigen Matrices
-    openmesh_to_eigen_features(outMesh, outFeatureMatrix);
+    //# Loop over the faces and add them all to the mesh
+    for (size_t i = 0 ; i < numFaces ; i++) {
+        //## Make a list of the vertex handles belonging to this face
+        std::vector<TriMesh::VertexHandle>  faceVertexHandles;
+        //### Vertex 0
+        size_t vertexIndex = inFaces(i,0);
+        vertexHandle = vertexHandles[vertexIndex];
+        faceVertexHandles.push_back(vertexHandle);
+        //### Vertex 1
+        vertexIndex = inFaces(i,1);
+        vertexHandle = vertexHandles[vertexIndex];
+        faceVertexHandles.push_back(vertexHandle);
+        //### Vertex 2
+        vertexIndex = inFaces(i,2);
+        vertexHandle = vertexHandles[vertexIndex];
+        faceVertexHandles.push_back(vertexHandle);
 
+        //## Add the list of vertex handles as a face to the mesh
+        outMesh.add_face(faceVertexHandles);
+    }
 }
 
 
-void eigen_features_to_openmesh(const FeatureMat &inFeatures,
+void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
                                 TriMesh &outMesh){
     /*
     GOAL
@@ -381,8 +406,46 @@ void eigen_features_to_openmesh(const FeatureMat &inFeatures,
     }
 }
 
+void load_obj_to_eigen(const std::string inObjFilename,
+                                TriMesh &outMesh,
+                                FeatureMat &outFeatureMatrix){
+    /*
+    GOAL
+    This function loads an OBJ file given by a filename and converts it to
+    OpenMesh's TriMesh type and feature matrices we use internally.
 
-void write_eigen_features_to_obj(const FeatureMat &inFeatures,
+    INPUT
+    -inObjFilename:
+
+    PARAMETERS
+
+    OUTPUT
+    -outMesh
+    -outFeatureMatrix
+    */
+
+    OpenMesh::IO::_OBJReader_(); //NOTE: this issue should only appear when STATICALLY linking OpenMesh
+    if (!OpenMesh::IO::read_mesh(outMesh,inObjFilename)){
+        std::cerr << "Read error \n";
+        exit(1);
+    };
+
+    // Update Normals
+    outMesh.request_face_normals();
+    outMesh.request_vertex_normals();
+    outMesh.update_face_normals();
+    outMesh.update_vertex_normals();
+
+    // Convert to Eigen Matrices
+    convert_openmesh_to_eigen(outMesh, outFeatureMatrix);
+
+}
+
+
+
+
+
+void write_eigen_to_obj(const FeatureMat &inFeatures,
                                 TriMesh &inMesh,
                                 const std::string inObjFilename){
     /*
@@ -414,7 +477,7 @@ void write_eigen_features_to_obj(const FeatureMat &inFeatures,
     }
 
     //# Convert feature matrix to OpenMesh structure
-    eigen_features_to_openmesh(inFeatures, inMesh);
+    convert_eigen_to_openmesh(inFeatures, inMesh);
 
     //# Write resulting mesh to OBJ file
     OpenMesh::IO::_OBJWriter_();
@@ -467,7 +530,7 @@ void update_normals_for_altered_positions(TriMesh &ioMesh,
     }
 
     //# Insert positions from 'ioFeatures' into 'ioMesh'
-    eigen_features_to_openmesh(ioFeatures, ioMesh);
+    convert_eigen_to_openmesh(ioFeatures, ioMesh);
 
     //# Given the new positions, let ioMesh update its normals
     ioMesh.request_face_normals();

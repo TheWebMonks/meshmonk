@@ -637,8 +637,8 @@ int main()
     TriMesh bunny;
     FeatureMat floatingFeatures;
     FeatureMat targetFeatures;
-    registration::load_obj_to_eigen_features(fuckedUpBunnyDir, fuckedUpBunny, floatingFeatures);
-    registration::load_obj_to_eigen_features(bunnyDir, bunny, targetFeatures);
+    registration::load_obj_to_eigen(fuckedUpBunnyDir, fuckedUpBunny, floatingFeatures);
+    registration::load_obj_to_eigen(bunnyDir, bunny, targetFeatures);
 //    floatingFeatures = FeatureMat::Zero(8, NUM_FEATURES);
 //    targetFeatures = FeatureMat::Zero(8, NUM_FEATURES);
 //    floatingFeatures << 0.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
@@ -830,7 +830,7 @@ int main()
     ############################################################################
     */
     //# Write result to file
-    registration::write_eigen_features_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
+    registration::write_eigen_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
 
 
     return 0;

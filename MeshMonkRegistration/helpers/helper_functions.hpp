@@ -42,20 +42,23 @@ void convert_openmesh_to_eigen(const TriMesh &inMesh,
                                 FeatureMat &outFeatures,
                                 MatDyn3Int &outFaces);
 
-void openmesh_to_eigen_features(const TriMesh &inputMesh,
+void convert_openmesh_to_eigen(const TriMesh &inputMesh,
                                 FeatureMat &outputFeatures);
 
+void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
+                                const MatDyn3Int &inFaces,
+                                TriMesh &outMesh);
 
-void load_obj_to_eigen_features(const std::string inObjFilename,
+void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
+                                TriMesh &outMesh);
+
+
+void load_obj_to_eigen(const std::string inObjFilename,
                                 TriMesh &outMesh,
                                 FeatureMat &outFeatureMatrix);
 
 
-void eigen_features_to_openmesh(const FeatureMat &inFeatures,
-                                TriMesh &outMesh);
-
-
-void write_eigen_features_to_obj(const FeatureMat &inFeatures,
+void write_eigen_to_obj(const FeatureMat &inFeatures,
                                 TriMesh &inMesh,
                                 const std::string inObjFilename);
 
