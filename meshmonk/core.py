@@ -2,7 +2,7 @@
 #if problems with libstdc++ : http://askubuntu.com/questions/575505/glibcxx-3-4-20-not-found-how-to-fix-this-error
 import sys
 # sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
-from openmesh import *
+import openmesh
 #Importing the rest of utilities
 import numpy
 from numpy import linalg
@@ -10,6 +10,7 @@ from scipy import spatial
 from scipy.interpolate import interp1d
 from abc import ABCMeta, abstractmethod
 import helpers
+import time
 
 
 
@@ -672,4 +673,102 @@ class ViscoElasticFilter(TransformationFilter):
         self._apply_transformation()
         
         
+class NonrigidRegistration(object):
+    """
+    This filter object determines inlier weights
+    """
+    def __init__(self, floatingMeshPath, targetMeshPath, resultingMeshPath):
+        self.floatingMeshPath = floatingMeshPath
+        self.targetMeshPath = targetMeshPath
+        self.resultingMeshPath = resultingMeshPath
+        # Parameters
+        ## Correspondences
+        self.wknnNumNeighbours = 3
+        ## Inliers
+        self.kappaa = 3.0
+        ## Transformation
+        self.numViscousSmoothingIterationsList = [55, 34, 21, 13, 8, 5, 3, 2, 1, 1]
+        self.numElasticSmoothingIterationsList = [55, 34, 21, 13, 8, 5, 3, 2, 1, 1]
+        self.numNeighbourDisplacements = 10
+        self.sigmaSmoothing = 10.0
         
+    def update(self):
+        ##########
+        # PREPARE DATA
+        ##########
+        # Load from file
+        floatingMesh = openmesh.TriMesh()
+        targetMesh = openmesh.TriMesh()
+        openmesh.read_mesh(floatingMesh, self.floatingMeshPath)
+        openmesh.read_mesh(targetMesh, self.targetMeshPath)
+        
+        # Obtain info and initialize matrices
+        numFloatingVertices = floatingMesh.n_vertices()
+        numTargetVertices = targetMesh.n_vertices()
+        ## Initialize weights and flags
+        floatingWeights = numpy.ones((numFloatingVertices), dtype = float)
+        floatingFlags = numpy.ones((numFloatingVertices), dtype = float)
+        targetFlags = numpy.ones((numTargetVertices), dtype = float)
+        
+        # Obtain the floating and target mesh features (= positions and normals)
+        floatingFeatures = helpers.openmesh_to_numpy_features(floatingMesh)
+        targetFeatures = helpers.openmesh_to_numpy_features(targetMesh)
+        correspondingFeatures = numpy.zeros((floatingFeatures.shape), dtype = float)
+        correspondingFlags = numpy.ones((floatingFlags.shape), dtype = float)
+        
+        
+        ##########
+        # NONRIGID REGISTRATION
+        ##########
+        """
+        
+        """
+        ## Initialize
+        symCorrespondenceFilter = SymCorrespondenceFilter(floatingFeatures,
+                                                          floatingFlags,
+                                                          targetFeatures,
+                                                          targetFlags,
+                                                          correspondingFeatures,
+                                                          correspondingFlags,
+                                                          self.wknnNumNeighbours)
+        ## Set up inlier filter
+        inlierFilter = InlierFilter(floatingFeatures, correspondingFeatures,
+                                    correspondingFlags, floatingWeights,
+                                    self.kappaa)
+        
+        
+        ## Set up transformation filter
+        transformationFilter = ViscoElasticFilter(floatingFeatures,
+                                                  correspondingFeatures,
+                                                  floatingWeights,
+                                                  10,
+                                                  self.sigmaSmoothing,
+                                                  numViscousIterations = 1,
+                                                  numElasticIterations = 1)
+        iteration = 0
+        for numViscousSmoothingIterations, numElasticSmoothingIterations in zip(self.numViscousSmoothingIterationsList, self.numElasticSmoothingIterationsList):
+            timeStart = time.time()
+            ## 1) Determine Nearest neighbours.
+            symCorrespondenceFilter.set_floating_features(floatingFeatures, floatingFlags)
+            symCorrespondenceFilter.update()
+            ## 2) Determine inlier weights.
+            inlierFilter.update()
+            ## 3) Determine and update transformation.
+            transformationFilter.set_parameters(self.numNeighbourDisplacements,
+                                                    self.sigmaSmoothing,
+                                                    numViscousSmoothingIterations,
+                                                    numElasticSmoothingIterations)
+            transformationFilter.update()
+        
+            ## 4) Re-calculate the mesh's properties (like normals e.g.)
+            floatingFeatures[:,3:6] = helpers.openmesh_normals_from_positions(floatingMesh, floatingFeatures[:,0:3])
+            
+            timeEnd = time.time()
+            print "Iteration " + str(iteration) + " took " + str(timeEnd-timeStart) 
+            iteration = iteration + 1
+        ##########
+        # EXPORT DATA
+        ##########
+        # Save the mesh
+        openmesh.write_mesh(floatingMesh, self.resultingMeshPath)
+        print "Exported result."
