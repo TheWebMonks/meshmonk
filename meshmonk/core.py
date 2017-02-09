@@ -672,15 +672,25 @@ class ViscoElasticFilter(TransformationFilter):
         self._update_transformation()
         self._apply_transformation()
         
-        
-class NonrigidRegistration(object):
-    """
-    This filter object determines inlier weights
-    """
+class RegistrationObj(object):
+    
+    __metaclass__ = ABCMeta
+    
     def __init__(self, floatingMeshPath, targetMeshPath, resultingMeshPath):
         self.floatingMeshPath = floatingMeshPath
         self.targetMeshPath = targetMeshPath
         self.resultingMeshPath = resultingMeshPath
+    
+    @abstractmethod
+    def update(self):
+        pass
+
+class NonrigidRegistration(RegistrationObj):
+    """
+    This filter object performs nonrigid registration
+    """
+    def __init__(self, floatingMeshPath, targetMeshPath, resultingMeshPath):
+        RegistrationObj.__init__(self, floatingMeshPath, targetMeshPath, resultingMeshPath)
         # Parameters
         ## Correspondences
         self.wknnNumNeighbours = 3
@@ -772,3 +782,40 @@ class NonrigidRegistration(object):
         # Save the mesh
         openmesh.write_mesh(floatingMesh, self.resultingMeshPath)
         print "Exported result."
+
+class RegistrationManager(object):
+    """
+    This class manages registration. It requires the user to specify file paths,
+    and takes parameters for the registration process.
+    """
+    def __init__(self, floatingMeshPath, targetMeshPath, resultingMeshPath,
+                 registrationType):
+        self.floatingMeshPath = floatingMeshPath
+        self.targetMeshPath = targetMeshPath
+        self.resultingMeshPath = resultingMeshPath
+        # Parameters
+        self.registrationTypes = ['rigid', 'nonrigid', 'full']
+        self.registrationType = registrationType #'rigid', 'nonrigid' or 'full'
+        
+    def update(self):
+        # Safety check
+        ## Check the type of registration
+        if not(self.registrationType in self.registrationTypes):
+            print('Chosen registrationtype should be "rigid", "nonrigid" or "full"!')
+            return
+            
+        # Execute the required parts
+        if self.registrationType == 'rigid':
+            print('rigid not available yet')
+        elif self.registrationType == 'nonrigid':
+            nonrigidTransformer = NonrigidRegistration(self.floatingMeshPath,
+                                                       self.targetMeshPath,
+                                                       self.resultingMeshPath)
+            nonrigidTransformer.update()
+        elif self.registrationType == 'full':
+            print('rigid not available yet')
+            nonrigidTransformer = NonrigidRegistration(self.floatingMeshPath,
+                                                       self.targetMeshPath,
+                                                       self.resultingMeshPath)
+            nonrigidTransformer.update()
+        

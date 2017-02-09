@@ -48,5 +48,5 @@ print("Resulting mesh path: \n\"" + args.result + "\"")
 
 
 
-nonrigidTransformer = core.NonrigidRegistration(args.float, args.target, args.result)
+nonrigidTransformer = core.RegistrationManager(args.float, args.target, args.result, 'nonrigid')
 nonrigidTransformer.update()
