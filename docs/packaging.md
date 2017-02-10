@@ -5,20 +5,28 @@
 ## 1. Create a new tag it git
 
 ```bash
-$ git tag -a v0.0.1 -m "first conda version"
+$ git tag -a v0.0.5 -m "your text here"
 $ git push origin --tags
 ```
 
-NOTE: Change version in the `conda/meta.yml` to your new tag version.
+## 2. Update meta.yml
 
-## 2. Create package
+Now you need to change the `git_rev` in the `conda/meta.yml` file to your new tag.
+
+```bash
+source:
+  git_rev: v0.0.5
+  git_url: https://github.com/TheWebMonks/meshmonk.git
+```
+
+## 3. Create package
 
 ```bash
 $ cd conda
 $ conda build .
 ```
 
-## 3. Upload package
+## 4. Upload package
 
 Pre-requisites:
 
