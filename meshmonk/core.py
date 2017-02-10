@@ -672,25 +672,15 @@ class ViscoElasticFilter(TransformationFilter):
         self._update_transformation()
         self._apply_transformation()
         
-class RegistrationObj(object):
-    
-    __metaclass__ = ABCMeta
-    
-    def __init__(self, floatingMeshPath, targetMeshPath, resultingMeshPath):
-        self.floatingMeshPath = floatingMeshPath
-        self.targetMeshPath = targetMeshPath
-        self.resultingMeshPath = resultingMeshPath
-    
-    @abstractmethod
-    def update(self):
-        pass
-
-class NonrigidRegistration(RegistrationObj):
+        
+class NonrigidRegistration(object):
     """
     This filter object performs nonrigid registration
     """
     def __init__(self, floatingMeshPath, targetMeshPath, resultingMeshPath):
-        RegistrationObj.__init__(self, floatingMeshPath, targetMeshPath, resultingMeshPath)
+        self.floatingMeshPath = floatingMeshPath
+        self.targetMeshPath = targetMeshPath
+        self.resultingMeshPath = resultingMeshPath
         # Parameters
         ## Correspondences
         self.wknnNumNeighbours = 3
@@ -706,25 +696,17 @@ class NonrigidRegistration(RegistrationObj):
         ##########
         # PREPARE DATA
         ##########
-        # Load from file
-        floatingMesh = openmesh.TriMesh()
-        targetMesh = openmesh.TriMesh()
-        openmesh.read_mesh(floatingMesh, self.floatingMeshPath)
-        openmesh.read_mesh(targetMesh, self.targetMeshPath)
+        # Import Data
+        dataImporter = helpers.DataImporter(self.floatingMeshPath, self.targetMeshPath)
+        ## Obtain the floating and target mesh features (= positions and normals)
+        floatingFeatures = dataImporter.floatingFeatures
+        targetFeatures = dataImporter.targetFeatures
+        ## Get openmesh's trimesh structures
+        floatingMesh = dataImporter.floatingMesh
+        targetMesh = dataImporter.targetMesh
         
-        # Obtain info and initialize matrices
-        numFloatingVertices = floatingMesh.n_vertices()
-        numTargetVertices = targetMesh.n_vertices()
-        ## Initialize weights and flags
-        floatingWeights = numpy.ones((numFloatingVertices), dtype = float)
-        floatingFlags = numpy.ones((numFloatingVertices), dtype = float)
-        targetFlags = numpy.ones((numTargetVertices), dtype = float)
         
-        # Obtain the floating and target mesh features (= positions and normals)
-        floatingFeatures = helpers.openmesh_to_numpy_features(floatingMesh)
-        targetFeatures = helpers.openmesh_to_numpy_features(targetMesh)
-        correspondingFeatures = numpy.zeros((floatingFeatures.shape), dtype = float)
-        correspondingFlags = numpy.ones((floatingFlags.shape), dtype = float)
+        
         
         
         ##########
@@ -734,6 +716,13 @@ class NonrigidRegistration(RegistrationObj):
         
         """
         ## Initialize
+        numFloatingVertices = floatingMesh.n_vertices()
+        numTargetVertices = targetMesh.n_vertices()
+        floatingFlags = numpy.ones((numFloatingVertices), dtype = float)
+        targetFlags = numpy.ones((numTargetVertices), dtype = float)
+        print(floatingFeatures)
+        correspondingFeatures = numpy.zeros((floatingFeatures.shape), dtype = float)
+        correspondingFlags = numpy.ones((floatingFlags.shape), dtype = float)
         symCorrespondenceFilter = SymCorrespondenceFilter(floatingFeatures,
                                                           floatingFlags,
                                                           targetFeatures,
@@ -742,6 +731,7 @@ class NonrigidRegistration(RegistrationObj):
                                                           correspondingFlags,
                                                           self.wknnNumNeighbours)
         ## Set up inlier filter
+        floatingWeights = numpy.ones((numFloatingVertices), dtype = float)
         inlierFilter = InlierFilter(floatingFeatures, correspondingFeatures,
                                     correspondingFlags, floatingWeights,
                                     self.kappaa)

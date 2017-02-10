@@ -464,3 +464,47 @@ def openmesh_to_numpy_features(mesh):
         features[i,5] = mesh.normal(vertexHandle)[2]
 
     return features
+
+class DataImporter(object):
+    """
+    This class takes filenames as input and prepares data that is required
+    by the registration framework
+    """
+    def __init__(self, floatingMeshPath, targetMeshPath):
+        self.floatingMeshPath = floatingMeshPath
+        self.targetMeshPath = targetMeshPath
+        self.floatingMesh = openmesh.TriMesh()
+        self.targetMesh = openmesh.TriMesh()
+        self.floatingFeatures = []
+        self.targetFeatures = []
+        self.update()
+        
+    def update(self):
+        # Load from file
+        openmesh.read_mesh(self.floatingMesh, self.floatingMeshPath)
+        openmesh.read_mesh(self.targetMesh, self.targetMeshPath)
+        print('floating mesh: \n')
+        print(self.floatingMesh)
+        # Obtain the floating and target mesh features (= positions and normals)
+        self.floatingFeatures = openmesh_to_numpy_features(self.floatingMesh)
+        print('floating features: \n')
+        print(self.floatingFeatures)
+        self.targetFeatures = openmesh_to_numpy_features(self.targetMesh)
+        
+        
+class DataExporter(object):
+    """
+    This class takes filenames as input and prepares data that is required
+    by the registration framework
+    """
+    def __init__(self,resultingFeatures, resultingMesh, resultingMeshPath):
+        self.resultingFeatures = resultingFeatures
+        self.resultingMesh = resultingMesh
+        self.resultingMeshPath = resultingMeshPath
+        self.update()
+        
+    def update(self):
+        # Insert positions into the mesh structure
+        openmesh_normals_from_positions(self.resultingMesh, self.resultingFeatures[:,0:3])
+        # Write the mesh to file
+        openmesh.write_mesh(self.resultingMesh, self.resultingMeshPath)
