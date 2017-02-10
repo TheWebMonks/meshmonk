@@ -677,10 +677,10 @@ class NonrigidRegistration(object):
     """
     This filter object performs nonrigid registration
     """
-    def __init__(self, floatingMeshPath, targetMeshPath, resultingMeshPath):
-        self.floatingMeshPath = floatingMeshPath
-        self.targetMeshPath = targetMeshPath
-        self.resultingMeshPath = resultingMeshPath
+    def __init__(self, floatingFeatures, floatingMesh, targetFeatures):
+        self.floatingFeatures = floatingFeatures
+        self.floatingMesh = floatingMesh
+        self.targetFeatures = targetFeatures
         # Parameters
         ## Correspondences
         self.wknnNumNeighbours = 3
@@ -693,52 +693,30 @@ class NonrigidRegistration(object):
         self.sigmaSmoothing = 10.0
         
     def update(self):
-        ##########
-        # PREPARE DATA
-        ##########
-        # Import Data
-        dataImporter = helpers.DataImporter(self.floatingMeshPath, self.targetMeshPath)
-        ## Obtain the floating and target mesh features (= positions and normals)
-        floatingFeatures = dataImporter.floatingFeatures
-        targetFeatures = dataImporter.targetFeatures
-        ## Get openmesh's trimesh structures
-        floatingMesh = dataImporter.floatingMesh
-        targetMesh = dataImporter.targetMesh
-        
-        
-        
-        
-        
-        ##########
-        # NONRIGID REGISTRATION
-        ##########
-        """
-        
-        """
+             
         ## Initialize
-        numFloatingVertices = floatingMesh.n_vertices()
-        numTargetVertices = targetMesh.n_vertices()
+        numFloatingVertices = self.floatingFeatures.shape[0]
+        numTargetVertices = self.targetFeatures.shape[0]
         floatingFlags = numpy.ones((numFloatingVertices), dtype = float)
         targetFlags = numpy.ones((numTargetVertices), dtype = float)
-        print(floatingFeatures)
-        correspondingFeatures = numpy.zeros((floatingFeatures.shape), dtype = float)
+        correspondingFeatures = numpy.zeros((self.floatingFeatures.shape), dtype = float)
         correspondingFlags = numpy.ones((floatingFlags.shape), dtype = float)
-        symCorrespondenceFilter = SymCorrespondenceFilter(floatingFeatures,
+        symCorrespondenceFilter = SymCorrespondenceFilter(self.floatingFeatures,
                                                           floatingFlags,
-                                                          targetFeatures,
+                                                          self.targetFeatures,
                                                           targetFlags,
                                                           correspondingFeatures,
                                                           correspondingFlags,
                                                           self.wknnNumNeighbours)
         ## Set up inlier filter
         floatingWeights = numpy.ones((numFloatingVertices), dtype = float)
-        inlierFilter = InlierFilter(floatingFeatures, correspondingFeatures,
+        inlierFilter = InlierFilter(self.floatingFeatures, correspondingFeatures,
                                     correspondingFlags, floatingWeights,
                                     self.kappaa)
         
         
         ## Set up transformation filter
-        transformationFilter = ViscoElasticFilter(floatingFeatures,
+        transformationFilter = ViscoElasticFilter(self.floatingFeatures,
                                                   correspondingFeatures,
                                                   floatingWeights,
                                                   10,
@@ -749,7 +727,7 @@ class NonrigidRegistration(object):
         for numViscousSmoothingIterations, numElasticSmoothingIterations in zip(self.numViscousSmoothingIterationsList, self.numElasticSmoothingIterationsList):
             timeStart = time.time()
             ## 1) Determine Nearest neighbours.
-            symCorrespondenceFilter.set_floating_features(floatingFeatures, floatingFlags)
+            symCorrespondenceFilter.set_floating_features(self.floatingFeatures, floatingFlags)
             symCorrespondenceFilter.update()
             ## 2) Determine inlier weights.
             inlierFilter.update()
@@ -761,16 +739,12 @@ class NonrigidRegistration(object):
             transformationFilter.update()
         
             ## 4) Re-calculate the mesh's properties (like normals e.g.)
-            floatingFeatures[:,3:6] = helpers.openmesh_normals_from_positions(floatingMesh, floatingFeatures[:,0:3])
+            self.floatingFeatures[:,3:6] = helpers.openmesh_normals_from_positions(self.floatingMesh, self.floatingFeatures[:,0:3])
             
             timeEnd = time.time()
             print "Iteration " + str(iteration) + " took " + str(timeEnd-timeStart) 
             iteration = iteration + 1
-        ##########
-        # EXPORT DATA
-        ##########
-        # Save the mesh
-        helpers.DataExporter(floatingFeatures, floatingMesh, self.resultingMeshPath)
+        
 
 class RegistrationManager(object):
     """
@@ -787,6 +761,20 @@ class RegistrationManager(object):
         self.registrationType = registrationType #'rigid', 'nonrigid' or 'full'
         
     def update(self):
+        ##########
+        # IMPORT DATA
+        ##########
+        # Import Data
+        dataImporter = helpers.DataImporter(self.floatingMeshPath, self.targetMeshPath)
+        ## Obtain the floating and target mesh features (= positions and normals)
+        floatingFeatures = dataImporter.floatingFeatures
+        targetFeatures = dataImporter.targetFeatures
+        ## Get openmesh's trimesh structures
+        floatingMesh = dataImporter.floatingMesh   
+        
+        ##########
+        # REGISTRATION
+        ##########
         # Safety check
         ## Check the type of registration
         if not(self.registrationType in self.registrationTypes):
@@ -797,14 +785,20 @@ class RegistrationManager(object):
         if self.registrationType == 'rigid':
             print('rigid not available yet')
         elif self.registrationType == 'nonrigid':
-            nonrigidTransformer = NonrigidRegistration(self.floatingMeshPath,
-                                                       self.targetMeshPath,
-                                                       self.resultingMeshPath)
+            nonrigidTransformer = NonrigidRegistration(floatingFeatures,
+                                                       floatingMesh,
+                                                       targetFeatures)
             nonrigidTransformer.update()
         elif self.registrationType == 'full':
             print('rigid not available yet')
-            nonrigidTransformer = NonrigidRegistration(self.floatingMeshPath,
-                                                       self.targetMeshPath,
-                                                       self.resultingMeshPath)
+            nonrigidTransformer = NonrigidRegistration(floatingFeatures,
+                                                       floatingMesh,
+                                                       targetFeatures)
             nonrigidTransformer.update()
+            
+        ##########
+        # EXPORT DATA
+        ##########
+        # Save the mesh
+        helpers.DataExporter(floatingFeatures, floatingMesh, self.resultingMeshPath)
         
