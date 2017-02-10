@@ -770,8 +770,7 @@ class NonrigidRegistration(object):
         # EXPORT DATA
         ##########
         # Save the mesh
-        openmesh.write_mesh(floatingMesh, self.resultingMeshPath)
-        print "Exported result."
+        helpers.DataExporter(floatingFeatures, floatingMesh, self.resultingMeshPath)
 
 class RegistrationManager(object):
     """

@@ -480,16 +480,14 @@ class DataImporter(object):
         self.update()
         
     def update(self):
+        print("Importing data....")
         # Load from file
         openmesh.read_mesh(self.floatingMesh, self.floatingMeshPath)
         openmesh.read_mesh(self.targetMesh, self.targetMeshPath)
-        print('floating mesh: \n')
-        print(self.floatingMesh)
         # Obtain the floating and target mesh features (= positions and normals)
         self.floatingFeatures = openmesh_to_numpy_features(self.floatingMesh)
-        print('floating features: \n')
-        print(self.floatingFeatures)
         self.targetFeatures = openmesh_to_numpy_features(self.targetMesh)
+        print("Data imported.")
         
         
 class DataExporter(object):
@@ -504,7 +502,9 @@ class DataExporter(object):
         self.update()
         
     def update(self):
+        print('Exporting data...')
         # Insert positions into the mesh structure
         openmesh_normals_from_positions(self.resultingMesh, self.resultingFeatures[:,0:3])
         # Write the mesh to file
         openmesh.write_mesh(self.resultingMesh, self.resultingMeshPath)
+        print('Data exported.')
