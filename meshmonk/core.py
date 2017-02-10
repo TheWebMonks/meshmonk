@@ -689,6 +689,7 @@ class NonrigidRegistration(object):
         ## Transformation
         self.numViscousSmoothingIterationsList = [55, 34, 21, 13, 8, 5, 3, 2, 1, 1]
         self.numElasticSmoothingIterationsList = [55, 34, 21, 13, 8, 5, 3, 2, 1, 1]
+        self.numIterations = len(self.numViscousSmoothingIterationsList)
         self.numNeighbourDisplacements = 10
         self.sigmaSmoothing = 10.0
         
@@ -724,6 +725,8 @@ class NonrigidRegistration(object):
                                                   numViscousIterations = 1,
                                                   numElasticIterations = 1)
         iteration = 0
+        print ("Starting Non-Rigid Registration...")
+        timePre = time.time()
         for numViscousSmoothingIterations, numElasticSmoothingIterations in zip(self.numViscousSmoothingIterationsList, self.numElasticSmoothingIterationsList):
             timeStart = time.time()
             ## 1) Determine Nearest neighbours.
@@ -742,10 +745,79 @@ class NonrigidRegistration(object):
             self.floatingFeatures[:,3:6] = helpers.openmesh_normals_from_positions(self.floatingMesh, self.floatingFeatures[:,0:3])
             
             timeEnd = time.time()
-            print "Iteration " + str(iteration) + " took " + str(timeEnd-timeStart) 
+            print("Iteration " + str(iteration) + "/" + str(self.numIterations) + " took " + str(timeEnd-timeStart) + 's')
+            iteration = iteration + 1
+            
+        timePost = time.time()
+        print ("Completed Non-Rigid Registration in " + str(timePost-timePre) + 's')
+        
+class RigidRegistration(object):
+    """
+    This filter object performs rigid registration
+    """
+    def __init__(self, floatingFeatures, floatingMesh, targetFeatures):
+        self.floatingFeatures = floatingFeatures
+        self.floatingMesh = floatingMesh
+        self.targetFeatures = targetFeatures
+        # Parameters
+        ## Correspondences
+        self.wknnNumNeighbours = 3
+        ## Inliers
+        self.kappaa = 3.0
+        ## Transformation
+        self.numIterations = 10
+        
+    def update(self):
+             
+        ## Initialize
+        numFloatingVertices = self.floatingFeatures.shape[0]
+        numTargetVertices = self.targetFeatures.shape[0]
+        floatingFlags = numpy.ones((numFloatingVertices), dtype = float)
+        targetFlags = numpy.ones((numTargetVertices), dtype = float)
+        correspondingFeatures = numpy.zeros((self.floatingFeatures.shape), dtype = float)
+        correspondingFlags = numpy.ones((floatingFlags.shape), dtype = float)
+        symCorrespondenceFilter = SymCorrespondenceFilter(self.floatingFeatures,
+                                                          floatingFlags,
+                                                          self.targetFeatures,
+                                                          targetFlags,
+                                                          correspondingFeatures,
+                                                          correspondingFlags,
+                                                          self.wknnNumNeighbours)
+        ## Set up inlier filter
+        floatingWeights = numpy.ones((numFloatingVertices), dtype = float)
+        inlierFilter = InlierFilter(self.floatingFeatures, correspondingFeatures,
+                                    correspondingFlags, floatingWeights,
+                                    self.kappaa)
+        
+        
+        ## Set up transformation filter
+        transformationFilter = RigidTransformationFilter(self.floatingFeatures,
+                                                         correspondingFeatures,
+                                                         floatingWeights)
+        
+        iteration = 0
+        print ("Starting Rigid Registration...")
+        timePre = time.time()
+        for i in range(self.numIterations):
+            timeStart = time.time()
+            ## 1) Update Nearest neighbours.
+            symCorrespondenceFilter.set_floating_features(self.floatingFeatures, floatingFlags)
+            symCorrespondenceFilter.update()
+            ## 2) Update inlier weights.
+            inlierFilter.update()
+            ## 3) Update transformation.
+            transformationFilter.update()
+        
+            ## 4) Re-calculate the mesh's properties (like normals e.g.)
+            self.floatingFeatures[:,3:6] = helpers.openmesh_normals_from_positions(self.floatingMesh, self.floatingFeatures[:,0:3])
+            
+            timeEnd = time.time()
+            print("Iteration " + str(iteration) + "/" + str(self.numIterations) + " took " + str(timeEnd-timeStart) + 's')
             iteration = iteration + 1
         
-
+        timePost = time.time()
+        print ("Completed Rigid Registration in " + str(timePost-timePre) + 's')
+            
 class RegistrationManager(object):
     """
     This class manages registration. It requires the user to specify file paths,
@@ -783,14 +855,22 @@ class RegistrationManager(object):
             
         # Execute the required parts
         if self.registrationType == 'rigid':
-            print('rigid not available yet')
+            rigidTransformer = RigidRegistration(floatingFeatures,
+                                                 floatingMesh,
+                                                 targetFeatures)
+            rigidTransformer.update()
+            
         elif self.registrationType == 'nonrigid':
             nonrigidTransformer = NonrigidRegistration(floatingFeatures,
                                                        floatingMesh,
                                                        targetFeatures)
             nonrigidTransformer.update()
+            
         elif self.registrationType == 'full':
-            print('rigid not available yet')
+            rigidTransformer = RigidRegistration(floatingFeatures,
+                                                 floatingMesh,
+                                                 targetFeatures)
+            rigidTransformer.update()
             nonrigidTransformer = NonrigidRegistration(floatingFeatures,
                                                        floatingMesh,
                                                        targetFeatures)

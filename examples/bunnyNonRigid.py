@@ -17,5 +17,5 @@ floatingMeshPath = "/home/jonatan/projects/meshmonk/examples/data/fucked_up_bunn
 targetMeshPath = "/home/jonatan/projects/meshmonk/examples/data/bunny90.obj"
 resultingMeshPath = "/home/jonatan/projects/meshmonk/examples/data/bunnyNonRigid.obj"
 
-nonrigidTransformer = core.RegistrationManager(floatingMeshPath, targetMeshPath, resultingMeshPath, 'nonrigid')
+nonrigidTransformer = core.RegistrationManager(floatingMeshPath, targetMeshPath, resultingMeshPath, 'full')
 nonrigidTransformer.update()
