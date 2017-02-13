@@ -30,7 +30,7 @@ Pre-requisites: download and install [Anaconda](https://www.continuum.io/downloa
 
 ```bash
 $ conda install -c conda-forge openmesh=6.3
-$ conda install -c lukin0110 meshmonk=0.0.4
+$ conda install -c webmonks meshmonk=0.0.5
 ```
 
 ## License

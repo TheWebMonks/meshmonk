@@ -5,20 +5,28 @@
 ## 1. Create a new tag it git
 
 ```bash
-$ git tag -a v0.0.1 -m "first conda version"
+$ git tag -a v0.0.5 -m "your text here"
 $ git push origin --tags
 ```
 
-NOTE: Change version in the `conda/meta.yml` to your new tag version.
+## 2. Update meta.yml
 
-## 2. Create package
+Now you need to change the `git_rev` in the `conda/meta.yml` file to your new tag.
+
+```bash
+source:
+  git_rev: v0.0.5
+  git_url: https://github.com/TheWebMonks/meshmonk.git
+```
+
+## 3. Create package
 
 ```bash
 $ cd conda
 $ conda build .
 ```
 
-## 3. Upload package
+## 4. Upload package
 
 Pre-requisites:
 
@@ -29,43 +37,13 @@ $ conda install anaconda-client
 Upload for OSX:
 ```bash
 $ anaconda login
-$ anaconda upload /Applications/anaconda/conda-bld/osx-64/meshmonk-0.0.3-np111py27_0.tar.bz2
+$ anaconda upload -u WebMonks /Applications/anaconda/conda-bld/osx-64/meshmonk-0.0.3-np111py27_0.tar.bz2
 ```
 
 Upload for Linux:
 ```bash
 $ conda convert --platform all /Applications/anaconda/conda-bld/osx-64/meshmonk-0.0.3-np111py27_0.tar.bz2 -o outputdir/
-$ anaconda upload outputdir/linux-64/meshmonk-0.0.3-np111py27_0.tar.bz2 
-```
-
-# Virtual envs on OSX
-
-http://sourabhbajaj.com/mac-setup/Python/virtualenv.html
-
-```bash
-$ virtualenv venv --distribute --system-site-packages
-```
-
-These commands create a venv subdirectory in your project where everything is installed. You need to activate it first 
-though (in every terminal where you are working on your project):
-
-```bash
-$ source venv/bin/activate
-```
-
-You should see a (venv) appear at the beginning of your terminal prompt indicating that you are working inside the 
-virtualenv. Now when you install something:
-
-```bash
-$ pip install <package>
-```
-
-It will get installed in the venv folder, and not conflict with other projects.
-
-To leave the virtual environment use.
-
-```bash
-$ deactivate
+$ anaconda upload -u WebMonks outputdir/linux-64/meshmonk-0.0.3-np111py27_0.tar.bz2 
 ```
 
 # TODO
