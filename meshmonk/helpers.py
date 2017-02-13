@@ -2,6 +2,7 @@ import sys
 # sys.path.append('/home/jonatan/projects/OpenMesh/build/Build/python')
 import openmesh
 #Importing the rest of utilities
+import os.path
 import numpy
 from numpy import linalg
 from scipy import spatial
@@ -380,50 +381,55 @@ class VectorFieldSmoother(object):
         return self.outVectors
     
     
-def openmesh_normals_from_positions(mesh, newPositions):
+def openmesh_normals_from_positions(ioMesh, inPositions):
     """
     GOAL
-    This function recalculates the normals for a given mesh, when there are new
-    positions for the nodes.
+    This function puts the new positions into the given mesh structure, and
+    recomputes the normals. 
 
     INPUT
-    -mesh:
-    this has to be a mesh of openmesh's TriMesh type
-    -newPositions:
+    -ioMesh:
+    this has to be a mesh of openmesh's TriMesh type. Its positions are updated
+    and the normals are recomputed and inserted into 'outNormals'
+    -inPositions:
     the new positions that have to be inserted into the mesh to recompute the
     vertex normals.
 
     PARAMETERS
 
     RETURNS
-    -newNormals:
+    -outNormals:
     The new vertex normals that were recomputed given the new positions and mesh
     structure.
     """
     # Info and Initialization
-    numVertices = newPositions.shape[0]
-    newNormals = numpy.zeros((numVertices,3), dtype = float)
+    numVertices = inPositions.shape[0]
+    outNormals = numpy.zeros((numVertices,3), dtype = float)
     # Put positions back into the floating mesh
     newPosition = openmesh.TriMesh.Point(0.0,0.0,0.0)
-    for i, vh in enumerate(mesh.vertices()):
-        newPosition[0] = newPositions[i,0]
-        newPosition[1] = newPositions[i,1]
-        newPosition[2] = newPositions[i,2]
-        mesh.set_point(vh,newPosition)
+    i = 0
+    for vh in ioMesh.vertices():
+        newPosition[0] = inPositions[i,0]
+        newPosition[1] = inPositions[i,1]
+        newPosition[2] = inPositions[i,2]
+        ioMesh.set_point(vh,newPosition)
+        i += 1
 
     # Let openmesh recalculate the vertex normals
-    mesh.request_vertex_normals()
-    mesh.request_face_normals()
-    mesh.update_normals()
-    mesh.release_face_normals()
+    ioMesh.request_vertex_normals()
+    ioMesh.request_face_normals()
+    ioMesh.update_normals()
+    ioMesh.release_face_normals()
 
     # Get the normals back out from the openmesh TriMesh
-    for i, vh in enumerate(mesh.vertices()):
-        newNormals[i,0] = mesh.normal(vh)[0]
-        newNormals[i,1] = mesh.normal(vh)[1]
-        newNormals[i,2] = mesh.normal(vh)[2]
+    i = 0
+    for vh in ioMesh.vertices():
+        outNormals[i,0] = ioMesh.normal(vh)[0]
+        outNormals[i,1] = ioMesh.normal(vh)[1]
+        outNormals[i,2] = ioMesh.normal(vh)[2]
+        i += 1
 
-    return newNormals
+    return outNormals
 
 def openmesh_to_numpy_features(mesh):
     """
@@ -483,7 +489,7 @@ def openmesh_to_matrices(inMesh):
     a numVertices x 6 numpy array where the first three columns are made up of
     the positions of the vertices, and the last three columns the normals of
     those vertices.
-    -outIndices:
+    -outFaces:
     a numFaces x 3 numpy array with each element containing the index of a
     vertex belonging to that face.
     """
@@ -491,7 +497,7 @@ def openmesh_to_matrices(inMesh):
     numVertices = inMesh.n_vertices()
     numFaces = inMesh.n_faces()
     outFeatures = numpy.zeros((numVertices,6), dtype = float)
-    outIndices = numpy.zeros((numFaces,3), dtype = int)
+    outFaces = numpy.zeros((numFaces,3), dtype = int)
 
     # Let openmesh recalculate the vertex normals (typically, only the face
     # normals are present).
@@ -518,10 +524,12 @@ def openmesh_to_matrices(inMesh):
         j = 0
         for vertexHandle in inMesh.fv(faceHandle):
             ## Save the vertex index
-            outIndices[i,j] = vertexHandle.idx()
+            outFaces[i,j] = vertexHandle.idx()
             j += 1
+        
+        i += 1
 
-    return outFeatures, outIndices
+    return outFeatures, outFaces
 
 def matrices_to_openmesh(inVertices, inFaces):
     """
@@ -565,7 +573,7 @@ def matrices_to_openmesh(inVertices, inFaces):
         vertexHandle1 = vertexHandles[vertexIndex1]
         vertexHandle2 = vertexHandles[vertexIndex2]
         ## Add a face to the mesh using these vertex handles
-        faceHandle = outMesh.addface(vertexHandle0,vertexHandle1,vertexHandle2)
+        faceHandle = outMesh.add_face(vertexHandle0,vertexHandle1,vertexHandle2)
     
     # Return the result
     return outMesh
@@ -575,23 +583,33 @@ class DataImporter(object):
     This class takes filenames as input and prepares data that is required
     by the registration framework
     """
-    def __init__(self, floatingMeshPath, targetMeshPath):
-        self.floatingMeshPath = floatingMeshPath
-        self.targetMeshPath = targetMeshPath
-        self.floatingMesh = openmesh.TriMesh()
-        self.targetMesh = openmesh.TriMesh()
-        self.floatingFeatures = []
-        self.targetFeatures = []
+    def __init__(self, inFloatingMeshPath, inTargetMeshPath):
+        self.inFloatingMeshPath = inFloatingMeshPath
+        self.inTargetMeshPath = inTargetMeshPath
+        self._floatingMesh = openmesh.TriMesh()
+        self._targetMesh = openmesh.TriMesh()
+        self.outFloatingFeatures = []
+        self.outTargetFeatures = []
+        self.outFloatingFaces = []
+        self.outTargetFaces = []
         self.update()
         
     def update(self):
         print("Importing data....")
+        # Safety check
+        if not os.path.isfile(self.inFloatingMeshPath):
+            raise IOError('Floating mesh path {:s} does not exist.'.format(self.inFloatingMeshPath))
+        
+        if not os.path.isfile(self.inTargetMeshPath):
+            raise IOError('Target mesh path {:s} does not exist.'.format(self.inTargetMeshPath))
+            
         # Load from file
-        openmesh.read_mesh(self.floatingMesh, self.floatingMeshPath)
-        openmesh.read_mesh(self.targetMesh, self.targetMeshPath)
+        openmesh.read_mesh(self._floatingMesh, self.inFloatingMeshPath)
+        openmesh.read_mesh(self._targetMesh, self.inTargetMeshPath)
         # Obtain the floating and target mesh features (= positions and normals)
-        self.floatingFeatures = openmesh_to_numpy_features(self.floatingMesh)
-        self.targetFeatures = openmesh_to_numpy_features(self.targetMesh)
+        # and their faces
+        self.outFloatingFeatures, self.outFloatingFaces = openmesh_to_matrices(self._floatingMesh)
+        self.outTargetFeatures, self.outTargetFaces = openmesh_to_matrices(self._targetMesh)
         print("Data imported.")
         
         
@@ -600,16 +618,17 @@ class DataExporter(object):
     This class takes filenames as input and prepares data that is required
     by the registration framework
     """
-    def __init__(self,resultingFeatures, resultingMesh, resultingMeshPath):
-        self.resultingFeatures = resultingFeatures
-        self.resultingMesh = resultingMesh
-        self.resultingMeshPath = resultingMeshPath
+    def __init__(self,inResultingFeatures, inResultingFaces, inResultingMeshPath):
+        self.inResultingFeatures = inResultingFeatures
+        self.inResultingFaces = inResultingFaces
+        self.inResultingMeshPath = inResultingMeshPath
         self.update()
         
     def update(self):
         print('Exporting data...')
-        # Insert positions into the mesh structure
-        openmesh_normals_from_positions(self.resultingMesh, self.resultingFeatures[:,0:3])
+        # Build a mesh using the vertex positions and faces
+        resultingMesh = matrices_to_openmesh(self.inResultingFeatures[:,0:3],
+                                             self.inResultingFaces)
         # Write the mesh to file
-        openmesh.write_mesh(self.resultingMesh, self.resultingMeshPath)
+        openmesh.write_mesh(resultingMesh, self.inResultingMeshPath)
         print('Data exported.')

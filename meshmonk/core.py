@@ -498,8 +498,12 @@ def rigid_transformation(floatingFeatures, correspondingFeatures, floatingWeight
     ##4) Apply transformation
     vector = numpy.ones((4), dtype = float)
     for i in range(numElements):
+        ### Apply full transformation on the positions
         vector[0:3] = floatingFeaturesT[0:3,i].copy()
         floatingFeatures[i,0:3] = transformationMatrix.dot(vector)[0:3]
+        ### Apply just the rotation on the normals
+        vector[0:3] = floatingFeaturesT[3:6,i].copy()
+        floatingFeatures[i,3:6] = rotationMatrix.dot(vector)[0:3]
 
     return transformationMatrix
 
@@ -583,11 +587,15 @@ class RigidTransformationFilter(TransformationFilter):
 class ViscoElasticFilter(TransformationFilter):
     
     def __init__(self, ioFloatingFeatures, inCorrespondingFeatures,
-                 inFloatingWeights, paramNumNeighbours, paramSigma = 1.0,
+                 inFloatingWeights, inFloatingFaces, 
+                 paramNumNeighbours, paramSigma = 1.0,
                  numViscousIterations = 1, numElasticIterations = 1):
         self.ioFloatingFeatures = ioFloatingFeatures
         self.inCorrespondingFeatures = inCorrespondingFeatures 
         self.inFloatingWeights = inFloatingWeights
+        self.inFloatingFaces = inFloatingFaces
+        self._floatingMesh = []
+        self._construct_floating_mesh_structure() #necessary to build the mesh structure in order to recompute the mesh vertex normals
         self.paramNumNeighbours = paramNumNeighbours
         self.paramSigma = paramSigma
         self.numViscousIterations = numViscousIterations
@@ -665,9 +673,24 @@ class ViscoElasticFilter(TransformationFilter):
                                             self._oldDisplacementField[i,:] + \
                                             self.ioDisplacementField[i,:]
 
+        # Update the normals (which are the last 3 columns of the feature matrix)
+        self._update_normals()
+        
         # Release the memory for the old displacement field
         self._oldDisplacementField = []
 
+    def _construct_floating_mesh_structure(self):
+        self._floatingMesh = helpers.matrices_to_openmesh(self.ioFloatingFeatures[:,0:3],
+                                                          self.inFloatingFaces)
+        
+    def _update_normals(self):
+        # Use helper function to recompute the normals, given the mesh structure and the new positions
+        newNormals = helpers.openmesh_normals_from_positions(self._floatingMesh, self.ioFloatingFeatures[:,0:3])
+        
+        # Insert the new normal values into the features
+        for i in range(self._numFloatingElements):
+            self.ioFloatingFeatures[i,3:6] = newNormals[i,:]
+    
     def update(self):
         self._update_transformation()
         self._apply_transformation()
@@ -677,10 +700,10 @@ class NonrigidRegistration(object):
     """
     This filter object performs nonrigid registration
     """
-    def __init__(self, floatingFeatures, floatingMesh, targetFeatures):
-        self.floatingFeatures = floatingFeatures
-        self.floatingMesh = floatingMesh
-        self.targetFeatures = targetFeatures
+    def __init__(self, ioFloatingFeatures, inFloatingFaces, inTargetFeatures):
+        self.ioFloatingFeatures = ioFloatingFeatures
+        self.inFloatingFaces = inFloatingFaces
+        self.inTargetFeatures = inTargetFeatures
         # Parameters
         ## Correspondences
         self.wknnNumNeighbours = 3
@@ -696,30 +719,31 @@ class NonrigidRegistration(object):
     def update(self):
              
         ## Initialize
-        numFloatingVertices = self.floatingFeatures.shape[0]
-        numTargetVertices = self.targetFeatures.shape[0]
+        numFloatingVertices = self.ioFloatingFeatures.shape[0]
+        numTargetVertices = self.inTargetFeatures.shape[0]
         floatingFlags = numpy.ones((numFloatingVertices), dtype = float)
         targetFlags = numpy.ones((numTargetVertices), dtype = float)
-        correspondingFeatures = numpy.zeros((self.floatingFeatures.shape), dtype = float)
+        correspondingFeatures = numpy.zeros((self.ioFloatingFeatures.shape), dtype = float)
         correspondingFlags = numpy.ones((floatingFlags.shape), dtype = float)
-        symCorrespondenceFilter = SymCorrespondenceFilter(self.floatingFeatures,
+        symCorrespondenceFilter = SymCorrespondenceFilter(self.ioFloatingFeatures,
                                                           floatingFlags,
-                                                          self.targetFeatures,
+                                                          self.inTargetFeatures,
                                                           targetFlags,
                                                           correspondingFeatures,
                                                           correspondingFlags,
                                                           self.wknnNumNeighbours)
         ## Set up inlier filter
         floatingWeights = numpy.ones((numFloatingVertices), dtype = float)
-        inlierFilter = InlierFilter(self.floatingFeatures, correspondingFeatures,
+        inlierFilter = InlierFilter(self.ioFloatingFeatures, correspondingFeatures,
                                     correspondingFlags, floatingWeights,
                                     self.kappaa)
         
         
         ## Set up transformation filter
-        transformationFilter = ViscoElasticFilter(self.floatingFeatures,
+        transformationFilter = ViscoElasticFilter(self.ioFloatingFeatures,
                                                   correspondingFeatures,
                                                   floatingWeights,
+                                                  self.inFloatingFaces,
                                                   10,
                                                   self.sigmaSmoothing,
                                                   numViscousIterations = 1,
@@ -730,7 +754,7 @@ class NonrigidRegistration(object):
         for numViscousSmoothingIterations, numElasticSmoothingIterations in zip(self.numViscousSmoothingIterationsList, self.numElasticSmoothingIterationsList):
             timeStart = time.time()
             ## 1) Determine Nearest neighbours.
-            symCorrespondenceFilter.set_floating_features(self.floatingFeatures, floatingFlags)
+            symCorrespondenceFilter.set_floating_features(self.ioFloatingFeatures, floatingFlags)
             symCorrespondenceFilter.update()
             ## 2) Determine inlier weights.
             inlierFilter.update()
@@ -741,9 +765,7 @@ class NonrigidRegistration(object):
                                                     numElasticSmoothingIterations)
             transformationFilter.update()
         
-            ## 4) Re-calculate the mesh's properties (like normals e.g.)
-            self.floatingFeatures[:,3:6] = helpers.openmesh_normals_from_positions(self.floatingMesh, self.floatingFeatures[:,0:3])
-            
+            ## Print progress
             timeEnd = time.time()
             print("Iteration " + str(iteration) + "/" + str(self.numIterations) + " took " + str(timeEnd-timeStart) + 's')
             iteration = iteration + 1
@@ -755,10 +777,9 @@ class RigidRegistration(object):
     """
     This filter object performs rigid registration
     """
-    def __init__(self, floatingFeatures, floatingMesh, targetFeatures):
-        self.floatingFeatures = floatingFeatures
-        self.floatingMesh = floatingMesh
-        self.targetFeatures = targetFeatures
+    def __init__(self, ioFloatingFeatures, inTargetFeatures):
+        self.ioFloatingFeatures = ioFloatingFeatures
+        self.inTargetFeatures = inTargetFeatures
         # Parameters
         ## Correspondences
         self.wknnNumNeighbours = 3
@@ -770,28 +791,28 @@ class RigidRegistration(object):
     def update(self):
              
         ## Initialize
-        numFloatingVertices = self.floatingFeatures.shape[0]
-        numTargetVertices = self.targetFeatures.shape[0]
+        numFloatingVertices = self.ioFloatingFeatures.shape[0]
+        numTargetVertices = self.inTargetFeatures.shape[0]
         floatingFlags = numpy.ones((numFloatingVertices), dtype = float)
         targetFlags = numpy.ones((numTargetVertices), dtype = float)
-        correspondingFeatures = numpy.zeros((self.floatingFeatures.shape), dtype = float)
+        correspondingFeatures = numpy.zeros((self.ioFloatingFeatures.shape), dtype = float)
         correspondingFlags = numpy.ones((floatingFlags.shape), dtype = float)
-        symCorrespondenceFilter = SymCorrespondenceFilter(self.floatingFeatures,
+        symCorrespondenceFilter = SymCorrespondenceFilter(self.ioFloatingFeatures,
                                                           floatingFlags,
-                                                          self.targetFeatures,
+                                                          self.inTargetFeatures,
                                                           targetFlags,
                                                           correspondingFeatures,
                                                           correspondingFlags,
                                                           self.wknnNumNeighbours)
         ## Set up inlier filter
         floatingWeights = numpy.ones((numFloatingVertices), dtype = float)
-        inlierFilter = InlierFilter(self.floatingFeatures, correspondingFeatures,
+        inlierFilter = InlierFilter(self.ioFloatingFeatures, correspondingFeatures,
                                     correspondingFlags, floatingWeights,
                                     self.kappaa)
         
         
         ## Set up transformation filter
-        transformationFilter = RigidTransformationFilter(self.floatingFeatures,
+        transformationFilter = RigidTransformationFilter(self.ioFloatingFeatures,
                                                          correspondingFeatures,
                                                          floatingWeights)
         
@@ -799,24 +820,30 @@ class RigidRegistration(object):
         print ("Starting Rigid Registration...")
         timePre = time.time()
         for i in range(self.numIterations):
+            #DEBUG
+            print("Floating Features: \n")
+            print(self.ioFloatingFeatures[0:3,:])
+            #ENDDEBUG
             timeStart = time.time()
             ## 1) Update Nearest neighbours.
-            symCorrespondenceFilter.set_floating_features(self.floatingFeatures, floatingFlags)
+            symCorrespondenceFilter.set_floating_features(self.ioFloatingFeatures, floatingFlags)
             symCorrespondenceFilter.update()
             ## 2) Update inlier weights.
             inlierFilter.update()
             ## 3) Update transformation.
             transformationFilter.update()
         
-            ## 4) Re-calculate the mesh's properties (like normals e.g.)
-            self.floatingFeatures[:,3:6] = helpers.openmesh_normals_from_positions(self.floatingMesh, self.floatingFeatures[:,0:3])
-            
+            ## Print progress            
             timeEnd = time.time()
             print("Iteration " + str(iteration) + "/" + str(self.numIterations) + " took " + str(timeEnd-timeStart) + 's')
             iteration = iteration + 1
         
         timePost = time.time()
         print ("Completed Rigid Registration in " + str(timePost-timePre) + 's')
+        #DEBUG
+        print("Floating Features: \n")
+        print(self.ioFloatingFeatures[0:3,:])
+        #ENDDEBUG
             
 class RegistrationManager(object):
     """
@@ -839,10 +866,10 @@ class RegistrationManager(object):
         # Import Data
         dataImporter = helpers.DataImporter(self.floatingMeshPath, self.targetMeshPath)
         ## Obtain the floating and target mesh features (= positions and normals)
-        floatingFeatures = dataImporter.floatingFeatures
-        targetFeatures = dataImporter.targetFeatures
-        ## Get openmesh's trimesh structures
-        floatingMesh = dataImporter.floatingMesh   
+        floatingFeatures = dataImporter.outFloatingFeatures
+        targetFeatures = dataImporter.outTargetFeatures
+        ## Get floating faces
+        floatingFaces = dataImporter.outFloatingFaces   
         
         ##########
         # REGISTRATION
@@ -856,23 +883,21 @@ class RegistrationManager(object):
         # Execute the required parts
         if self.registrationType == 'rigid':
             rigidTransformer = RigidRegistration(floatingFeatures,
-                                                 floatingMesh,
                                                  targetFeatures)
             rigidTransformer.update()
             
         elif self.registrationType == 'nonrigid':
             nonrigidTransformer = NonrigidRegistration(floatingFeatures,
-                                                       floatingMesh,
+                                                       floatingFaces,
                                                        targetFeatures)
             nonrigidTransformer.update()
             
         elif self.registrationType == 'full':
             rigidTransformer = RigidRegistration(floatingFeatures,
-                                                 floatingMesh,
                                                  targetFeatures)
             rigidTransformer.update()
             nonrigidTransformer = NonrigidRegistration(floatingFeatures,
-                                                       floatingMesh,
+                                                       floatingFaces,
                                                        targetFeatures)
             nonrigidTransformer.update()
             
@@ -880,5 +905,5 @@ class RegistrationManager(object):
         # EXPORT DATA
         ##########
         # Save the mesh
-        helpers.DataExporter(floatingFeatures, floatingMesh, self.resultingMeshPath)
+        helpers.DataExporter(floatingFeatures, floatingFaces, self.resultingMeshPath)
         
