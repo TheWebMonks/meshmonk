@@ -465,6 +465,111 @@ def openmesh_to_numpy_features(mesh):
 
     return features
 
+def openmesh_to_matrices(inMesh):
+    """
+    GOAL
+    This function converts an openmesh trimesh structure to the matrix
+    representations used in the registration framework (matrices of vertex
+    features and face indices)
+
+    INPUT
+    -inMesh:
+    this has to be a mesh of openmesh's TriMesh type
+
+    PARAMETERS
+
+    RETURNS
+    -outFeatures:
+    a numVertices x 6 numpy array where the first three columns are made up of
+    the positions of the vertices, and the last three columns the normals of
+    those vertices.
+    -outIndices:
+    a numFaces x 3 numpy array with each element containing the index of a
+    vertex belonging to that face.
+    """
+    # Info and Initialization
+    numVertices = inMesh.n_vertices()
+    numFaces = inMesh.n_faces()
+    outFeatures = numpy.zeros((numVertices,6), dtype = float)
+    outIndices = numpy.zeros((numFaces,3), dtype = int)
+
+    # Let openmesh recalculate the vertex normals (typically, only the face
+    # normals are present).
+    inMesh.request_vertex_normals()
+    inMesh.request_face_normals()
+    inMesh.update_normals()
+    inMesh.release_face_normals()
+
+    # Extract the vertex positions and normals
+    i = 0
+    for vertexHandle in inMesh.vertices():
+        outFeatures[i,0] = inMesh.point(vertexHandle)[0]
+        outFeatures[i,1] = inMesh.point(vertexHandle)[1]
+        outFeatures[i,2] = inMesh.point(vertexHandle)[2]
+        outFeatures[i,3] = inMesh.normal(vertexHandle)[0]
+        outFeatures[i,4] = inMesh.normal(vertexHandle)[1]
+        outFeatures[i,5] = inMesh.normal(vertexHandle)[2]
+        i += 1
+
+    # Extract the face indices
+    i = 0
+    for faceHandle in inMesh.faces():
+        ## Loop over the vertices of the current face
+        j = 0
+        for vertexHandle in inMesh.fv(faceHandle):
+            ## Save the vertex index
+            outIndices[i,j] = vertexHandle.idx()
+            j += 1
+
+    return outFeatures, outIndices
+
+def matrices_to_openmesh(inVertices, inFaces):
+    """
+    GOAL
+    This function converts matrices into an OpenMesh TriMesh structure.
+
+    INPUT
+    -inVertices:
+    A matrix containing the x,y,z coordinates for each vertex
+    -inFaces:
+    A matrix containing the indices for all the nodes of each face
+
+    PARAMETERS
+
+    RETURNS
+    -an OpenMesh Trimesh
+    """
+    # Info and Initialization
+    numVertices = inVertices.shape[0]
+    numFaces = inFaces.shape[0]
+    outMesh = openmesh.TriMesh()
+    
+    # Add each vertex to the mesh
+    vertexHandles = [None] * numVertices
+    for i in range(numVertices):
+        ## Add current vertex
+        vertexHandle = outMesh.add_vertex(openmesh.TriMesh.Point(inVertices[i,0], inVertices[i,1], inVertices[i,2]))
+        ## Save the vertex handle that was returned, since we will need it
+        ## to construct the faces of the mesh
+        vertexHandles[i] = vertexHandle
+    
+    # Add each face to the mesh
+    for i in range(numFaces):
+        ## Get vertex indices of current face
+        vertexIndex0 = inFaces[i,0]
+        vertexIndex1 = inFaces[i,1]
+        vertexIndex2 = inFaces[i,2]
+        ## Get the corresponding vertex handles (generated when adding the 
+        ## vertices to the mesh)
+        vertexHandle0 = vertexHandles[vertexIndex0]
+        vertexHandle1 = vertexHandles[vertexIndex1]
+        vertexHandle2 = vertexHandles[vertexIndex2]
+        ## Add a face to the mesh using these vertex handles
+        faceHandle = outMesh.addface(vertexHandle0,vertexHandle1,vertexHandle2)
+    
+    # Return the result
+    return outMesh
+
 class DataImporter(object):
     """
     This class takes filenames as input and prepares data that is required
