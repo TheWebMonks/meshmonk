@@ -797,7 +797,7 @@ int main()
     size_t smoothingIterations[12] = {144,89,55,34,21,13,8,5,3,2,1,1};
     //size_t smoothingIterations = numNonrigidIterations + 1; //we will use this for the number of smoothing iterations
     registration::ViscoElasticTransformer transformer;
-    transformer.set_input(&correspondingFeatures, &floatingWeights);
+    transformer.set_input(&correspondingFeatures, &floatingWeights, &floatingFaces);
     transformer.set_output(&floatingFeatures);
 
 

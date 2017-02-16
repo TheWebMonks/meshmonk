@@ -4,23 +4,26 @@ namespace registration {
 
 
 
-void ViscoElasticTransformer::set_input(const FeatureMat * const inCorrespondingPositions,
-                                        const VecDynFloat * const inWeights){
-    _inCorrespondingPositions = inCorrespondingPositions;
+void ViscoElasticTransformer::set_input(const FeatureMat * const inCorrespondingFeatures,
+                                        const VecDynFloat * const inWeights,
+                                        const FacesMat * const inFloatingFaces){
+    _inCorrespondingFeatures = inCorrespondingFeatures;
     _inWeights = inWeights;
+    _inFloatingFaces = inFloatingFaces;
     _weightsOutdated = true; //if the user sets new _inWeights, we need to update our smoothing weights.
 }//end set_input()
 
 
-void ViscoElasticTransformer::set_output(FeatureMat * const ioFloatingPositions){
-    _ioFloatingPositions = ioFloatingPositions;
-    _neighboursOutdated = true; //if the user sets new floating positions, we need to update our neighbours, and hence our smoothing weights.
+void ViscoElasticTransformer::set_output(FeatureMat * const ioFloatingFeatures){
+    _ioFloatingFeatures = ioFloatingFeatures;
+    _neighboursOutdated = true; //if the user sets new floating Features, we need to update our neighbours, and hence our smoothing weights.
     _weightsOutdated = true;
 
-    _numElements = _ioFloatingPositions->rows();
+    _numElements = _ioFloatingFeatures->rows();
     _displacementField = Vec3Mat::Zero(_numElements,3);
     _oldDisplacementField = Vec3Mat::Zero(_numElements,3);
     _smoothingWeights = MatDynFloat::Zero(_numElements,_numNeighbours);
+    convert_matrices_to_mesh(*_ioFloatingFeatures, *_inFloatingFaces, _floatingMesh); //NOTE: We should do actually really be doing this EVERY TIME the user provides a different floating mesh to this class.
 
 }//end set_output()
 
@@ -46,8 +49,8 @@ void ViscoElasticTransformer::set_parameters(size_t numNeighbours, float sigma,
 
 //## Update the neighbour finder
 void ViscoElasticTransformer::_update_neighbours(){
-    _neighbourFinder.set_source_points(_ioFloatingPositions);
-    _neighbourFinder.set_queried_points(_ioFloatingPositions);
+    _neighbourFinder.set_source_points(_ioFloatingFeatures);
+    _neighbourFinder.set_queried_points(_ioFloatingFeatures);
     _neighbourFinder.set_parameters(_numNeighbours);
     _neighbourFinder.update();
 }//end _update_neighbours()
@@ -99,7 +102,7 @@ void ViscoElasticTransformer::_update_viscously(){
     /*
     Viscosity is obtained by incrementing the displacement field with a regularized force field.
 
-    The force field is the difference between the current floating and corresponding positions.
+    The force field is the difference between the current floating and corresponding Features.
     A purely viscous transformation can be obtained by adding a regularized force fold to the
     total displacement field. If, however, that total displacement field is regularized as well,
     a more elastic behaviour is achieved.
@@ -111,8 +114,8 @@ void ViscoElasticTransformer::_update_viscously(){
     */
 
     //# 1) Determine the force field (difference between current floating and corresponding
-    //# positions).
-    Vec3Mat forceField = _inCorrespondingPositions->leftCols(3) - _ioFloatingPositions->leftCols(3);
+    //# Features).
+    Vec3Mat forceField = _inCorrespondingFeatures->leftCols(3) - _ioFloatingFeatures->leftCols(3);
 
     //# 2) Regularize the force field through iterative weighted averaging.
     /*
@@ -205,8 +208,11 @@ void ViscoElasticTransformer::_apply_transformation(){
     //# Displace each current floating position by the difference between
     //# the old and new displacement fields.
     for (size_t i = 0 ; i < _numElements ; i++) {
-        _ioFloatingPositions->row(i).head(3) += (_displacementField.row(i) - _oldDisplacementField.row(i));
+        _ioFloatingFeatures->row(i).head(3) += (_displacementField.row(i) - _oldDisplacementField.row(i));
     }
+
+    //# Update the floating surface normals
+    update_normals_for_altered_positions(_floatingMesh, *_ioFloatingFeatures);
 }
 
 

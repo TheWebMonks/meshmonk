@@ -611,7 +611,18 @@ void update_normals_for_altered_positions(TriMesh &ioMesh,
     }
 
     //# Insert positions from 'ioFeatures' into 'ioMesh'
-    convert_eigen_to_openmesh(ioFeatures, ioMesh);
+    TriMesh::Point updatedPosition(0.0f,0.0f,0.0f);
+    unsigned int i = 0;
+    TriMesh::VertexIter vertexIt(ioMesh.vertices_begin());
+    TriMesh::VertexIter vertexEnd(ioMesh.vertices_end());
+    for ( ; vertexIt != vertexEnd ; ++i, ++vertexIt) {
+        //## Get positions and normals from the feature matrix
+        updatedPosition[0] = ioFeatures(i,0);
+        updatedPosition[1] = ioFeatures(i,1);
+        updatedPosition[2] = ioFeatures(i,2);
+        //## Insert position and normal into mesh
+        ioMesh.set_point(vertexIt,updatedPosition);
+    }
 
     //# Given the new positions, let ioMesh update its normals
     ioMesh.request_face_normals();
@@ -620,10 +631,9 @@ void update_normals_for_altered_positions(TriMesh &ioMesh,
     ioMesh.release_face_normals();
 
     //# Copy ioMesh's new normals into 'ioFeatures' last three columns.
-    unsigned int i = 0;
-    TriMesh::Normal updatedNormal(0.0f,0.0f,0.0f);
-    TriMesh::VertexIter vertexIt(ioMesh.vertices_begin());
-    TriMesh::VertexIter vertexEnd(ioMesh.vertices_end());
+    TriMesh::Point updatedNormal(0.0f,0.0f,0.0f);
+    i = 0;
+    vertexIt = ioMesh.vertices_begin();
     for ( ; vertexIt != vertexEnd ; ++i, ++vertexIt) {
         //## Get normal
         updatedNormal = ioMesh.normal(vertexIt);

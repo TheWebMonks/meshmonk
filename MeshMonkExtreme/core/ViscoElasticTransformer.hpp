@@ -4,12 +4,18 @@
 #include <Eigen/Dense>
 #include <NeighbourFinder.hpp>
 #include <iostream>
+#include <OpenMesh/Core/IO/MeshIO.hh>
+#include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
+#include <helper_functions.hpp>
 
 typedef Eigen::Vector3f Vec3Float;
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, 3> Vec3Mat; //matrix Mx3 of type float
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
+typedef Eigen::Matrix< int, Eigen::Dynamic, 3> FacesMat;
+typedef OpenMesh::DefaultTraits MyTraits;
+typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits>  TriMesh;
 
 namespace registration{
 
@@ -17,8 +23,10 @@ class ViscoElasticTransformer
 {
     public:
 
-        void set_input(const FeatureMat * const inCorrespondingPositions, const VecDynFloat * const inWeights);
-        void set_output(FeatureMat * const ioFloatingPositions);
+        void set_input(const FeatureMat * const inCorrespondingFeatures,
+                       const VecDynFloat * const inWeights,
+                       const FacesMat * const inFloatingFaces);
+        void set_output(FeatureMat * const ioFloatingFeatures);
         void set_parameters(size_t numNeighbours = 10, float sigma = 3.0,
                             size_t viscousIterations = 10, size_t elasticIterations = 10);
         Vec3Mat get_transformation() const {return _displacementField;}
@@ -29,11 +37,12 @@ class ViscoElasticTransformer
     private:
         //# Inputs
         //##_ioFeatures is used as both an input (to compute the transformation) and output
-        const FeatureMat * _inCorrespondingPositions = NULL;
+        const FeatureMat * _inCorrespondingFeatures = NULL;
         const VecDynFloat * _inWeights = NULL;
+        const FacesMat * _inFloatingFaces = NULL;
 
         //# Outputs
-        FeatureMat * _ioFloatingPositions = NULL;
+        FeatureMat * _ioFloatingFeatures = NULL;
 
 
         //# User Parameters
@@ -47,6 +56,7 @@ class ViscoElasticTransformer
         Vec3Mat _oldDisplacementField;
         NeighbourFinder<FeatureMat> _neighbourFinder;
         MatDynFloat _smoothingWeights;
+        TriMesh _floatingMesh;
 
         //# Internal Parameters
         size_t _numElements = 0;
