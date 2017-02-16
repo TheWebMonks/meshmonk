@@ -131,25 +131,34 @@ void RigidTransformer::_update_transformation() {
     //## 10. Compute the entire transformation matrix.
     //### Initialize Matrices
     Mat4Float translationMatrix = Mat4Float::Identity();
-    Mat4Float rotationMatrix = Mat4Float::Identity();
+    Mat4Float rotationMatrix = Mat4Float::Identity(); //to apply just the rotation to the surface normals later
+    Mat4Float scaledRotationMatrix = Mat4Float::Identity();
     _transformationMatrix = Mat4Float::Identity();
     //### Convert to homogeneous transformation matrices
     translationMatrix.block<3, 1>(0,3) = translation;
-    rotationMatrix.block<3, 3>(0, 0) = scaleFactor * rotMatTemp;
+    rotationMatrix.block<3, 3>(0, 0) = rotMatTemp;
+    scaledRotationMatrix.block<3, 3>(0, 0) = scaleFactor * rotMatTemp;
     //### Matrix transformations on data is performed from right to left.
     //### Translation should be performed before rotating, so translationMatrix
     //### stands right in the multiplication with rotationMatrix.
-    _transformationMatrix = rotationMatrix * translationMatrix;
+    _transformationMatrix = scaledRotationMatrix * translationMatrix;
 
     //# Apply the transformation
-    //## initialize the position in a [x y z 1] representation
-    Vec4Float position4d = Vec4Float::Ones();
+    //## initialize a homogeneous vector in a [x y z 1] representation
+    Vec4Float vector4d = Vec4Float::Ones();
     for (size_t i = 0 ; i < _numElements ; i++) {
-        //## Extraxt position from feature matrix
-        position4d.segment(0, 3) = floatingPositions.block<3,1>(0,i);
-        //## Apply transformation and assign to 'position4d' variable again
-        position4d = _transformationMatrix * position4d;
-        _ioFeatures->block<1,3>(i,0) = position4d.segment(0, 3);
+        //## Transform the position
+        //### Extract position from feature matrix
+        vector4d.segment(0, 3) = floatingPositions.block<3,1>(0,i);
+        //### Apply transformation to the position
+        vector4d = _transformationMatrix * vector4d;
+        _ioFeatures->block<1,3>(i,0) = vector4d.segment(0, 3);
+        //## Rotate the vertex normals
+        //### Extract normal from feature matrix
+        vector4d.segment(0, 3) = _ioFeatures->block<1,3>(i,3);
+        //### Apply rotation to the normal
+        vector4d = rotationMatrix * vector4d;
+        _ioFeatures->block<1,3>(i,3) = vector4d.segment(0, 3);
     }
 }
 
