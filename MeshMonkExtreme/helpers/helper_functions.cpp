@@ -199,7 +199,7 @@ void radius_nearest_neighbours(const VecMatType &inQueriedPoints,
 
 
 
-void convert_openmesh_to_eigen(const TriMesh &inMesh,
+void convert_mesh_to_matrices(const TriMesh &inMesh,
                                 FeatureMat &outFeatures,
                                 FacesMat &outFaces){
     /*
@@ -230,7 +230,7 @@ void convert_openmesh_to_eigen(const TriMesh &inMesh,
     outFaces = FacesMat::Zero(numFaces,3);
 
     //# Convert the vertex normals and positions to eigen feature matrices
-    convert_openmesh_to_eigen(inMesh, outFeatures);
+    convert_mesh_to_matrices(inMesh, outFeatures);
 
     //# Build the matrix containing the faces
     //## Initialize the face iterator
@@ -248,10 +248,10 @@ void convert_openmesh_to_eigen(const TriMesh &inMesh,
         }
     }
 
-}//end convert_openmesh_to_eigen()
+}//end convert_mesh_to_matrices()
 
 
-void convert_openmesh_to_eigen(const TriMesh &inputMesh,
+void convert_mesh_to_matrices(const TriMesh &inputMesh,
                                 FeatureMat &outputFeatures){
     /*
     GOAL
@@ -294,10 +294,11 @@ void convert_openmesh_to_eigen(const TriMesh &inputMesh,
         outputFeatures(i,4) = normal[1];
         outputFeatures(i,5) = normal[2];
     }
-}
+}//end convert_mesh_to_matrices()
 
 
-void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
+
+void convert_matrices_to_mesh(const FeatureMat &inFeatures,
                             const FacesMat &inFaces,
                             TriMesh &outMesh) {
     /*
@@ -331,7 +332,7 @@ void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
     TriMesh::VertexHandle vertexHandle;
     std::vector<TriMesh::VertexHandle>  vertexHandles;
     for (size_t i = 0 ; i < numVertices ; i++) {
-        vertexHandle = outMesh.add_vertex(TriMesh::Point(inFeatures(i,0),inFeatures(i,2),inFeatures(i,2)));
+        vertexHandle = outMesh.add_vertex(TriMesh::Point(inFeatures(i,0),inFeatures(i,1),inFeatures(i,2)));
         vertexHandles.push_back(vertexHandle);
     }
 
@@ -355,7 +356,7 @@ void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
         //## Add the list of vertex handles as a face to the mesh
         outMesh.add_face(faceVertexHandles);
     }
-}
+}//end convert_matrices_to_mesh()
 
 
 void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
@@ -437,7 +438,7 @@ void load_obj_to_eigen(const std::string inObjFilename,
     outMesh.update_vertex_normals();
 
     // Convert to Eigen Matrices
-    convert_openmesh_to_eigen(outMesh, outFeatureMatrix);
+    convert_mesh_to_matrices(outMesh, outFeatureMatrix);
 
 }
 
@@ -488,6 +489,86 @@ void write_eigen_to_obj(const FeatureMat &inFeatures,
     }
 }//end write_eigen_features_to_obj()
 
+bool import_data(const std::string inFloatingMeshPath,
+                 const std::string inTargetMeshPath,
+                 FeatureMat &outFloatingFeatures,
+                 FeatureMat &outTargetFeatures,
+                 FacesMat &outFloatingFaces){
+    std::cout << "Importing Data..." << std::endl;
+
+    //# Safety check (do the input files exist?)
+    bool inputfilesExist = true;
+    //## Floating Mesh
+    std::ifstream infile(inFloatingMeshPath);
+    if (infile.good() != true){
+        inputfilesExist = false;
+        std::cerr << "Floating mesh file does not exist" << std::endl;
+    }
+    infile.close();
+    //## Target Mesh
+    infile.open(inTargetMeshPath);
+    if (infile.good() != true){
+        inputfilesExist = false;
+        std::cerr << "Target mesh file does not exist" << std::endl;
+    }
+    infile.close();
+    if (!inputfilesExist){
+        std::cout<< "DataImporter can't update - input files not found!" << std::endl;
+        return inputfilesExist;
+    }
+
+    //# Load OpenMesh meshes
+    //## Floating Mesh
+    TriMesh floatingMesh;
+    OpenMesh::IO::_OBJReader_();
+    if (!OpenMesh::IO::read_mesh(floatingMesh,inFloatingMeshPath)){
+        std::cerr << "Read error \n";
+        exit(1);
+    };
+    //## Target Mesh
+    TriMesh targetMesh;
+    if (!OpenMesh::IO::read_mesh(targetMesh,inTargetMeshPath)){
+        std::cerr << "Read error \n";
+        exit(1);
+    };
+
+    //# Update the mesh vertex normals
+    floatingMesh.request_face_normals();
+    floatingMesh.request_vertex_normals();
+    floatingMesh.update_face_normals();
+    floatingMesh.update_vertex_normals();
+    targetMesh.request_face_normals();
+    targetMesh.request_vertex_normals();
+    targetMesh.update_face_normals();
+    targetMesh.update_vertex_normals();
+
+    //# Convert OpenMesh meshes to Eigen matrices
+    convert_mesh_to_matrices(floatingMesh, outFloatingFeatures, outFloatingFaces);
+    convert_mesh_to_matrices(targetMesh, outTargetFeatures);
+
+
+    std::cout << "Imported Data" << std::endl;
+}//end import_data()
+
+
+bool export_data(FeatureMat &inResultFeatures,
+                 FacesMat &inResultFaces,
+                 const std::string inResultMeshPath) {
+    std::cout << "Exporting Data..." << std::endl;
+
+    //# Convert the matrices to a mesh
+    TriMesh resultMesh;
+    convert_matrices_to_mesh(inResultFeatures, inResultFaces, resultMesh);
+    //# Write the mesh to file
+    OpenMesh::IO::_OBJWriter_();
+    if (!OpenMesh::IO::write_mesh(resultMesh, inResultMeshPath))
+    {
+        std::cerr << "write error\n";
+        exit(1);
+    }
+
+    std::cout << "Data Exported." << std::endl;
+}
 
 void update_normals_for_altered_positions(TriMesh &ioMesh,
                                         FeatureMat &ioFeatures){

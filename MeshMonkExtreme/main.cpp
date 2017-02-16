@@ -25,7 +25,7 @@ typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits>  TriMesh;
 typedef OpenMesh::Decimater::DecimaterT<TriMesh>    DecimaterType;
 typedef OpenMesh::Decimater::ModQuadricT<TriMesh>::Handle HModQuadric;
 typedef Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> MatDynInt; //matrix MxN of type unsigned int
-typedef Eigen::Matrix< int, Eigen::Dynamic, 3> MatDyn3Int; //matrix Mx3 of type unsigned int
+typedef Eigen::Matrix< int, Eigen::Dynamic, 3> FacesMat; //matrix Mx3 of type unsigned int
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat; //matrix MxN of type float
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Vector3f Vec3Float;
@@ -624,21 +624,22 @@ int main()
     ############################################################################
     */
     //# IO variables
-//    const string fuckedUpBunnyDir = "/home/jonatan/kuleuven-algorithms/examples/data/bunny_slightly_rotated.obj";
-//    const string fuckedUpBunnyDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/fucked_up_bunny.obj";
-//    const string bunnyDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/bunny90.obj";
-//    const string fuckedUpBunnyResultDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/fucked_up_bunny_result.obj";
-    const string fuckedUpBunnyDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/kul_gezichten/Outliers/Alspac/4707_template.obj";
-    const string bunnyDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/kul_gezichten/Outliers/Alspac/4707_mevislab.obj";
-    const string fuckedUpBunnyResultDir = "/home/jonatan/projects/kuleuven-algorithms/examples/data/kul_gezichten/Outliers/Alspac/4707_Monk.obj";
+//    const string fuckedUpBunnyDir = "/home/jonatan/meshmonk/examples/data/bunny_slightly_rotated.obj";
+    const string fuckedUpBunnyDir = "/home/jonatan/projects/meshmonk/examples/data/fucked_up_bunny.obj";
+    const string bunnyDir = "/home/jonatan/projects/meshmonk/examples/data/bunny90.obj";
+    const string fuckedUpBunnyResultDir = "/home/jonatan/projects/meshmonk/examples/data/bunnyNonRigid.obj";
+//    const string fuckedUpBunnyDir = "/home/jonatan/projects/meshmonk/examples/data/kul_gezichten/Outliers/Alspac/4707_template.obj";
+//    const string bunnyDir = "/home/jonatan/projects/meshmonk/examples/data/kul_gezichten/Outliers/Alspac/4707_mevislab.obj";
+//    const string fuckedUpBunnyResultDir = "/home/jonatan/projects/meshmonk/examples/data/kul_gezichten/Outliers/Alspac/4707_Monk.obj";
 
     //# Load meshes and convert to feature matrices
     TriMesh fuckedUpBunny;
     TriMesh bunny;
     FeatureMat floatingFeatures;
     FeatureMat targetFeatures;
-    registration::load_obj_to_eigen(fuckedUpBunnyDir, fuckedUpBunny, floatingFeatures);
-    registration::load_obj_to_eigen(bunnyDir, bunny, targetFeatures);
+    FacesMat floatingFaces;
+    registration::import_data(fuckedUpBunnyDir, bunnyDir, floatingFeatures,
+                              targetFeatures, floatingFaces);
 //    floatingFeatures = FeatureMat::Zero(8, NUM_FEATURES);
 //    targetFeatures = FeatureMat::Zero(8, NUM_FEATURES);
 //    floatingFeatures << 0.1f, 0.1f, 0.1f, 0.0f, 0.0f, 1.0f,
@@ -666,17 +667,10 @@ int main()
     ##############################  TEST SHIZZLE  ##############################
     ############################################################################
     */
-    FeatureMat testFeatures;
-    MatDyn3Int testFaces;
-    registration::convert_openmesh_to_eigen(fuckedUpBunny, testFeatures, testFaces);
-    std::cout << "test features: \n" << testFeatures.topRows(10) << std::endl;
-    std::cout << "test faces: \n" << testFaces.topRows(10) << std::endl;
 
-//    MatDynInt indices;
-//    MatDynFloat distancesSquared;
-//    radius_nearest_neighbours(floatingFeatures, targetFeatures, indices, distancesSquared, 1.0, 15);
-//    cout << "Indices found: \n" << indices << endl;
-//    cout << "distances squared found: \n" << distancesSquared << endl;
+//    std::cout << "test features: \n" << floatingFeatures.topRows(10) << std::endl;
+//    std::cout << "test faces: \n" << floatingFaces.topRows(10) << std::endl;
+
 
 
     /*
@@ -685,48 +679,51 @@ int main()
     ############################################################################
     */
 
-    //# block boundary vertices
-    fuckedUpBunny.request_vertex_status();
-    //## Get an iterator over all halfedges
-    TriMesh::HalfedgeIter he_it, he_end=fuckedUpBunny.halfedges_end();
-    //## If halfedge is boundary, lock the corresponding vertices
-    for (he_it = fuckedUpBunny.halfedges_begin(); he_it != he_end ; ++he_it) {
-      if (fuckedUpBunny.is_boundary(*he_it)) {
-         fuckedUpBunny.status(fuckedUpBunny.to_vertex_handle(*he_it)).set_locked(true);
-         fuckedUpBunny.status(fuckedUpBunny.from_vertex_handle(*he_it)).set_locked(true);
-      }
-    }
-    //# Make sure mesh has necessary normals etc
-    fuckedUpBunny.request_face_normals();
-    fuckedUpBunny.update_face_normals();
-
-    //# Set up the decimator
-    DecimaterType decimater(fuckedUpBunny);  // a decimater object, connected to a mesh
-    HModQuadric hModQuadric;      // use a quadric module
-    decimater.add( hModQuadric ); // register module at the decimater
-
-    std::cout << decimater.module( hModQuadric ).name() << std::endl;
-    decimater.module(hModQuadric).unset_max_err();
-
-    //# Initialize the decimater
-    bool rc = decimater.initialize();
-    std::cout  << "Decimater Initialization: " << decimater.is_initialized() << std::endl;
-    if (!rc){
-        std::cerr << "  initializing failed!" << std::endl;
-        std::cerr << "  maybe no priority module or more than one were defined!" << std::endl;
-        return false;
-    }
-
-
-    std::cout << "Decimater Observer: \n" << decimater.observer() << std::endl;
-
-
-
-    //# Run the decimater
-    rc = decimater.decimate_to(size_t(10));
-
-    //# Collect garbage
-    fuckedUpBunny.garbage_collection();
+//    //# block boundary vertices
+//    fuckedUpBunny.request_vertex_status();
+//    //## Get an iterator over all halfedges
+//    TriMesh::HalfedgeIter he_it, he_end=fuckedUpBunny.halfedges_end();
+//    //## If halfedge is boundary, lock the corresponding vertices
+//    for (he_it = fuckedUpBunny.halfedges_begin(); he_it != he_end ; ++he_it) {
+//      if (fuckedUpBunny.is_boundary(*he_it)) {
+//         fuckedUpBunny.status(fuckedUpBunny.to_vertex_handle(*he_it)).set_locked(true);
+//         fuckedUpBunny.status(fuckedUpBunny.from_vertex_handle(*he_it)).set_locked(true);
+//      }
+//    }
+//    //# Make sure mesh has necessary normals etc
+//    fuckedUpBunny.request_face_normals();
+//    fuckedUpBunny.update_face_normals();
+//
+//    //# Set up the decimator
+//    DecimaterType decimater(fuckedUpBunny);  // a decimater object, connected to a mesh
+//    HModQuadric hModQuadric;      // use a quadric module
+//    decimater.add( hModQuadric ); // register module at the decimater
+//
+//    std::cout << decimater.module( hModQuadric ).name() << std::endl;
+//    decimater.module(hModQuadric).unset_max_err();
+//
+//    //# Initialize the decimater
+//    bool rc = decimater.initialize();
+//    std::cout  << "Decimater Initialization: " << decimater.is_initialized() << std::endl;
+//    if (!rc){
+//        std::cerr << "  initializing failed!" << std::endl;
+//        std::cerr << "  maybe no priority module or more than one were defined!" << std::endl;
+//        return false;
+//    }
+//
+//
+//    std::cout << "Decimater Observer: \n" << decimater.observer() << std::endl;
+//
+//
+//
+//    //# Run the decimater
+//    rc = decimater.decimate_to(size_t(10));
+//
+//    //# Collect garbage
+//    fuckedUpBunny.garbage_collection();
+//
+//    //# convert to our features
+//    registration::convert_mesh_to_matrices(fuckedUpBunny, floatingFeatures, floatingFaces);
 
 
     /*
@@ -735,94 +732,94 @@ int main()
     ############################################################################
     */
 
-//    //# Info & Initialization
-//    //## Data and matrices
-//    size_t numFloatingVertices = floatingFeatures.rows();
-//    size_t numTargetVertices = targetFeatures.rows();
-//    VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
-//    VecDynFloat floatingFlags = VecDynFloat::Ones(numFloatingVertices);
-//    VecDynFloat targetFlags = VecDynFloat::Ones(numTargetVertices);
-//    FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
-//    VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
-//
-//    //## Parameters
-//    const size_t numNearestNeighbours = 5;
-//    const size_t numRigidIterations = 10;
-//    //## Set up Correspondence Filter
-//    //registration::CorrespondenceFilter correspondenceFilter;
-//    registration::SymmetricCorrespondenceFilter correspondenceFilter;
-//    correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
-//    //correspondenceFilter.set_floating_input(&floatingFeatures);
-//    correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
-//    correspondenceFilter.set_output(&correspondingFeatures, &correspondingFlags);
-//    correspondenceFilter.set_parameters(numNearestNeighbours);
-//    //## Set up Inlier Detector
-//
-//    registration::InlierDetector inlierDetector;
-//    inlierDetector.set_input(&floatingFeatures, &correspondingFeatures,
-//                                &correspondingFlags);
-//    inlierDetector.set_output(&floatingWeights);
-//    inlierDetector.set_parameters(3.0);
-//    //## Set up the rigid transformer
-//    registration::RigidTransformer rigidTransformer;
-//    rigidTransformer.set_input(&correspondingFeatures, &floatingWeights);
-//    rigidTransformer.set_output(&floatingFeatures);
-//    rigidTransformer.set_parameters(false);
-//
-//    //# Loop ICP
-//    for (size_t iteration = 0 ; iteration < numRigidIterations ; iteration++) {
-//        //# Determine Correspondences
-//        //## Compute symmetric wknn correspondences
-//        //registration::wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
-//        //                    correspondingFeatures, correspondingFlags,
-//        //                    numNearestNeighbours, true);
-//        //correspondenceFilter.set_floating_input(&floatingFeatures);
-//        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
-//        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
-//        correspondenceFilter.update();
-//
-//
-//        //# Inlier Detection
-//        inlierDetector.update();
-//
-//        //# Compute the transformation
-//        rigidTransformer.update();
-//    }
-//
-//    /*
-//    ############################################################################
-//    ##########################  NON-RIGID ICP  #################################
-//    ############################################################################
-//    */
-//
-//    //## Set up viscoelastic transformer
-//    const size_t numNonrigidIterations = 12;
-//    size_t smoothingIterations[12] = {144,89,55,34,21,13,8,5,3,2,1,1};
-//    //size_t smoothingIterations = numNonrigidIterations + 1; //we will use this for the number of smoothing iterations
-//    registration::ViscoElasticTransformer transformer;
-//    transformer.set_input(&correspondingFeatures, &floatingWeights);
-//    transformer.set_output(&floatingFeatures);
-//
-//
-//    for (size_t i = 0 ; i < numNonrigidIterations ; i++) {
-//        //# Determine Correspondences
-//        //## Compute symmetric wknn correspondences
-//        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
-//        //correspondenceFilter.set_floating_input(&floatingFeatures);
-//        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
-//        correspondenceFilter.update();
-//
-//
-//        //# Inlier Detection
-//        inlierDetector.update();
-//
-//        //# Visco-Elastic transformation
-//        std::cout << "floating positions before:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
-//        transformer.set_parameters(10, 2.0, smoothingIterations[i],smoothingIterations[i]);
-//        transformer.update();
-//        std::cout << "floating positions after:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
-//        //smoothingIterations--;
-//    }
+    //# Info & Initialization
+    //## Data and matrices
+    size_t numFloatingVertices = floatingFeatures.rows();
+    size_t numTargetVertices = targetFeatures.rows();
+    VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
+    VecDynFloat floatingFlags = VecDynFloat::Ones(numFloatingVertices);
+    VecDynFloat targetFlags = VecDynFloat::Ones(numTargetVertices);
+    FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
+    VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
+
+    //## Parameters
+    const size_t numNearestNeighbours = 5;
+    const size_t numRigidIterations = 10;
+    //## Set up Correspondence Filter
+    //registration::CorrespondenceFilter correspondenceFilter;
+    registration::SymmetricCorrespondenceFilter correspondenceFilter;
+    correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
+    //correspondenceFilter.set_floating_input(&floatingFeatures);
+    correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
+    correspondenceFilter.set_output(&correspondingFeatures, &correspondingFlags);
+    correspondenceFilter.set_parameters(numNearestNeighbours);
+    //## Set up Inlier Detector
+
+    registration::InlierDetector inlierDetector;
+    inlierDetector.set_input(&floatingFeatures, &correspondingFeatures,
+                                &correspondingFlags);
+    inlierDetector.set_output(&floatingWeights);
+    inlierDetector.set_parameters(3.0);
+    //## Set up the rigid transformer
+    registration::RigidTransformer rigidTransformer;
+    rigidTransformer.set_input(&correspondingFeatures, &floatingWeights);
+    rigidTransformer.set_output(&floatingFeatures);
+    rigidTransformer.set_parameters(false);
+
+    //# Loop ICP
+    for (size_t iteration = 0 ; iteration < numRigidIterations ; iteration++) {
+        //# Determine Correspondences
+        //## Compute symmetric wknn correspondences
+        //registration::wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
+        //                    correspondingFeatures, correspondingFlags,
+        //                    numNearestNeighbours, true);
+        //correspondenceFilter.set_floating_input(&floatingFeatures);
+        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
+        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
+        correspondenceFilter.update();
+
+
+        //# Inlier Detection
+        inlierDetector.update();
+
+        //# Compute the transformation
+        rigidTransformer.update();
+    }
+
+    /*
+    ############################################################################
+    ##########################  NON-RIGID ICP  #################################
+    ############################################################################
+    */
+
+    //## Set up viscoelastic transformer
+    const size_t numNonrigidIterations = 12;
+    size_t smoothingIterations[12] = {144,89,55,34,21,13,8,5,3,2,1,1};
+    //size_t smoothingIterations = numNonrigidIterations + 1; //we will use this for the number of smoothing iterations
+    registration::ViscoElasticTransformer transformer;
+    transformer.set_input(&correspondingFeatures, &floatingWeights);
+    transformer.set_output(&floatingFeatures);
+
+
+    for (size_t i = 0 ; i < numNonrigidIterations ; i++) {
+        //# Determine Correspondences
+        //## Compute symmetric wknn correspondences
+        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
+        //correspondenceFilter.set_floating_input(&floatingFeatures);
+        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
+        correspondenceFilter.update();
+
+
+        //# Inlier Detection
+        inlierDetector.update();
+
+        //# Visco-Elastic transformation
+        std::cout << "floating positions before:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
+        transformer.set_parameters(10, 2.0, smoothingIterations[i],smoothingIterations[i]);
+        transformer.update();
+        std::cout << "floating positions after:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
+        //smoothingIterations--;
+    }
 
     /*
     ############################################################################
@@ -830,7 +827,7 @@ int main()
     ############################################################################
     */
     //# Write result to file
-    registration::write_eigen_to_obj(floatingFeatures, fuckedUpBunny, fuckedUpBunnyResultDir);
+    registration::export_data(floatingFeatures,floatingFaces, fuckedUpBunnyResultDir);
 
 
     return 0;

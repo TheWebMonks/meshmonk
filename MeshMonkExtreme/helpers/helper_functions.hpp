@@ -38,18 +38,15 @@ void radius_nearest_neighbours(const VecMatType &inQueriedPoints,
 
 
 
-void convert_openmesh_to_eigen(const TriMesh &inMesh,
+void convert_mesh_to_matrices(const TriMesh &inMesh,
                                 FeatureMat &outFeatures,
                                 FacesMat &outFaces);
 
-void convert_openmesh_to_eigen(const TriMesh &inputMesh,
-                                FeatureMat &outputFeatures);
+void convert_mesh_to_matrices(const TriMesh &inMesh,
+                                FeatureMat &outFeatures);
 
-void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
+void convert_matrices_to_mesh(const FeatureMat &inFeatures,
                                 const FacesMat &inFaces,
-                                TriMesh &outMesh);
-
-void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
                                 TriMesh &outMesh);
 
 
@@ -61,6 +58,16 @@ void load_obj_to_eigen(const std::string inObjFilename,
 void write_eigen_to_obj(const FeatureMat &inFeatures,
                                 TriMesh &inMesh,
                                 const std::string inObjFilename);
+
+bool import_data(const std::string inFloatingMeshPath,
+                 const std::string inTargetMeshPath,
+                 FeatureMat &outFloatingFeatures,
+                 FeatureMat &outTargetFeatures,
+                 FacesMat &outFloatingFaces);
+
+bool export_data(FeatureMat &inResultFeatures,
+                 FacesMat &inResultFaces,
+                 const std::string inResultMeshPath);
 
 
 void update_normals_for_altered_positions(TriMesh &ioMesh,
