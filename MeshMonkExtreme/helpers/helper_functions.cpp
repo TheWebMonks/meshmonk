@@ -201,7 +201,7 @@ void radius_nearest_neighbours(const VecMatType &inQueriedPoints,
 
 void convert_openmesh_to_eigen(const TriMesh &inMesh,
                                 FeatureMat &outFeatures,
-                                MatDyn3Int &outFaces){
+                                FacesMat &outFaces){
     /*
     GOAL
     This function converts an openmesh data structure to a feature matrix
@@ -227,7 +227,7 @@ void convert_openmesh_to_eigen(const TriMesh &inMesh,
     const int numVertices = inMesh.n_vertices();
     const int numFaces = inMesh.n_faces();
     outFeatures = FeatureMat::Zero(numVertices,NUM_FEATURES);
-    outFaces = MatDyn3Int::Zero(numFaces,3);
+    outFaces = FacesMat::Zero(numFaces,3);
 
     //# Convert the vertex normals and positions to eigen feature matrices
     convert_openmesh_to_eigen(inMesh, outFeatures);
@@ -298,7 +298,7 @@ void convert_openmesh_to_eigen(const TriMesh &inputMesh,
 
 
 void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
-                            const MatDyn3Int &inFaces,
+                            const FacesMat &inFaces,
                             TriMesh &outMesh) {
     /*
     GOAL
