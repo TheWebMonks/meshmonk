@@ -9,11 +9,12 @@ __pycache__/
 .idea
 venv/
 
-MeshMonkRegistration/bin/*
-MeshMonkRegistration/obj/*
+MeshMonkExtreme/bin/*
+MeshMonkExtreme/obj/*
 *.cbp
 *.depend
 *.layout
+*.o
 
 
  examples/data/
