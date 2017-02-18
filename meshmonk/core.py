@@ -5,6 +5,7 @@ import sys
 import openmesh
 #Importing the rest of utilities
 import numpy
+import math
 from numpy import linalg
 from scipy import spatial
 from scipy.interpolate import interp1d
@@ -73,7 +74,7 @@ def wknn_affinity(features1, features2, neighbourDistances, neighbourIndices, k 
     return affinity12
 
     
-def fuse_affinities(affinity12, affinity21):
+def fuse_affinities(affinity12, affinity21, affinityRatio = 1.0):
     """
     # GOAL
     Fuse the two affinity matrices together.
@@ -83,6 +84,10 @@ def fuse_affinities(affinity12, affinity21):
     -affinity21: dimensions should be transposed of affinity12
 
     # PARAMETERS
+    -affinityRatio:
+    floating number that is multiplied with affinity12 before summing the
+    affinities. This parameter thus allows to put more or less weight into
+    either affinity matrix.
 
     # OUTPUT
     -affinityFused
@@ -261,8 +266,10 @@ class SymCorrespondenceFilter(GenericCorrespondenceFilter):
     def __init__(self, inFloatingFeatures, inFloatingFlags,
                  inTargetFeatures, inTargetFlags,
                  outCorrespondingFeatures, outCorrespondingFlags,
-                 paramNumNeighbours = 3):
+                 paramNumNeighbours = 3,
+                 ratioPushToPull = 1.0):
         self.paramNumNeighbours = paramNumNeighbours
+        self.paramRatioPushToPull = ratioPushToPull
         GenericCorrespondenceFilter.__init__(self, inFloatingFeatures, inFloatingFlags,
                                              inTargetFeatures, inTargetFlags,
                                              outCorrespondingFeatures, outCorrespondingFlags)
@@ -297,7 +304,8 @@ class SymCorrespondenceFilter(GenericCorrespondenceFilter):
         pullAffinity = self.pullFilter._get_affinity()
         
         # Merge the affinities
-        self._affinity = fuse_affinities(pushAffinity, pullAffinity)
+        self._affinity = fuse_affinities(pushAffinity, pullAffinity,
+                                         self.paramRatioPushToPull)
         
     
     
@@ -707,14 +715,42 @@ class NonrigidRegistration(object):
         # Parameters
         ## Correspondences
         self.wknnNumNeighbours = 3
+        self.ratioPushToPull = 1.0
         ## Inliers
         self.kappaa = 3.0
         ## Transformation
-        self.numViscousSmoothingIterationsList = [55, 34, 21, 13, 8, 5, 3, 2, 1, 1]
-        self.numElasticSmoothingIterationsList = [55, 34, 21, 13, 8, 5, 3, 2, 1, 1]
-        self.numIterations = len(self.numViscousSmoothingIterationsList)
+        self.numViscousSmoothingStart = 50
+        self.numViscousSmoothingStop = 1
+        self.numElasticSmoothingStart = 50
+        self.numViscousSmoothingStop = 1
+        self.numIterations = 20
+        self.viscousAnnealingRate = math.exp(math.log(float(self.numViscousSmoothingStop)/float(self.numViscousSmoothingStart))/float(self.numIterations))
+        self.elasticAnnealingRate = math.exp(math.log(float(self.numViscousSmoothingStop)/float(self.numElasticSmoothingStart))/float(self.numIterations))
         self.numNeighbourDisplacements = 10
         self.sigmaSmoothing = 10.0
+        
+    def set_parameters(self, numViscousSmoothingStart = 50, numViscousSmoothingStop = 1,
+                       numElasticSmoothingStart = 20, numElasticSmoothingStop = 1,
+                       numIterations = 20,
+                       wknnNumNeighbours = 3, kappaa = 3.0,
+                       numNeighbourDisplacements = 10, sigmaSmoothing = 3.0,
+                       ratioPushToPull = 1.0):
+        # General
+        self.numIterations = numIterations
+        # Correspondences
+        self.wknnNumNeighbours = wknnNumNeighbours
+        self.ratioPushToPull = ratioPushToPull
+        # Inliers
+        self.kappaa = kappaa
+        # Transformation
+        self.numViscousSmoothingStart = numViscousSmoothingStart
+        self.numViscousSmoothingStop = numViscousSmoothingStop
+        self.numElasticSmoothingStart = numElasticSmoothingStart
+        self.numViscousSmoothingStop = numViscousSmoothingStop
+        self.viscousAnnealingRate = math.exp(math.log(self.numViscousSmoothingStop/self.numViscousSmoothingStart)/self.numIterations)
+        self.elasticAnnealingRate = math.exp(math.log(self.numViscousSmoothingStop/self.numElasticSmoothingStart)/self.numIterations)
+        self.numNeighbourDisplacements = numNeighbourDisplacements
+        self.sigmaSmoothing = sigmaSmoothing
         
     def update(self):
              
@@ -731,7 +767,8 @@ class NonrigidRegistration(object):
                                                           targetFlags,
                                                           correspondingFeatures,
                                                           correspondingFlags,
-                                                          self.wknnNumNeighbours)
+                                                          self.wknnNumNeighbours,
+                                                          self.ratioPushToPull)
         ## Set up inlier filter
         floatingWeights = numpy.ones((numFloatingVertices), dtype = float)
         inlierFilter = InlierFilter(self.ioFloatingFeatures, correspondingFeatures,
@@ -740,18 +777,20 @@ class NonrigidRegistration(object):
         
         
         ## Set up transformation filter
+        numViscousSmoothingIterations = self.numViscousSmoothingStart
+        numElasticSmoothingIterations = self.numElasticSmoothingStart
         transformationFilter = ViscoElasticFilter(self.ioFloatingFeatures,
                                                   correspondingFeatures,
                                                   floatingWeights,
                                                   self.inFloatingFaces,
                                                   10,
                                                   self.sigmaSmoothing,
-                                                  numViscousIterations = 1,
-                                                  numElasticIterations = 1)
-        iteration = 0
+                                                  numViscousSmoothingIterations,
+                                                  numElasticSmoothingIterations)
+        
         print ("Starting Non-Rigid Registration...")
         timePre = time.time()
-        for numViscousSmoothingIterations, numElasticSmoothingIterations in zip(self.numViscousSmoothingIterationsList, self.numElasticSmoothingIterationsList):
+        for iteration in range(self.numIterations):
             timeStart = time.time()
             ## 1) Determine Nearest neighbours.
             symCorrespondenceFilter.set_floating_features(self.ioFloatingFeatures, floatingFlags)
@@ -764,6 +803,10 @@ class NonrigidRegistration(object):
                                                     numViscousSmoothingIterations,
                                                     numElasticSmoothingIterations)
             transformationFilter.update()
+            
+            ## Update annealing parameters
+            numViscousSmoothingIterations = int(math.floor(numViscousSmoothingIterations * self.viscousAnnealingRate + 0.5))
+            numElasticSmoothingIterations = int(math.floor(numElasticSmoothingIterations * self.elasticAnnealingRate + 0.5))
         
             ## Print progress
             timeEnd = time.time()
@@ -820,10 +863,6 @@ class RigidRegistration(object):
         print ("Starting Rigid Registration...")
         timePre = time.time()
         for i in range(self.numIterations):
-            #DEBUG
-            print("Floating Features: \n")
-            print(self.ioFloatingFeatures[0:3,:])
-            #ENDDEBUG
             timeStart = time.time()
             ## 1) Update Nearest neighbours.
             symCorrespondenceFilter.set_floating_features(self.ioFloatingFeatures, floatingFlags)
@@ -840,10 +879,6 @@ class RigidRegistration(object):
         
         timePost = time.time()
         print ("Completed Rigid Registration in " + str(timePost-timePre) + 's')
-        #DEBUG
-        print("Floating Features: \n")
-        print(self.ioFloatingFeatures[0:3,:])
-        #ENDDEBUG
             
 class RegistrationManager(object):
     """
