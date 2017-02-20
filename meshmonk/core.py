@@ -267,9 +267,9 @@ class SymCorrespondenceFilter(GenericCorrespondenceFilter):
                  inTargetFeatures, inTargetFlags,
                  outCorrespondingFeatures, outCorrespondingFlags,
                  paramNumNeighbours = 3,
-                 ratioPushToPull = 1.0):
+                 paramRatioPushToPull = 1.0):
         self.paramNumNeighbours = paramNumNeighbours
-        self.paramRatioPushToPull = ratioPushToPull
+        self.paramRatioPushToPull = paramRatioPushToPull
         GenericCorrespondenceFilter.__init__(self, inFloatingFeatures, inFloatingFlags,
                                              inTargetFeatures, inTargetFlags,
                                              outCorrespondingFeatures, outCorrespondingFlags)
@@ -284,6 +284,18 @@ class SymCorrespondenceFilter(GenericCorrespondenceFilter):
                                                [], [],
                                                self.paramNumNeighbours)
     
+    def set_parameters(self, paramNumNeighbours = 3, paramRatioPushToPull = 1.0):
+        self.paramNumNeighbours = paramNumNeighbours
+        self.paramRatioPushToPull = paramRatioPushToPull
+        self.pushFilter = CorrespondenceFilter(self.inFloatingFeatures, self.inFloatingFlags,
+                                               self.inTargetFeatures, self.inTargetFlags,
+                                               [], [],
+                                               self.paramNumNeighbours)
+        self.pullFilter = CorrespondenceFilter(self.inTargetFeatures, self.inTargetFlags,
+                                               self.inFloatingFeatures, self.inFloatingFlags,
+                                               [], [],
+                                               self.paramNumNeighbours)
+        
     def set_floating_features(self, inFloatingFeatures, inFloatingFlags):
         self.pushFilter.set_floating_features(inFloatingFeatures, inFloatingFlags)
         self.pullFilter.set_target_features(inFloatingFeatures, inFloatingFlags)
@@ -826,10 +838,23 @@ class RigidRegistration(object):
         # Parameters
         ## Correspondences
         self.wknnNumNeighbours = 3
+        self.ratioPushToPull = 1.0
         ## Inliers
         self.kappaa = 3.0
         ## Transformation
         self.numIterations = 10
+        
+    def set_parameters(self, wknnNumNeighbours = 3,
+                       ratioPushToPull = 1.0,
+                       kappaa = 3.0,
+                       numIterations = 10):
+        # Correspondences
+        self.wknnNumNeighbours = wknnNumNeighbours
+        self.ratioPushToPull = ratioPushToPull
+        # Inliers
+        self.kappaa = kappaa
+        # Transformation
+        self.numIterations = numIterations
         
     def update(self):
              
@@ -846,7 +871,8 @@ class RigidRegistration(object):
                                                           targetFlags,
                                                           correspondingFeatures,
                                                           correspondingFlags,
-                                                          self.wknnNumNeighbours)
+                                                          self.wknnNumNeighbours,
+                                                          self.ratioPushToPull)
         ## Set up inlier filter
         floatingWeights = numpy.ones((numFloatingVertices), dtype = float)
         inlierFilter = InlierFilter(self.ioFloatingFeatures, correspondingFeatures,
@@ -859,10 +885,10 @@ class RigidRegistration(object):
                                                          correspondingFeatures,
                                                          floatingWeights)
         
-        iteration = 0
+        
         print ("Starting Rigid Registration...")
         timePre = time.time()
-        for i in range(self.numIterations):
+        for iteration in range(self.numIterations):
             timeStart = time.time()
             ## 1) Update Nearest neighbours.
             symCorrespondenceFilter.set_floating_features(self.ioFloatingFeatures, floatingFlags)
