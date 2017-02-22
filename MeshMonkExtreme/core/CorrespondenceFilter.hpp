@@ -7,6 +7,7 @@
 #include "../global.hpp"
 #include <NeighbourFinder.hpp>
 #include <helper_functions.hpp>
+#include <BaseCorrespondenceFilter.hpp>
 
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
@@ -19,7 +20,7 @@ typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat;
 
 namespace registration {
 
-class CorrespondenceFilter
+class CorrespondenceFilter : public BaseCorrespondenceFilter
 {
 
     /*
@@ -46,11 +47,10 @@ class CorrespondenceFilter
         //CorrespondenceFilter(); //default constructor
         //~CorrespondenceFilter(); //destructor
 
-        void set_floating_input(const FeatureMat * const inFloatingFeatures);
+        void set_floating_input(const FeatureMat * const inFloatingFeatures,
+                                const VecDynFloat * const inFloatingFlags);
         void set_target_input(const FeatureMat * const inTargetFeatures,
                             const VecDynFloat * const inTargetFlags);
-        void set_output(FeatureMat * const ioCorrespondingFeatures,
-                        VecDynFloat * const ioCorrespondingFlags);
         SparseMat get_affinity() const {return _affinity;}
         void set_parameters(const size_t numNeighbours);
         void update();
@@ -58,35 +58,20 @@ class CorrespondenceFilter
     protected:
 
     private:
-        //# Inputs
-        const FeatureMat * _inFloatingFeatures = NULL;
-        const FeatureMat * _inTargetFeatures = NULL;
-        const VecDynFloat * _inTargetFlags = NULL;
-
-        //# Outputs
-        FeatureMat * _ioCorrespondingFeatures = NULL;
-        VecDynFloat * _ioCorrespondingFlags = NULL;
-
-        //# User Parameters
-        size_t _numNeighbours = 3;
 
         //# Internal Data structures
         NeighbourFinder<FeatureMat> _neighbourFinder;
-        SparseMat _affinity;
-
 
         //# Internal Parameters
-        size_t _numFloatingElements = 0;
-        size_t _numTargetElements = 0;
         size_t _numAffinityElements = 0;
-        float _flagRoundingLimit = 0.9;
 
-        //# Internal functions
+        //# Internal Functions
         //## Function to update the sparse affinity matrix
         void _update_affinity();
         //## Function to convert the sparse affinity weights into corresponding
         //## features and flags
         void _affinity_to_correspondences();
+
 };
 
 

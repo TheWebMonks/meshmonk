@@ -4,10 +4,12 @@
 namespace registration {
 
 
-void CorrespondenceFilter::set_floating_input(const FeatureMat * const inFloatingFeatures)
+void CorrespondenceFilter::set_floating_input(const FeatureMat * const inFloatingFeatures,
+                                              const VecDynFloat * const inFloatingFlags)
 {
     //# Set input
     _inFloatingFeatures = inFloatingFeatures;
+    _inFloatingFlags = inFloatingFlags;
 
     //# Update internal parameters
     _numFloatingElements = _inFloatingFeatures->rows();
@@ -32,12 +34,6 @@ void CorrespondenceFilter::set_target_input(const FeatureMat * const inTargetFea
     _neighbourFinder.set_source_points(_inTargetFeatures);
 }
 
-void CorrespondenceFilter::set_output(FeatureMat * const ioCorrespondingFeatures,
-                                    VecDynFloat * const ioCorrespondingFlags)
-{
-    _ioCorrespondingFeatures = ioCorrespondingFeatures;
-    _ioCorrespondingFlags = ioCorrespondingFlags;
-}
 
 void CorrespondenceFilter::set_parameters(const size_t numNeighbours)
 {
@@ -105,40 +101,6 @@ void CorrespondenceFilter::_update_affinity() {
 
 }//end wknn_affinity()
 
-void CorrespondenceFilter::_affinity_to_correspondences(){
-    /*
-    # GOAL
-    This function computes all the corresponding features and flags,
-    when the affinity for a set of features and flags is given.
-
-    # PARAMETERS
-    -_flagRoundingLimit:
-    Flags are binary. Anything over this double is rounded up, whereas anything
-    under it is rounded down. A suggested cut-off is 0.9, which means that if
-    an element flagged zero contributes 10 percent or to the affinity, the
-    corresponding element should be flagged a zero as well.
-
-    # RESULT
-    -outCorrespondingFeatures
-    -outCorrespondingFlags
-    */
-
-    //# Simple computation of corresponding features and flags
-    *_ioCorrespondingFeatures = _affinity * (*_inTargetFeatures);
-    *_ioCorrespondingFlags = _affinity * (*_inTargetFlags);
-
-    //# Flag correction.
-    //## Flags are binary. We will round them down if lower than the flag
-    //## rounding limit (see explanation in parameter description).
-    for (size_t i = 0 ; i < _numFloatingElements ; i++) {
-        if ((*_ioCorrespondingFlags)[i] > _flagRoundingLimit){
-            (*_ioCorrespondingFlags)[i] = 1.0;
-        }
-        else {
-            (*_ioCorrespondingFlags)[i] = 0.0;
-        }
-    }
-}
 
 void CorrespondenceFilter::update() {
 
@@ -151,7 +113,7 @@ void CorrespondenceFilter::update() {
 
     if (_ioCorrespondingFeatures != NULL) {
         //# Use the affinity weights to determine corresponding features and flags.
-        _affinity_to_correspondences();
+        BaseCorrespondenceFilter::_affinity_to_correspondences();
     }
     else {
         /*
@@ -159,26 +121,6 @@ void CorrespondenceFilter::update() {
         are not generated if the filter doesn't know where to write the output.
         */
     }
-
-
-//    //# Compute the affinity for inFloatingFeatures towards inTargetFeatures
-//    wknn_affinity(inFloatingFeatures, inTargetFeatures, affinity, paramK);
-//
-//    //# Ccompute symmetric correspondences (if required)
-//    if (paramSymmetric == true) {
-//        affinityPull = SparseMat(numTargetVertices, numFloatingVertices);
-//        //## Compute the affinity for inTargetFeatures towards inFloatingFeatures
-//        wknn_affinity(inTargetFeatures, inFloatingFeatures, affinityPull, paramK);
-//
-//        //## Fuse the two affinities together.
-//        fuse_affinities(affinity, affinityPull);
-//    }
-//
-//    //## Compute corresponding features as affinity matrix multiplied with the
-//    //## target features.
-//    affinity_to_correspondences(inTargetFeatures, inTargetFlags, affinity,
-//                                outCorrespondingFeatures, outCorrespondingFlags,
-//                                0.9);
 }//end wkkn_correspondences()
 
 }

@@ -5,6 +5,7 @@
 #include <Eigen/SparseCore>
 #include <stdio.h>
 #include "../global.hpp"
+#include <BaseCorrespondenceFilter.hpp>
 #include <CorrespondenceFilter.hpp>
 #include <helper_functions.hpp>
 
@@ -19,7 +20,7 @@ typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat;
 
 namespace registration {
 
-class SymmetricCorrespondenceFilter
+class SymmetricCorrespondenceFilter: public BaseCorrespondenceFilter
 {
     /*
     # GOAL
@@ -55,37 +56,18 @@ class SymmetricCorrespondenceFilter
                                 const VecDynFloat * const inFloatingFlags);
         void set_target_input(const FeatureMat * const inTargetFeatures,
                             const VecDynFloat * const inTargetFlags);
-        void set_output(FeatureMat * const ioCorrespondingFeatures,
-                        VecDynFloat * const ioCorrespondingFlags);
+        //void set_output(FeatureMat * const ioCorrespondingFeatures,
+//                        VecDynFloat * const ioCorrespondingFlags);
         void set_parameters(const size_t numNeighbours);
         void update();
 
     protected:
 
     private:
-        //# Inputs
-        const FeatureMat * _inFloatingFeatures = NULL;
-        const FeatureMat * _inTargetFeatures = NULL;
-        const VecDynFloat * _inFloatingFlags = NULL;
-        const VecDynFloat * _inTargetFlags = NULL;
-
-        //# Outputs
-        FeatureMat * _ioCorrespondingFeatures = NULL;
-        VecDynFloat * _ioCorrespondingFlags = NULL;
-
-        //# User Parameters
-        size_t _numNeighbours = 3;
 
         //# Internal Data structures
         CorrespondenceFilter _pushFilter;
         CorrespondenceFilter _pullFilter;
-        SparseMat _affinity;
-
-
-        //# Internal Parameters
-        size_t _numFloatingElements = 0;
-        size_t _numTargetElements = 0;
-        float _flagRoundingLimit = 0.9;
 
         //# Internal functions
         //## Function to update the sparse affinity matrix
