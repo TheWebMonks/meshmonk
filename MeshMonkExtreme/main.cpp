@@ -758,42 +758,15 @@ int main()
     ############################################################################
     */
     //## Initialization
-    size_t numElasticIterations = 10;
+    size_t numNonrigidIterations = 20;
+    float sigmaSmoothing = 2.0f;
     registration::NonrigidRegistration nonrigidRegistration;
     nonrigidRegistration.set_input(&floatingFeatures, &targetFeatures, &floatingFaces, &floatingFlags, &targetFlags);
-    nonrigidRegistration.set_parameters(symmetric, numNearestNeighbours, kappa, numElasticIterations);
+    nonrigidRegistration.set_parameters(symmetric, numNearestNeighbours, kappa,
+                                        numNonrigidIterations, sigmaSmoothing,
+                                        100, 1,
+                                        100, 1);
     nonrigidRegistration.update();
-//    FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
-//    VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
-//
-//    //## Set up viscoelastic transformer
-//    const size_t numNonrigidIterations = 12;
-//    size_t smoothingIterations[12] = {144,89,55,34,21,13,8,5,3,2,1,1};
-//    //size_t smoothingIterations = numNonrigidIterations + 1; //we will use this for the number of smoothing iterations
-//    registration::ViscoElasticTransformer transformer;
-//    transformer.set_input(&correspondingFeatures, &floatingWeights, &floatingFaces);
-//    transformer.set_output(&floatingFeatures);
-//
-//
-//    for (size_t i = 0 ; i < numNonrigidIterations ; i++) {
-//        //# Determine Correspondences
-//        //## Compute symmetric wknn correspondences
-//        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
-//        //correspondenceFilter.set_floating_input(&floatingFeatures);
-//        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
-//        correspondenceFilter.update();
-//
-//
-//        //# Inlier Detection
-//        inlierDetector.update();
-//
-//        //# Visco-Elastic transformation
-//        std::cout << "floating positions before:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
-//        transformer.set_parameters(10, 2.0, smoothingIterations[i],smoothingIterations[i]);
-//        transformer.update();
-//        std::cout << "floating positions after:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
-//        //smoothingIterations--;
-//    }
 
     /*
     ############################################################################

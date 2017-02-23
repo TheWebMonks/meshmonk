@@ -14,12 +14,25 @@ void NonrigidRegistration::set_input(FeatureMat * const ioFloatingFeatures,
     _inTargetFlags = inTargetFlags;
 }//end set_input()
 
-void NonrigidRegistration::set_parameters(bool symmetric, size_t numNeighbours,
-                                       float kappaa, size_t numIterations){
+void NonrigidRegistration::set_parameters(bool symmetric,
+                            size_t numNeighbours,
+                            float kappaa,
+                            size_t numIterations,
+                            float sigmaSmoothing,
+                            size_t numViscousIterationsStart,
+                            size_t numViscousIterationsEnd,
+                            size_t numElasticIterationsStart,
+                            size_t numElasticIterationsEnd){
     _symmetric = symmetric;
     _numNeighbours = numNeighbours;
     _kappaa = kappaa;
     _numIterations = numIterations;
+    _numIterations = numIterations;
+    _sigmaSmoothing = sigmaSmoothing;
+    _numViscousIterationsStart = numViscousIterationsStart;
+    _numViscousIterationsEnd = numViscousIterationsEnd;
+    _numElasticIterationsStart = numElasticIterationsStart;
+    _numElasticIterationsEnd = numElasticIterationsEnd;
 }//end set_parameters()
 
 
@@ -57,7 +70,8 @@ void NonrigidRegistration::update(){
     inlierDetector.set_parameters(_kappaa);
     //## Transformation Filter
     const size_t numNonrigidIterations = 12;
-    size_t smoothingIterations[12] = {144,89,55,34,21,13,8,5,3,2,1,1};
+    int viscousSmoothingIterations = _numViscousIterationsStart;
+    int elasticSmoothingIterations = _numElasticIterationsStart;
     ViscoElasticTransformer transformer;
     transformer.set_input(&correspondingFeatures, &floatingWeights, _inFloatingFaces);
     transformer.set_output(_ioFloatingFeatures);
@@ -77,8 +91,12 @@ void NonrigidRegistration::update(){
         inlierDetector.update();
 
         //# Transformation
-        transformer.set_parameters(10, 2.0, smoothingIterations[iteration],smoothingIterations[iteration]);
+        transformer.set_parameters(10, _sigmaSmoothing, viscousSmoothingIterations,elasticSmoothingIterations);
         transformer.update();
+
+        //# Update annealing parameters
+        viscousSmoothingIterations = int(round(viscousSmoothingIterations * _viscousAnnealingRate));
+        elasticSmoothingIterations = int(round(elasticSmoothingIterations * _elasticAnnealingRate));
 
         //# Print info
         timePostIteration = time(0);
