@@ -66,8 +66,11 @@ void CorrespondenceFilter::_update_affinity() {
     //## second set.
     size_t i = 0;
     size_t j = 0;
+    Vec3Float floatingNormal = Vec3Float::Zero();
+    Vec3Float targetNormal = Vec3Float::Zero();
     unsigned int counter = 0;
     for ( ; i < _numFloatingElements ; i++) {
+        floatingNormal = _inFloatingFeatures->row(i).tail(3);
         //### Loop over each found neighbour
         for ( j = 0 ; j < _numNeighbours ; j++) {
             //### Get index of neighbour and squared distance to it
@@ -80,10 +83,17 @@ void CorrespondenceFilter::_update_affinity() {
 
             //### Compute the affinity element as 1/distance*distance
             float affinityElement = 1.0f / distanceSquared;
-            const float eps2 = 0.0001f;
+
+            //### Incorporate the orientation
+            targetNormal = _inTargetFeatures->row(neighbourIndex).tail(3);
+            float dotProduct = floatingNormal.dot(targetNormal);
+            float orientationWeight = dotProduct / 2.0f + 0.5f;
+            affinityElement *= orientationWeight;
+
             //### Check for numerical stability (the affinity elements will be
             //### normalized later, so dividing by a sum of tiny elements might
             //### go wrong.
+            const float eps2 = 0.0001f;
             if (affinityElement < eps2) {affinityElement = eps2;}
 
             //### Write result to the affinity triplet list
