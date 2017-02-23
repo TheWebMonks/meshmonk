@@ -10,6 +10,7 @@
 #include <nanoflann.hpp>
 #include <stdio.h>
 #include <RigidRegistration.hpp>
+#include <NonrigidRegistration.hpp>
 #include <InlierDetector.hpp>
 #include <CorrespondenceFilter.hpp>
 #include <SymmetricCorrespondenceFilter.hpp>
@@ -757,6 +758,11 @@ int main()
     ############################################################################
     */
     //## Initialization
+    size_t numElasticIterations = 10;
+    registration::NonrigidRegistration nonrigidRegistration;
+    nonrigidRegistration.set_input(&floatingFeatures, &targetFeatures, &floatingFaces, &floatingFlags, &targetFlags);
+    nonrigidRegistration.set_parameters(symmetric, numNearestNeighbours, kappa, numElasticIterations);
+    nonrigidRegistration.update();
 //    FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
 //    VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
 //
