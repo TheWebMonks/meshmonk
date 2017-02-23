@@ -9,6 +9,7 @@
 #include <Eigen/SparseCore>
 #include <nanoflann.hpp>
 #include <stdio.h>
+#include <RigidRegistration.hpp>
 #include <InlierDetector.hpp>
 #include <CorrespondenceFilter.hpp>
 #include <SymmetricCorrespondenceFilter.hpp>
@@ -736,90 +737,57 @@ int main()
     //## Data and matrices
     size_t numFloatingVertices = floatingFeatures.rows();
     size_t numTargetVertices = targetFeatures.rows();
-    VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
     VecDynFloat floatingFlags = VecDynFloat::Ones(numFloatingVertices);
     VecDynFloat targetFlags = VecDynFloat::Ones(numTargetVertices);
-    FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
-    VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
 
     //## Parameters
-    const size_t numNearestNeighbours = 5;
-    const size_t numRigidIterations = 10;
-    //## Set up Correspondence Filter
-    //registration::CorrespondenceFilter correspondenceFilter;
-    registration::SymmetricCorrespondenceFilter correspondenceFilter;
-    correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
-    //correspondenceFilter.set_floating_input(&floatingFeatures);
-    correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
-    correspondenceFilter.set_output(&correspondingFeatures, &correspondingFlags);
-    correspondenceFilter.set_parameters(numNearestNeighbours);
-    //## Set up Inlier Detector
+    bool symmetric = true;
+    size_t numNearestNeighbours = 5;
+    size_t numRigidIterations = 10;
+    float kappa = 3.0f;
 
-    registration::InlierDetector inlierDetector;
-    inlierDetector.set_input(&floatingFeatures, &correspondingFeatures,
-                                &correspondingFlags);
-    inlierDetector.set_output(&floatingWeights);
-    inlierDetector.set_parameters(3.0);
-    //## Set up the rigid transformer
-    registration::RigidTransformer rigidTransformer;
-    rigidTransformer.set_input(&correspondingFeatures, &floatingWeights);
-    rigidTransformer.set_output(&floatingFeatures);
-    rigidTransformer.set_parameters(false);
-
-    //# Loop ICP
-    for (size_t iteration = 0 ; iteration < numRigidIterations ; iteration++) {
-        //# Determine Correspondences
-        //## Compute symmetric wknn correspondences
-        //registration::wkkn_correspondences(floatingFeatures, targetFeatures, targetFlags,
-        //                    correspondingFeatures, correspondingFlags,
-        //                    numNearestNeighbours, true);
-        //correspondenceFilter.set_floating_input(&floatingFeatures);
-        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
-        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
-        correspondenceFilter.update();
-
-
-        //# Inlier Detection
-        inlierDetector.update();
-
-        //# Compute the transformation
-        rigidTransformer.update();
-    }
+    registration::RigidRegistration rigidRegistration;
+    rigidRegistration.set_input(&floatingFeatures, &targetFeatures, &floatingFlags, &targetFlags);
+    rigidRegistration.set_parameters(symmetric, numNearestNeighbours, kappa, numRigidIterations);
+    rigidRegistration.update();
 
     /*
     ############################################################################
     ##########################  NON-RIGID ICP  #################################
     ############################################################################
     */
-
-    //## Set up viscoelastic transformer
-    const size_t numNonrigidIterations = 12;
-    size_t smoothingIterations[12] = {144,89,55,34,21,13,8,5,3,2,1,1};
-    //size_t smoothingIterations = numNonrigidIterations + 1; //we will use this for the number of smoothing iterations
-    registration::ViscoElasticTransformer transformer;
-    transformer.set_input(&correspondingFeatures, &floatingWeights, &floatingFaces);
-    transformer.set_output(&floatingFeatures);
-
-
-    for (size_t i = 0 ; i < numNonrigidIterations ; i++) {
-        //# Determine Correspondences
-        //## Compute symmetric wknn correspondences
-        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
-        //correspondenceFilter.set_floating_input(&floatingFeatures);
-        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
-        correspondenceFilter.update();
-
-
-        //# Inlier Detection
-        inlierDetector.update();
-
-        //# Visco-Elastic transformation
-        std::cout << "floating positions before:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
-        transformer.set_parameters(10, 2.0, smoothingIterations[i],smoothingIterations[i]);
-        transformer.update();
-        std::cout << "floating positions after:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
-        //smoothingIterations--;
-    }
+    //## Initialization
+//    FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
+//    VecDynFloat correspondingFlags = VecDynFloat::Ones(numFloatingVertices);
+//
+//    //## Set up viscoelastic transformer
+//    const size_t numNonrigidIterations = 12;
+//    size_t smoothingIterations[12] = {144,89,55,34,21,13,8,5,3,2,1,1};
+//    //size_t smoothingIterations = numNonrigidIterations + 1; //we will use this for the number of smoothing iterations
+//    registration::ViscoElasticTransformer transformer;
+//    transformer.set_input(&correspondingFeatures, &floatingWeights, &floatingFaces);
+//    transformer.set_output(&floatingFeatures);
+//
+//
+//    for (size_t i = 0 ; i < numNonrigidIterations ; i++) {
+//        //# Determine Correspondences
+//        //## Compute symmetric wknn correspondences
+//        correspondenceFilter.set_floating_input(&floatingFeatures, &floatingFlags);
+//        //correspondenceFilter.set_floating_input(&floatingFeatures);
+//        correspondenceFilter.set_target_input(&targetFeatures, &targetFlags);
+//        correspondenceFilter.update();
+//
+//
+//        //# Inlier Detection
+//        inlierDetector.update();
+//
+//        //# Visco-Elastic transformation
+//        std::cout << "floating positions before:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
+//        transformer.set_parameters(10, 2.0, smoothingIterations[i],smoothingIterations[i]);
+//        transformer.update();
+//        std::cout << "floating positions after:\n" << floatingFeatures.topLeftCorner(3,3) << std::endl;
+//        //smoothingIterations--;
+//    }
 
     /*
     ############################################################################

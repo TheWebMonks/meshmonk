@@ -29,14 +29,14 @@ class BaseCorrespondenceFilter
         virtual ~BaseCorrespondenceFilter();
 
         virtual void set_floating_input(const FeatureMat * const inFloatingFeatures,
-                                const VecDynFloat * const inFloatingFlags){};
+                                const VecDynFloat * const inFloatingFlags){}
         virtual void set_target_input(const FeatureMat * const inTargetFeatures,
-                            const VecDynFloat * const inTargetFlags){};
+                            const VecDynFloat * const inTargetFlags){}
         void set_output(FeatureMat * const ioCorrespondingFeatures,
                         VecDynFloat * const ioCorrespondingFlags);
         SparseMat get_affinity() const {return _affinity;}
-        virtual void set_parameters(const size_t numNeighbours){};
-        virtual void update(){};
+        virtual void set_parameters(const size_t numNeighbours){}
+        virtual void update(){}
 
     protected:
 

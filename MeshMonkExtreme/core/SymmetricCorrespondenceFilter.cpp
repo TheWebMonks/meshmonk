@@ -64,7 +64,6 @@ void SymmetricCorrespondenceFilter::update() {
     _pullFilter.set_floating_input(_inTargetFeatures, _inTargetFlags);
     _pullFilter.set_target_input(_inFloatingFeatures, _inFloatingFlags);
 
-
     //# Update the (sparse) affinity matrix
     _update_affinity();
 

@@ -56,8 +56,6 @@ class SymmetricCorrespondenceFilter: public BaseCorrespondenceFilter
                                 const VecDynFloat * const inFloatingFlags);
         void set_target_input(const FeatureMat * const inTargetFeatures,
                             const VecDynFloat * const inTargetFlags);
-        //void set_output(FeatureMat * const ioCorrespondingFeatures,
-//                        VecDynFloat * const ioCorrespondingFlags);
         void set_parameters(const size_t numNeighbours);
         void update();
 

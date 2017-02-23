@@ -3,6 +3,8 @@
 
 #include <Eigen/Dense>
 #include <stdio.h>
+#include <memory.h>
+#include <time.h>
 #include <boost/variant.hpp>
 #include "../global.hpp"
 #include <CorrespondenceFilter.hpp>
@@ -37,8 +39,11 @@ class RigidRegistration
     */
 
     public:
-        RigidRegistration();
 
+        void set_input(FeatureMat * const ioFloatingFeatures,
+                       const FeatureMat * const inTargetFeatures,
+                       const VecDynFloat * const inFloatingFlags,
+                       const VecDynFloat * const inTargetFlags);
         void set_parameters(bool symmetric, size_t numNeighbours, float kappaa,
                             size_t numIterations);
 
