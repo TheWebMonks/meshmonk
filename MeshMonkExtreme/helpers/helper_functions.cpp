@@ -358,6 +358,48 @@ void convert_matrices_to_mesh(const FeatureMat &inFeatures,
     }
 }//end convert_matrices_to_mesh()
 
+void convert_matrices_to_mesh(const FeatureMat &inFeatures,
+                            const FacesMat &inFaces,
+                            const VecDynFloat &inFlags,
+                            TriMesh &outMesh) {
+    /*
+    GOAL
+    This function converts a mesh representation using eigen matrices
+    into a mesh representation using OpenMesh's TriMesh. Additionally,
+    flags (scalar between 0.0 and 1.0) are assigned to each vertex.
+
+    INPUT
+    -inFeatures:
+    a numVertices x 6 Eigen dense matrix where the first three columns are made
+    up of the positions of the vertices, and the last three columns the normals
+    of those vertices.
+    -inFaces:
+    a numFaces x 3 Eigen dense matrix where each row contains the corresponding
+    indices of the vertices belonging to that face.
+    -inFlags
+
+    PARAMETERS
+
+    OUTPUT
+    -outMesh:
+    this has to be a mesh of openmesh's TriMesh type. The function expects this
+    to be an empty mesh !!
+    */
+
+    //# Use previously implemented function to build a mesh using features and faces matrices
+    convert_matrices_to_mesh(inFeatures, inFaces, outMesh);
+
+    //# Add the flags to the mesh vertices
+    OpenMesh::VPropHandleT<float> flags;
+    outMesh.add_property(flags);
+    TriMesh::VertexIter vertexIt(outMesh.vertices_begin());
+    TriMesh::VertexIter vertexEnd(outMesh.vertices_end());
+    for (size_t i = 0 ; vertexIt != vertexEnd ; ++i, ++vertexIt) {
+        outMesh.property(flags, vertexIt) = inFlags[i];
+    }
+
+}//end convert_matrices_to_mesh()
+
 
 void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
                                 TriMesh &outMesh){
