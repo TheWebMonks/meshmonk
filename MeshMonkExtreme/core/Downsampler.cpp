@@ -83,16 +83,17 @@ void Downsampler::update(){
     rc = decimater.decimate(numDecimations);
     std::cout << " Decimation Succes? -> " << rc << std::endl;
 
-    //# Collect garbage
+    //## Collect garbage
     mesh.garbage_collection();
 
-    //# Print Mesh property
+    //## Print Mesh property
     std::cout << "--------  After processing " << std::endl;
     std::cout << "# Vertices " << mesh.n_vertices() << std::endl;
     std::cout << "# Edges " << mesh.n_edges() << std::endl;
     std::cout << "# Faces " << mesh.n_faces() << std::endl;
 
     //# Convert the downsampled result to the output matrices
+    convert_mesh_to_matrices(mesh, *_outFeatures, *_outFaces, *_outFlags);
 
 }
 

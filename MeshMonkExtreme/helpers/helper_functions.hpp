@@ -46,6 +46,11 @@ void convert_mesh_to_matrices(const TriMesh &inMesh,
 void convert_mesh_to_matrices(const TriMesh &inMesh,
                                 FeatureMat &outFeatures);
 
+void convert_mesh_to_matrices(const TriMesh &inMesh,
+                                FeatureMat &outFeatures,
+                                FacesMat &outFaces,
+                                VecDynFloat &outFlags);
+
 void convert_matrices_to_mesh(const FeatureMat &inFeatures,
                                 const FacesMat &inFaces,
                                 TriMesh &outMesh);

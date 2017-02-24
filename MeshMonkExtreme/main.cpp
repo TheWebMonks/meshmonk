@@ -14,6 +14,7 @@
 #include <SymmetricCorrespondenceFilter.hpp>
 #include <RigidTransformer.hpp>
 #include <ViscoElasticTransformer.hpp>
+#include <Downsampler.hpp>
 #include "global.hpp"
 #include <helper_functions.hpp>
 
@@ -52,7 +53,14 @@ int main()
     registration::import_data(fuckedUpBunnyDir, bunnyDir, floatingFeatures,
                               targetFeatures, floatingFaces);
 
+    size_t numVertices = floatingFeatures.rows();
+    VecDynFloat floatingFlags = VecDynFloat::Zero(numVertices);
 
+    registration::Downsampler downsampler;
+    downsampler.set_input(&floatingFeatures, &floatingFaces, &floatingFlags);
+    downsampler.set_output(floatingFeatures, floatingFaces, floatingFlags);
+    downsampler.set_parameters(0.5f);
+    downsampler.update();
 
 
 
@@ -97,81 +105,81 @@ int main()
     ############################################################################
     */
 
-    //# Load the bunny
-    TriMesh fuckedUpBunny;
-    OpenMesh::IO::_OBJReader_();
-    if (!OpenMesh::IO::read_mesh(fuckedUpBunny,fuckedUpBunnyDir)){
-        std::cerr << "Read error \n";
-        exit(1);
-    };
-
-    //# Print Mesh property
-    std::cout << "--------  Before processing " << std::endl;
-    std::cout << "# Vertices " << fuckedUpBunny.n_vertices() << std::endl;
-    std::cout << "# Edges " << fuckedUpBunny.n_edges() << std::endl;
-    std::cout << "# Faces " << fuckedUpBunny.n_faces() << std::endl;
-
-    //# block boundary vertices
-    fuckedUpBunny.request_vertex_status();
-    //## Get an iterator over all halfedges
-    TriMesh::HalfedgeIter he_it, he_end=fuckedUpBunny.halfedges_end();
-    //## If halfedge is boundary, lock the corresponding vertices
-    for (he_it = fuckedUpBunny.halfedges_begin(); he_it != he_end ; ++he_it) {
-      if (fuckedUpBunny.is_boundary(*he_it)) {
-         fuckedUpBunny.status(fuckedUpBunny.to_vertex_handle(*he_it)).set_locked(true);
-         fuckedUpBunny.status(fuckedUpBunny.from_vertex_handle(*he_it)).set_locked(true);
-      }
-    }
-    //# Make sure mesh has necessary normals etc
-    fuckedUpBunny.request_face_normals();
-    fuckedUpBunny.update_face_normals();
-
-    //# Set up the decimator
-    DecimaterType decimater(fuckedUpBunny);  // a decimater object, connected to a mesh
-    HModQuadric hModQuadric;      // use a quadric module
-    bool addSucces = decimater.add( hModQuadric ); // register module at the decimater
-    std::cout << "Adding quadric modifier to decimater : " << addSucces << std::endl;
-
-    std::cout << decimater.module( hModQuadric ).name() << std::endl;
-    decimater.module(hModQuadric).unset_max_err();
-
-    //# Initialize the decimater
-    bool rc = decimater.initialize();
-    std::cout  << "Decimater Initialization: " << decimater.is_initialized() << std::endl;
-    if (!rc){
-        std::cerr << "  initializing failed!" << std::endl;
-        std::cerr << "  maybe no priority module or more than one were defined!" << std::endl;
-        return false;
-    }
-
-
-    std::cout << "Decimater Observer: " << decimater.observer() << std::endl;
-
-
-
-    //# Run the decimater
-//    rc = decimater.decimate_to(size_t(10));
-    rc = decimater.decimate(size_t(10));
-    std::cout << " Did we fucking decimate?? -> " << rc << std::endl;
-
-    //# Collect garbage
-    fuckedUpBunny.garbage_collection();
-
-    //# Print Mesh property
-    std::cout << "--------  After processing " << std::endl;
-    std::cout << "# Vertices " << fuckedUpBunny.n_vertices() << std::endl;
-    std::cout << "# Edges " << fuckedUpBunny.n_edges() << std::endl;
-    std::cout << "# Faces " << fuckedUpBunny.n_faces() << std::endl;
-
-
-
-    //# Write to file
-    OpenMesh::IO::_OBJWriter_();
-    if (!OpenMesh::IO::write_mesh(fuckedUpBunny, fuckedUpBunnyResultDir))
-    {
-        std::cerr << "write error\n";
-        exit(1);
-    }
+//    //# Load the bunny
+//    TriMesh fuckedUpBunny;
+//    OpenMesh::IO::_OBJReader_();
+//    if (!OpenMesh::IO::read_mesh(fuckedUpBunny,fuckedUpBunnyDir)){
+//        std::cerr << "Read error \n";
+//        exit(1);
+//    };
+//
+//    //# Print Mesh property
+//    std::cout << "--------  Before processing " << std::endl;
+//    std::cout << "# Vertices " << fuckedUpBunny.n_vertices() << std::endl;
+//    std::cout << "# Edges " << fuckedUpBunny.n_edges() << std::endl;
+//    std::cout << "# Faces " << fuckedUpBunny.n_faces() << std::endl;
+//
+//    //# block boundary vertices
+//    fuckedUpBunny.request_vertex_status();
+//    //## Get an iterator over all halfedges
+//    TriMesh::HalfedgeIter he_it, he_end=fuckedUpBunny.halfedges_end();
+//    //## If halfedge is boundary, lock the corresponding vertices
+//    for (he_it = fuckedUpBunny.halfedges_begin(); he_it != he_end ; ++he_it) {
+//      if (fuckedUpBunny.is_boundary(*he_it)) {
+//         fuckedUpBunny.status(fuckedUpBunny.to_vertex_handle(*he_it)).set_locked(true);
+//         fuckedUpBunny.status(fuckedUpBunny.from_vertex_handle(*he_it)).set_locked(true);
+//      }
+//    }
+//    //# Make sure mesh has necessary normals etc
+//    fuckedUpBunny.request_face_normals();
+//    fuckedUpBunny.update_face_normals();
+//
+//    //# Set up the decimator
+//    DecimaterType decimater(fuckedUpBunny);  // a decimater object, connected to a mesh
+//    HModQuadric hModQuadric;      // use a quadric module
+//    bool addSucces = decimater.add( hModQuadric ); // register module at the decimater
+//    std::cout << "Adding quadric modifier to decimater : " << addSucces << std::endl;
+//
+//    std::cout << decimater.module( hModQuadric ).name() << std::endl;
+//    decimater.module(hModQuadric).unset_max_err();
+//
+//    //# Initialize the decimater
+//    bool rc = decimater.initialize();
+//    std::cout  << "Decimater Initialization: " << decimater.is_initialized() << std::endl;
+//    if (!rc){
+//        std::cerr << "  initializing failed!" << std::endl;
+//        std::cerr << "  maybe no priority module or more than one were defined!" << std::endl;
+//        return false;
+//    }
+//
+//
+//    std::cout << "Decimater Observer: " << decimater.observer() << std::endl;
+//
+//
+//
+//    //# Run the decimater
+////    rc = decimater.decimate_to(size_t(10));
+//    rc = decimater.decimate(size_t(10));
+//    std::cout << " Did we fucking decimate?? -> " << rc << std::endl;
+//
+//    //# Collect garbage
+//    fuckedUpBunny.garbage_collection();
+//
+//    //# Print Mesh property
+//    std::cout << "--------  After processing " << std::endl;
+//    std::cout << "# Vertices " << fuckedUpBunny.n_vertices() << std::endl;
+//    std::cout << "# Edges " << fuckedUpBunny.n_edges() << std::endl;
+//    std::cout << "# Faces " << fuckedUpBunny.n_faces() << std::endl;
+//
+//
+//
+//    //# Write to file
+//    OpenMesh::IO::_OBJWriter_();
+//    if (!OpenMesh::IO::write_mesh(fuckedUpBunny, fuckedUpBunnyResultDir))
+//    {
+//        std::cerr << "write error\n";
+//        exit(1);
+//    }
 //
 //    //# convert to our features
 //    registration::convert_mesh_to_matrices(fuckedUpBunny, floatingFeatures, floatingFaces);
@@ -223,7 +231,7 @@ int main()
     ############################################################################
     */
     //# Write result to file
-//    registration::export_data(floatingFeatures,floatingFaces, fuckedUpBunnyResultDir);
+    registration::export_data(floatingFeatures,floatingFaces, fuckedUpBunnyResultDir);
 
 
     return 0;

@@ -298,6 +298,51 @@ void convert_mesh_to_matrices(const TriMesh &inputMesh,
 
 
 
+void convert_mesh_to_matrices(const TriMesh &inMesh,
+                                FeatureMat &outFeatures,
+                                FacesMat &outFaces,
+                                VecDynFloat &outFlags) {
+    /*
+    GOAL
+    This function converts an openmesh data structure to a feature matrix,
+    a faces matrix and a matrix containing the flags (values between 0.0 and
+    1.0 that were assigned to each vertex).
+
+    INPUT
+    -inMesh:
+    this has to be a mesh of openmesh's TriMesh type
+
+    PARAMETERS
+
+    OUTPUT
+    -outFeatures:
+    a numVertices x 6 Eigen dense matrix where the first three columns are made
+    up of the positions of the vertices, and the last three columns the normals
+    of those vertices.
+    -outFaces:
+    a numFaces x 3 Eigen dense matrix where each row contains the corresponding
+    indices of the vertices belonging to that face.
+    -outFlags
+    */
+    //# Info & Initialization
+    size_t numVertices = inMesh.n_vertices();
+    outFlags = VecDynFloat::Zero(numVertices);
+    OpenMesh::VPropHandleT<TriMesh::Scalar> flags;
+
+    //# Convert to features and faces
+    convert_mesh_to_matrices(inMesh, outFeatures, outFaces);
+
+    //# Build the matrix containing the flags
+    //## Initialize the vertex iterator
+    TriMesh::VertexIter vertexIt(inMesh.vertices_begin());
+    TriMesh::VertexIter vertexEnd(inMesh.vertices_end());
+    //## Loop over every face
+    for (size_t i = 0 ; vertexIt != vertexEnd ; i++, vertexIt++) {
+            outFlags[i] = inMesh.property(flags, *vertexIt);
+    }
+}
+
+
 void convert_matrices_to_mesh(const FeatureMat &inFeatures,
                             const FacesMat &inFaces,
                             TriMesh &outMesh) {
@@ -356,6 +401,12 @@ void convert_matrices_to_mesh(const FeatureMat &inFeatures,
         //## Add the list of vertex handles as a face to the mesh
         outMesh.add_face(faceVertexHandles);
     }
+
+    //# Make sure the mesh has computed/updated its vertex normals
+    outMesh.request_face_normals();
+    outMesh.request_vertex_normals();
+    outMesh.update_normals();
+    outMesh.release_face_normals();
 }//end convert_matrices_to_mesh()
 
 void convert_matrices_to_mesh(const FeatureMat &inFeatures,
@@ -390,12 +441,12 @@ void convert_matrices_to_mesh(const FeatureMat &inFeatures,
     convert_matrices_to_mesh(inFeatures, inFaces, outMesh);
 
     //# Add the flags to the mesh vertices
-    OpenMesh::VPropHandleT<float> flags;
+    OpenMesh::VPropHandleT<TriMesh::Scalar> flags;
     outMesh.add_property(flags);
     TriMesh::VertexIter vertexIt(outMesh.vertices_begin());
     TriMesh::VertexIter vertexEnd(outMesh.vertices_end());
     for (size_t i = 0 ; vertexIt != vertexEnd ; ++i, ++vertexIt) {
-        outMesh.property(flags, vertexIt) = inFlags[i];
+        outMesh.property(flags, *vertexIt) = inFlags[i];
     }
 
 }//end convert_matrices_to_mesh()
