@@ -327,7 +327,13 @@ void convert_mesh_to_matrices(const TriMesh &inMesh,
     //# Info & Initialization
     size_t numVertices = inMesh.n_vertices();
     outFlags = VecDynFloat::Zero(numVertices);
-    OpenMesh::VPropHandleT<TriMesh::Scalar> flags;
+    OpenMesh::VPropHandleT<float> flags;
+    bool flagsExist = inMesh.get_property_handle(flags, "flags");
+    if (!flagsExist)
+    {
+        std::cerr << "Tried to access the 'flags' property of input mesh - couldn't find handle\n";
+        exit(1);
+    }
 
     //# Convert to features and faces
     convert_mesh_to_matrices(inMesh, outFeatures, outFaces);
@@ -338,7 +344,7 @@ void convert_mesh_to_matrices(const TriMesh &inMesh,
     TriMesh::VertexIter vertexEnd(inMesh.vertices_end());
     //## Loop over every face
     for (size_t i = 0 ; vertexIt != vertexEnd ; i++, vertexIt++) {
-            outFlags[i] = inMesh.property(flags, *vertexIt);
+            outFlags[i] = inMesh.property(flags, vertexIt);
     }
 }
 
@@ -441,12 +447,13 @@ void convert_matrices_to_mesh(const FeatureMat &inFeatures,
     convert_matrices_to_mesh(inFeatures, inFaces, outMesh);
 
     //# Add the flags to the mesh vertices
-    OpenMesh::VPropHandleT<TriMesh::Scalar> flags;
-    outMesh.add_property(flags);
+    OpenMesh::VPropHandleT<float> flags;
+    outMesh.add_property(flags, "flags");
+    outMesh.property(flags).set_persistent(true);
     TriMesh::VertexIter vertexIt(outMesh.vertices_begin());
     TriMesh::VertexIter vertexEnd(outMesh.vertices_end());
     for (size_t i = 0 ; vertexIt != vertexEnd ; ++i, ++vertexIt) {
-        outMesh.property(flags, *vertexIt) = inFlags[i];
+        outMesh.property(flags, vertexIt) = inFlags[i];
     }
 
 }//end convert_matrices_to_mesh()

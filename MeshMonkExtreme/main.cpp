@@ -54,7 +54,7 @@ int main()
                               targetFeatures, floatingFaces);
 
     size_t numVertices = floatingFeatures.rows();
-    VecDynFloat floatingFlags = VecDynFloat::Zero(numVertices);
+    VecDynFloat floatingFlags = VecDynFloat::Ones(numVertices);
 
     registration::Downsampler downsampler;
     downsampler.set_input(&floatingFeatures, &floatingFaces, &floatingFlags);
