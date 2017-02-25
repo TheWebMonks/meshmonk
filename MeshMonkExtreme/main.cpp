@@ -57,11 +57,14 @@ int main()
     VecDynFloat floatingFlags = VecDynFloat::Ones(numVertices);
 
     registration::Downsampler downsampler;
+    VecDynInt originalIndices;
+    FeatureMat newFeatures;
+    FacesMat newFaces;
+    VecDynFloat newFlags;
     downsampler.set_input(&floatingFeatures, &floatingFaces, &floatingFlags);
-    downsampler.set_output(floatingFeatures, floatingFaces, floatingFlags);
+    downsampler.set_output(newFeatures, newFaces, newFlags, originalIndices);
     downsampler.set_parameters(0.5f);
     downsampler.update();
-
 
 
 

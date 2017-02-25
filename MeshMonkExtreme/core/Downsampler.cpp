@@ -17,11 +17,13 @@ void Downsampler::set_input(const FeatureMat * const inFeatures,
 
 void Downsampler::set_output(FeatureMat &outFeatures,
                             FacesMat &outFaces,
-                            VecDynFloat &outFlags){
+                            VecDynFloat &outFlags,
+                            VecDynInt &outOriginalIndices){
 
     _outFeatures = &outFeatures;
     _outFaces = &outFaces;
     _outFlags = &outFlags;
+    _outOriginalIndices = &outOriginalIndices;
 }//end set_output()
 
 
@@ -34,6 +36,18 @@ void Downsampler::update(){
                             *_inFaces,
                             *_inFlags,
                             mesh);
+
+    //# Add the original indices as a custom property to each vertex
+    //## This is so that we can extract the original index of each vertex
+    //## after downsampling.
+    OpenMesh::VPropHandleT<float> originalIndices;
+    mesh.add_property(originalIndices, "originalIndices");
+    mesh.property(originalIndices).set_persistent(true);
+    TriMesh::VertexIter vertexIt(mesh.vertices_begin());
+    TriMesh::VertexIter vertexEnd(mesh.vertices_end());
+    for (size_t index = 0 ; vertexIt != vertexEnd ; index++, vertexIt++) {
+        mesh.property(originalIndices, vertexIt) = index;
+    }
 
     //# Downsample using OpenMesh library
     //## Print Mesh property
@@ -87,6 +101,7 @@ void Downsampler::update(){
     mesh.garbage_collection();
 
     //## Print Mesh property
+    numVertices = mesh.n_vertices();
     std::cout << "--------  After processing " << std::endl;
     std::cout << "# Vertices " << mesh.n_vertices() << std::endl;
     std::cout << "# Edges " << mesh.n_edges() << std::endl;
@@ -95,6 +110,23 @@ void Downsampler::update(){
     //# Convert the downsampled result to the output matrices
     convert_mesh_to_matrices(mesh, *_outFeatures, *_outFaces, *_outFlags);
 
+    //# Extract the original indices.
+    //## Get handle to the originalIndices property.
+    *_outOriginalIndices = VecDynInt::Zero(numVertices); //resizing
+    bool propertyExist = mesh.get_property_handle(originalIndices, "originalIndices");
+    if (!propertyExist)
+    {
+        std::cerr << "Tried to access the 'originalIndices' property of the mesh after downsampling - couldn't find handle\n";
+        exit(1);
+    }
+
+    //## Loop over the vertices and save its original index
+    vertexIt = mesh.vertices_begin();
+    vertexEnd = mesh.vertices_end();
+    //## Loop over every face
+    for (size_t i = 0 ; vertexIt != vertexEnd ; i++, vertexIt++) {
+            (*_outOriginalIndices)[i] = mesh.property(originalIndices, vertexIt);
+    }
 }
 
 

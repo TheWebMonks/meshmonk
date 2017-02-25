@@ -13,6 +13,7 @@
 
 typedef Eigen::Vector3f Vec3Float;
 typedef Eigen::VectorXf VecDynFloat;
+typedef Eigen::VectorXi VecDynInt;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
 typedef Eigen::Matrix< int, Eigen::Dynamic, 3> FacesMat;
 typedef OpenMesh::DefaultTraits MyTraits;
@@ -31,7 +32,8 @@ class Downsampler
                        const VecDynFloat * const inFlags);
         void set_output(FeatureMat &outFeatures,
                         FacesMat &outFaces,
-                        VecDynFloat &outFlags);
+                        VecDynFloat &outFlags,
+                        VecDynInt &outOriginalIndices);
         void set_parameters(float downsampleRatio = 0.8f){ _downsampleRatio = downsampleRatio;};
         void update();
 
@@ -47,6 +49,7 @@ class Downsampler
         FeatureMat * _outFeatures;
         FacesMat * _outFaces;
         VecDynFloat * _outFlags;
+        VecDynInt *_outOriginalIndices;
 
 
         //# User Parameters
