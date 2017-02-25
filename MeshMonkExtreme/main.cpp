@@ -56,15 +56,49 @@ int main()
     size_t numVertices = floatingFeatures.rows();
     VecDynFloat floatingFlags = VecDynFloat::Ones(numVertices);
 
+
+    //# Downsample the original Mesh, call it downsampleMesh
     registration::Downsampler downsampler;
-    VecDynInt originalIndices;
-    FeatureMat newFeatures;
-    FacesMat newFaces;
-    VecDynFloat newFlags;
+    VecDynInt downOriginalIndices;
+    FeatureMat downFeatures;
+    FacesMat downFaces;
+    VecDynFloat downFlags;
     downsampler.set_input(&floatingFeatures, &floatingFaces, &floatingFlags);
-    downsampler.set_output(newFeatures, newFaces, newFlags, originalIndices);
+    downsampler.set_output(downFeatures, downFaces, downFlags, downOriginalIndices);
     downsampler.set_parameters(0.5f);
     downsampler.update();
+
+
+    //# Register it to the target mesh
+    size_t numNonrigidIterations = 20;
+    float sigmaSmoothing = 2.0f;
+    size_t numTargetVertices = targetFeatures.rows();
+    VecDynFloat targetFlags = VecDynFloat::Ones(numTargetVertices);
+    registration::NonrigidRegistration nonrigidRegistration;
+    nonrigidRegistration.set_input(&downFeatures, &targetFeatures, &downFaces, &downFlags, &targetFlags);
+    nonrigidRegistration.set_parameters(true, 5, 3.0,
+                                        numNonrigidIterations, sigmaSmoothing,
+                                        100, 1,
+                                        100, 1);
+    nonrigidRegistration.update();
+
+
+
+    //# Downsample the original again, but leave it at a higher resolution. Call it upsampleMesh.
+    registration::Downsampler upsampler;
+    VecDynInt upOriginalIndices;
+    FeatureMat upFeatures;
+    FacesMat upFaces;
+    VecDynFloat upFlags;
+    upsampler.set_input(&floatingFeatures, &floatingFaces, &floatingFlags);
+    upsampler.set_output(upFeatures, upFaces, upFlags, upOriginalIndices);
+    upsampler.set_parameters(0.2f);
+    upsampler.update();
+
+    //# Transfer the vertex positions of downsampleMesh to upsampleMesh using ScaleShifter class
+
+
+
 
 
 
@@ -234,7 +268,10 @@ int main()
     ############################################################################
     */
     //# Write result to file
-    registration::export_data(floatingFeatures,floatingFaces, fuckedUpBunnyResultDir);
+//    registration::export_data(floatingFeatures,floatingFaces, fuckedUpBunnyResultDir);
+//    registration::export_data(upFeatures,upFaces, fuckedUpBunnyResultDir);
+    registration::export_data(downFeatures,downFaces, fuckedUpBunnyResultDir);
+
 
 
     return 0;
