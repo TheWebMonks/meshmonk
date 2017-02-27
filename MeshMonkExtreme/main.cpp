@@ -95,21 +95,12 @@ int main()
     upsampler.set_parameters(0.3f);
     upsampler.update();
 
-
-    //DEBUG PRINTS
-    std::cout << "down features : " << downFeatures.topRows(20) << std::endl;
-    std::cout << "up features : " << upFeatures.topRows(20)  << std::endl;
-    std::cout << "down original indices " << downOriginalIndices.head(20) << std::endl;
-    std::cout << "up original indices " << upOriginalIndices.head(20) << std::endl;
-//    std::cout <<  << std::endl;
-
     //# Transfer the vertex positions of downsampleMesh to upsampleMesh using ScaleShifter class
     registration::ScaleShifter scaleShifter;
     scaleShifter.set_input(downFeatures, downOriginalIndices, upOriginalIndices);
     scaleShifter.set_output(upFeatures);
     scaleShifter.update();
 
-    std::cout << "up features NEW : " << upFeatures.topRows(20)  << std::endl;
 
 
 
@@ -283,7 +274,7 @@ int main()
     //# Write result to file
 //    registration::export_data(floatingFeatures,floatingFaces, fuckedUpBunnyResultDir);
     registration::export_data(upFeatures,upFaces, fuckedUpBunnyResultDir);
-//    registration::export_data(downFeatures,downFaces, fuckedUpBunnyResultDir);
+//    registration::export_data(downFeatures,downFaces, "/home/jonatan/projects/meshmonk/examples/data/bunnyDown.obj");
 
 
 

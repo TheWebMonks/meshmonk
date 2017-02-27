@@ -49,9 +49,6 @@ void ScaleShifter::_find_corresponding_and_new_indices(){
         lowIndexPairs.push_back(indexPair);
     }
     //## Loop over the high sampled indices
-    std::cout << "Num High Nodes : " << _numHighNodes << "\n";
-    std::cout << "Num Rows High Original Indices : " << _inHighOriginalIndices->rows() << "\n";
-    std::cout << "Size High Index Pairs : " << highIndexPairs.size() << "\n";
     for (int i = 0 ; i < _numHighNodes ; i++){
         //## Get the original index
         int originalIndex = (*_inHighOriginalIndices)[i];
@@ -63,12 +60,6 @@ void ScaleShifter::_find_corresponding_and_new_indices(){
 
 
     //# Sort the index pair lists by the original indices
-//    struct compare_first_only {
-//        bool operator()(const std::pair<int, int>& p1, const std::pair<int, int>& p2) {
-//            return p1.first < p2.first;
-//        }
-//    };
-//    std::stable_sort(lowIndexPairs.begin(), lowIndexPairs.end(), compare_first_only());
     std::stable_sort(lowIndexPairs.begin(), lowIndexPairs.end(), [](auto &left, auto &right) {
         return left.first < right.first;
     }); //This construction makes sure we only sort using the first element of the std::pair
@@ -76,15 +67,6 @@ void ScaleShifter::_find_corresponding_and_new_indices(){
         return left.first < right.first;
     });
 
-    //DEBUG
-    std::cout << "LOW INDEX PAIRS :" << std::endl;
-    for (int i = 0 ; i < lowIndexPairs.size() ; i++){
-        std::cout << lowIndexPairs[i].first << " || " << lowIndexPairs[i].second << std::endl;
-    }
-    std::cout << "HIGH INDEX PAIRS :" << std::endl;
-    for (int i = 0 ; i < highIndexPairs.size() ; i++){
-        std::cout << highIndexPairs[i].first << " || " << highIndexPairs[i].second << std::endl;
-    }
 
     //# Determine corresponding and new nodes of the high sampled mesh.
     //##    Determine the current index pairs between the corresponding nodes of the high and low
@@ -119,12 +101,6 @@ void ScaleShifter::_find_corresponding_and_new_indices(){
             }
             //## if one index is smaller than the other, we have to increment that index
             else if (lowOriginalIndex > highOriginalIndex) {
-    //            //DEBUG
-    //            std::cout << " Low original index : " << lowOriginalIndex << std::endl;
-    //            std::cout << " Low current index : " << lowCurrentIndex << std::endl;
-    //            std::cout << " high original index : " << highOriginalIndex << std::endl;
-    //            std::cout << " high current index : " << highCurrentIndex << std::endl;
-
                 //## This node is new!
                 _newIndices.push_back(highCurrentIndex);
                 //## Move to the next pair of high indices
@@ -133,7 +109,8 @@ void ScaleShifter::_find_corresponding_and_new_indices(){
             else if (lowOriginalIndex < highOriginalIndex) {
                 //## (!) This should never occur, it means that a node was found in the low sampled mesh that doesn't exist in the high sampled mesh.
                 std::cerr << "the original indices in the low sampled mesh should be a subset of those of the high sampled mesh. Something went wrong?" << std::endl;
-                return;
+                counterLow++;
+                continue;
             }
         }
 
@@ -141,9 +118,7 @@ void ScaleShifter::_find_corresponding_and_new_indices(){
 
     //# Save the number of corresponding and new nodes
     _numCorrespondingNodes = _correspondingIndexPairs.size();
-    std::cout << "NUM NODES A : " << _numNewNodes << std::endl;
     _numNewNodes = _newIndices.size();
-    std::cout << "NUM NODES B : " << _numNewNodes << std::endl;
     //## safety check
     if((_numCorrespondingNodes + _numNewNodes) != _numHighNodes){
         std::cerr << "Some nodes were missed as being new or corresponding nodes in ScaleShifter." << std::endl;
@@ -209,7 +184,6 @@ void ScaleShifter::_interpolate_new_nodes(){
     //## Initialization
     Vec3Float newNodeOldPosition = Vec3Float::Zero();
     Vec3Float newNodeOldNormal = Vec3Float::Zero();
-    std::cout << "NUM NEW NODES : " << _numNewNodes << std::endl;
     //## Loop over the indices of the new nodes
     for (int i = 0 ; i < _numNewNodes ; i++) {
         const int newNodeIndex = _newIndices[i];
