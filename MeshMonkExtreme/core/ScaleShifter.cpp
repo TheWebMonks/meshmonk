@@ -5,14 +5,13 @@ namespace registration {
 
 
 void ScaleShifter::set_input(const FeatureMat &inLowFeatures,
-                       const VecDynInt &inLowOriginalIndices,
-                       const VecDynInt &inHighOriginalIndices){
+                            const VecDynInt &inLowOriginalIndices,
+                            const VecDynInt &inHighOriginalIndices){
     _inLowFeatures = &inLowFeatures;
     _inLowOriginalIndices = &inLowOriginalIndices;
     _inHighOriginalIndices = &inHighOriginalIndices;
 
     _numLowNodes = _inLowFeatures->rows();
-    _numHighNodes = _outHighFeatures->rows();
 
     _numCorrespondingNodes = 0;
     _numNewNodes = 0;
@@ -24,6 +23,14 @@ void ScaleShifter::set_input(const FeatureMat &inLowFeatures,
 
 void ScaleShifter::set_output(FeatureMat &outHighFeatures){
     _outHighFeatures = &outHighFeatures;
+
+    _numHighNodes = _outHighFeatures->rows();
+
+    _numCorrespondingNodes = 0;
+    _numNewNodes = 0;
+
+    _correspondingIndexPairs.clear();
+    _newIndices.clear();
 }//end set_output()
 
 
@@ -42,6 +49,9 @@ void ScaleShifter::_find_corresponding_and_new_indices(){
         lowIndexPairs.push_back(indexPair);
     }
     //## Loop over the high sampled indices
+    std::cout << "Num High Nodes : " << _numHighNodes << "\n";
+    std::cout << "Num Rows High Original Indices : " << _inHighOriginalIndices->rows() << "\n";
+    std::cout << "Size High Index Pairs : " << highIndexPairs.size() << "\n";
     for (int i = 0 ; i < _numHighNodes ; i++){
         //## Get the original index
         int originalIndex = (*_inHighOriginalIndices)[i];
@@ -62,7 +72,19 @@ void ScaleShifter::_find_corresponding_and_new_indices(){
     std::stable_sort(lowIndexPairs.begin(), lowIndexPairs.end(), [](auto &left, auto &right) {
         return left.first < right.first;
     }); //This construction makes sure we only sort using the first element of the std::pair
+    std::stable_sort(highIndexPairs.begin(), highIndexPairs.end(), [](auto &left, auto &right) {
+        return left.first < right.first;
+    });
 
+    //DEBUG
+    std::cout << "LOW INDEX PAIRS :" << std::endl;
+    for (int i = 0 ; i < lowIndexPairs.size() ; i++){
+        std::cout << lowIndexPairs[i].first << " || " << lowIndexPairs[i].second << std::endl;
+    }
+    std::cout << "HIGH INDEX PAIRS :" << std::endl;
+    for (int i = 0 ; i < highIndexPairs.size() ; i++){
+        std::cout << highIndexPairs[i].first << " || " << highIndexPairs[i].second << std::endl;
+    }
 
     //# Determine corresponding and new nodes of the high sampled mesh.
     //##    Determine the current index pairs between the corresponding nodes of the high and low
@@ -74,35 +96,54 @@ void ScaleShifter::_find_corresponding_and_new_indices(){
     int counterHigh = 0;
     _correspondingIndexPairs.clear();
     for ( ; counterHigh < _numHighNodes ; counterHigh++){
-        //## Obtain original and current indices for both meshes
-        int lowOriginalIndex = lowIndexPairs[counterLow].first;
-        int lowCurrentIndex = lowIndexPairs[counterLow].second;
+        //## Obtain original and current indices for high sampled mesh
         int highOriginalIndex = highIndexPairs[counterHigh].first;
         int highCurrentIndex = highIndexPairs[counterHigh].second;
 
-        //## if the original indices match, we have found corresponding nodes!
-        if (lowOriginalIndex == highOriginalIndex) {
-            std::pair<int,int> correspondingPair(highCurrentIndex, lowCurrentIndex);
-            _correspondingIndexPairs.push_back(correspondingPair);
-            counterLow++; //counterHigh is incremented in for-loop definition
-        }
-        //## if one index is smaller than the other, we have to increment that index
-        else if (lowOriginalIndex > highOriginalIndex) {
-            //## This node is new!
+        //## If the counter for the low sampled mesh becomes higher than its number
+        //## of nodes, we ran out and all high samples mesh nodes are therefor new!
+        if (counterLow >= _numLowNodes) {
             _newIndices.push_back(highCurrentIndex);
-            //## Move to the next pair of high indices
-            continue; //skips the rest of the for-loop
+            continue;
         }
-        else if (lowOriginalIndex < highOriginalIndex) {
-            //## (!) This should never occur, it means that a node was found in the low sampled mesh that doesn't exist in the high sampled mesh.
-            std::cerr << "the original indices in the low sampled mesh should be a subset of those of the high sampled mesh. Something went wrong?" << std::endl;
-            return;
+        else { //check if there is a match between the original indices of the high and low sampled node
+            //## Obtain original and current indices for both meshes
+            int lowOriginalIndex = lowIndexPairs[counterLow].first;
+            int lowCurrentIndex = lowIndexPairs[counterLow].second;
+
+            //## if the original indices match, we have found corresponding nodes!
+            if (lowOriginalIndex == highOriginalIndex) {
+                std::pair<int,int> correspondingPair(highCurrentIndex, lowCurrentIndex);
+                _correspondingIndexPairs.push_back(correspondingPair);
+                counterLow++; //counterHigh is incremented in for-loop definition
+            }
+            //## if one index is smaller than the other, we have to increment that index
+            else if (lowOriginalIndex > highOriginalIndex) {
+    //            //DEBUG
+    //            std::cout << " Low original index : " << lowOriginalIndex << std::endl;
+    //            std::cout << " Low current index : " << lowCurrentIndex << std::endl;
+    //            std::cout << " high original index : " << highOriginalIndex << std::endl;
+    //            std::cout << " high current index : " << highCurrentIndex << std::endl;
+
+                //## This node is new!
+                _newIndices.push_back(highCurrentIndex);
+                //## Move to the next pair of high indices
+                continue; //skips the rest of the for-loop
+            }
+            else if (lowOriginalIndex < highOriginalIndex) {
+                //## (!) This should never occur, it means that a node was found in the low sampled mesh that doesn't exist in the high sampled mesh.
+                std::cerr << "the original indices in the low sampled mesh should be a subset of those of the high sampled mesh. Something went wrong?" << std::endl;
+                return;
+            }
         }
+
     }
 
     //# Save the number of corresponding and new nodes
     _numCorrespondingNodes = _correspondingIndexPairs.size();
+    std::cout << "NUM NODES A : " << _numNewNodes << std::endl;
     _numNewNodes = _newIndices.size();
+    std::cout << "NUM NODES B : " << _numNewNodes << std::endl;
     //## safety check
     if((_numCorrespondingNodes + _numNewNodes) != _numHighNodes){
         std::cerr << "Some nodes were missed as being new or corresponding nodes in ScaleShifter." << std::endl;
@@ -145,7 +186,7 @@ void ScaleShifter::_interpolate_new_nodes(){
 
     //# Set up Queried Points
     FeatureMat newNodesOldFeatures = FeatureMat::Zero(_numNewNodes, NUM_FEATURES);
-    for (int i = 0 ; i < _numCorrespondingNodes ; i++) {
+    for (int i = 0 ; i < _numNewNodes ; i++) {
         //## Get the index of the new nodes of the high sampled mesh. We are skipping
         //## all the nodes for which a match was found in the low sampled mesh.
         int newIndex = _newIndices[i];
@@ -168,6 +209,7 @@ void ScaleShifter::_interpolate_new_nodes(){
     //## Initialization
     Vec3Float newNodeOldPosition = Vec3Float::Zero();
     Vec3Float newNodeOldNormal = Vec3Float::Zero();
+    std::cout << "NUM NEW NODES : " << _numNewNodes << std::endl;
     //## Loop over the indices of the new nodes
     for (int i = 0 ; i < _numNewNodes ; i++) {
         const int newNodeIndex = _newIndices[i];

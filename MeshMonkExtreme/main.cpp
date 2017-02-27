@@ -15,6 +15,7 @@
 #include <RigidTransformer.hpp>
 #include <ViscoElasticTransformer.hpp>
 #include <Downsampler.hpp>
+#include <ScaleShifter.hpp>
 #include "global.hpp"
 #include <helper_functions.hpp>
 
@@ -68,7 +69,6 @@ int main()
     downsampler.set_parameters(0.5f);
     downsampler.update();
 
-
     //# Register it to the target mesh
     size_t numNonrigidIterations = 20;
     float sigmaSmoothing = 2.0f;
@@ -92,11 +92,24 @@ int main()
     VecDynFloat upFlags;
     upsampler.set_input(&floatingFeatures, &floatingFaces, &floatingFlags);
     upsampler.set_output(upFeatures, upFaces, upFlags, upOriginalIndices);
-    upsampler.set_parameters(0.2f);
+    upsampler.set_parameters(0.3f);
     upsampler.update();
 
-    //# Transfer the vertex positions of downsampleMesh to upsampleMesh using ScaleShifter class
 
+    //DEBUG PRINTS
+    std::cout << "down features : " << downFeatures.topRows(20) << std::endl;
+    std::cout << "up features : " << upFeatures.topRows(20)  << std::endl;
+    std::cout << "down original indices " << downOriginalIndices.head(20) << std::endl;
+    std::cout << "up original indices " << upOriginalIndices.head(20) << std::endl;
+//    std::cout <<  << std::endl;
+
+    //# Transfer the vertex positions of downsampleMesh to upsampleMesh using ScaleShifter class
+    registration::ScaleShifter scaleShifter;
+    scaleShifter.set_input(downFeatures, downOriginalIndices, upOriginalIndices);
+    scaleShifter.set_output(upFeatures);
+    scaleShifter.update();
+
+    std::cout << "up features NEW : " << upFeatures.topRows(20)  << std::endl;
 
 
 
@@ -269,8 +282,8 @@ int main()
     */
     //# Write result to file
 //    registration::export_data(floatingFeatures,floatingFaces, fuckedUpBunnyResultDir);
-//    registration::export_data(upFeatures,upFaces, fuckedUpBunnyResultDir);
-    registration::export_data(downFeatures,downFaces, fuckedUpBunnyResultDir);
+    registration::export_data(upFeatures,upFaces, fuckedUpBunnyResultDir);
+//    registration::export_data(downFeatures,downFaces, fuckedUpBunnyResultDir);
 
 
 
