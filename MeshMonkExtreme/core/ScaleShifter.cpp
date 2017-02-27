@@ -218,6 +218,18 @@ void ScaleShifter::_interpolate_new_nodes(){
 }//end _interpolate_new_nodes()
 
 
+void ScaleShifter::_copy_matching_nodes(){
+    //# Copy the features of the lowly sampled mesh into the features
+    //# of the matching nodes of the highly sampled mesh.
+    for (int i = 0 ; i < _numCorrespondingNodes ; i++){
+        //## Get the index pairs
+        int highIndex = _correspondingIndexPairs[i].first;
+        int lowIndex = _correspondingIndexPairs[i].second;
+        //## copy the features of the low mesh into the features of the high mesh
+        _outHighFeatures->row(highIndex) = _inLowFeatures->row(lowIndex);
+    }
+}//end _copy_matching_nodes()
+
 void ScaleShifter::update(){
 
     //# Build the list of corresponding indices
@@ -226,18 +238,10 @@ void ScaleShifter::update(){
 
 
     //# Interpolate the features of new nodes
+    _interpolate_new_nodes();
 
-
-    //# Copy the features of corresponding nodes
-    //## Loop over the corresponding nodes
-    for (int i = 0 ; i < _numCorrespondingNodes ; i++){
-        //## Get the index pairs
-        int highIndex = _correspondingIndexPairs[i].first;
-        int lowIndex = _correspondingIndexPairs[i].second;
-        //## copy the features of the low mesh into the features of the high mesh
-        _outHighFeatures->row(highIndex) = _inLowFeatures->row(lowIndex);
-    }
-
+    //# Copy the features of matching nodes.
+    _copy_matching_nodes();
 
 }//end update()
 

@@ -60,6 +60,7 @@ class ScaleShifter
         //# Internal functions
         void _find_corresponding_and_new_indices();
         void _interpolate_new_nodes();
+        void _copy_matching_nodes();
 };
 
 }//namespace registration
