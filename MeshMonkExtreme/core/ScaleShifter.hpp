@@ -9,10 +9,13 @@
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 #include "../global.hpp"
 #include <helper_functions.hpp>
+#include <NeighbourFinder.hpp>
 
 typedef Eigen::Vector3f Vec3Float;
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::VectorXi VecDynInt;
+typedef Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> IntegerMat;
+typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> FloatMat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
 typedef Eigen::Matrix< int, Eigen::Dynamic, 3> FacesMat;
 typedef OpenMesh::DefaultTraits MyTraits;
@@ -56,6 +59,7 @@ class ScaleShifter
 
         //# Internal functions
         void _find_corresponding_and_new_indices();
+        void _interpolate_new_nodes();
 };
 
 }//namespace registration
