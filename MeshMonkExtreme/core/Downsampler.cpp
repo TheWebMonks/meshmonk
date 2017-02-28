@@ -61,11 +61,9 @@ void Downsampler::update(){
     }
 
     //# Downsample using OpenMesh library
-    //## Print Mesh property
-    std::cout << "--------  Before processing " << std::endl;
-    std::cout << "# Vertices " << mesh.n_vertices() << std::endl;
-    std::cout << "# Edges " << mesh.n_edges() << std::endl;
-    std::cout << "# Faces " << mesh.n_faces() << std::endl;
+    const size_t numOriginalVertices = mesh.n_vertices();
+    const size_t numOriginalEdges = mesh.n_edges();
+    const size_t numOriginalFaces = mesh.n_faces();
     //## block boundary vertices
     mesh.request_vertex_status();
     //### Get an iterator over all halfedges
@@ -85,38 +83,40 @@ void Downsampler::update(){
     DecimaterType decimater(mesh);  // a decimater object, connected to a mesh
     HModQuadric hModQuadric;      // use a quadric module
     bool addSucces = decimater.add( hModQuadric ); // register module at the decimater
-    std::cout << "Adding quadric modifier to decimater : " << addSucces << std::endl;
-
-    std::cout << decimater.module( hModQuadric ).name() << std::endl;
     decimater.module(hModQuadric).unset_max_err();
 
     //## Initialize the decimater
     bool rc = decimater.initialize();
-    std::cout  << "Decimater Initialization - Success. " << std::endl;
     if (!rc){
         std::cerr << "  initializing failed!" << std::endl;
         std::cerr << "  maybe no priority module or more than one were defined!" << std::endl;
         return;
     }
-    std::cout << "Decimater Observer: " << decimater.observer() << std::endl;
 
 
 
     //## Run the decimater
     size_t numVertices = mesh.n_vertices();
     size_t numDecimations = size_t(round(_downsampleRatio * numVertices));
-    rc = decimater.decimate(numDecimations);
-    std::cout << " Decimation Succes? -> " << rc << std::endl;
+    std::cout << "DEBUG - downsampleratio : " << _downsampleRatio << " || numdecimations : " << numDecimations << std::endl;
+    if (numDecimations > 0 ){
+        rc = decimater.decimate(numDecimations);
+    }
 
     //## Collect garbage
     mesh.garbage_collection();
 
     //## Print Mesh property
     numVertices = mesh.n_vertices();
-    std::cout << "--------  After processing " << std::endl;
-    std::cout << "# Vertices " << mesh.n_vertices() << std::endl;
-    std::cout << "# Edges " << mesh.n_edges() << std::endl;
-    std::cout << "# Faces " << mesh.n_faces() << std::endl;
+    const size_t numEdges = mesh.n_edges();
+    const size_t numFaces = mesh.n_faces();
+    if (rc){
+        std::cout << "Downsampled mesh from " << numOriginalVertices << "v | " << numOriginalEdges << "e | " << numOriginalFaces
+        << "f to " << numVertices << "v | " << numEdges << "e | " << numFaces << "f." << std::endl;
+    }
+    else{
+        std::cerr << "DOWNSAMPLING FAILED !" << std::endl;
+    }
 
     //# Convert the downsampled result to the output matrices
     convert_mesh_to_matrices(mesh, *_outFeatures, *_outFaces, *_outFlags);

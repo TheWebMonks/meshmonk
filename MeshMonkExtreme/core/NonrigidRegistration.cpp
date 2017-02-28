@@ -27,7 +27,6 @@ void NonrigidRegistration::set_parameters(bool symmetric,
     _numNeighbours = numNeighbours;
     _kappaa = kappaa;
     _numIterations = numIterations;
-    _numIterations = numIterations;
     _sigmaSmoothing = sigmaSmoothing;
     _numViscousIterationsStart = numViscousIterationsStart;
     _numViscousIterationsEnd = numViscousIterationsEnd;
@@ -100,7 +99,7 @@ void NonrigidRegistration::update(){
 
         //# Print info
         timePostIteration = time(0);
-        std::cout << "Iteration " << iteration << "/" << _numIterations << " took "<< difftime(timePostIteration, timePreIteration) <<" second(s)."<< std::endl;
+        std::cout << "Iteration " << iteration+1 << "/" << _numIterations << " took "<< difftime(timePostIteration, timePreIteration) <<" second(s)."<< std::endl;
     }
     timeEnd = time(0);
     std::cout << "Nonrigid Registration Completed in " << difftime(timeEnd, timeStart) <<" second(s)."<< std::endl;

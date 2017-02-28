@@ -41,7 +41,9 @@ int main()
     //# IO variables
 //    const string fuckedUpBunnyDir = "/home/jonatan/meshmonk/examples/data/bunny_slightly_rotated.obj";
     const string fuckedUpBunnyDir = "/home/jonatan/projects/meshmonk/examples/data/fucked_up_bunny.obj";
+//    const string fuckedUpBunnyDir = "/home/jonatan/projects/meshmonk/examples/data/harry/cropped_face_template.obj";
     const string bunnyDir = "/home/jonatan/projects/meshmonk/examples/data/bunny90.obj";
+//    const string bunnyDir = "/home/jonatan/projects/meshmonk/examples/data/harry/HM_cleaned_properly.obj";
     const string fuckedUpBunnyResultDir = "/home/jonatan/projects/meshmonk/examples/data/bunnyNonRigid.obj";
 //    const string fuckedUpBunnyDir = "/home/jonatan/projects/meshmonk/examples/data/kul_gezichten/Outliers/Alspac/4707_template.obj";
 //    const string bunnyDir = "/home/jonatan/projects/meshmonk/examples/data/kul_gezichten/Outliers/Alspac/4707_mevislab.obj";
@@ -112,7 +114,11 @@ int main()
 //    scaleShifter.update();
 
 
-    int numPyramids = 3;
+    int numPyramidLayers = 4;
+    int floatPyramidStart = 70;//percentage you want to start downsampling the floating mesh by
+    int targetPyramidStart = 70;//percentage you want to start downsampling the target mesh by
+    int floatPyramidEnd = 0;
+    int targetPyramidEnd = 0;
     size_t numNonrigidIterations = 21;
     //# Initialize the floating features, their original indices and the faces.
     /*
@@ -124,7 +130,7 @@ int main()
     FeatureMat floatingFeatures;
     FacesMat floatingFaces;
     VecDynInt floatingOriginalIndices;
-    for (int i = 0 ; i < numPyramids ; i++){
+    for (int i = 0 ; i < numPyramidLayers ; i++){
         //# Copy the floating features and indices of the previous pyramid scale
         FeatureMat oldFloatingFeatures;
         VecDynInt oldFloatingOriginalIndices;
@@ -134,20 +140,26 @@ int main()
         }
 
         //# Downsample Floating Mesh
+        float downsampleRatio = float(std::round(floatPyramidEnd + std::round((floatPyramidStart-floatPyramidEnd)/numPyramidLayers) * (numPyramidLayers-i-1)));
+        downsampleRatio /= 100.0f;
+        std::cout << "Downsample Ratio Float : " << downsampleRatio << std::endl;
         registration::Downsampler downsampler;
         VecDynFloat floatingFlags;
         downsampler.set_input(&originalFloatingFeatures, &originalFloatingFaces, &originalFloatingFlags);
         downsampler.set_output(floatingFeatures, floatingFaces, floatingFlags, floatingOriginalIndices);
-        downsampler.set_parameters(0.5f);
+        downsampler.set_parameters(downsampleRatio);
         downsampler.update();
 
         //# Downsample Target Mesh
+        downsampleRatio = float(std::round(targetPyramidEnd + std::round((targetPyramidStart-targetPyramidEnd)/numPyramidLayers) * (numPyramidLayers-i-1)));
+        downsampleRatio /= 100.0f;
+        std::cout << "Downsample Ratio target : " << downsampleRatio << std::endl;
         FeatureMat targetFeatures;
         FacesMat targetFaces;
         VecDynFloat targetFlags;
         downsampler.set_input(&originalTargetFeatures, &originalTargetFaces, &originalTargetFlags);
         downsampler.set_output(targetFeatures, targetFaces, targetFlags);
-        downsampler.set_parameters(0.5f);
+        downsampler.set_parameters(downsampleRatio);
         downsampler.update();
 
         //# Transfer floating mesh properties from previous pyramid scale to the current one.
@@ -160,7 +172,7 @@ int main()
         }
 
         //# Registration
-        size_t iterations = int(std::floor(float(numNonrigidIterations)/3.0f));
+        size_t iterations = int(std::floor(float(numNonrigidIterations)/float(numPyramidLayers) + 1.0f));
         float sigmaSmoothing = 2.0f;
         size_t numTargetVertices = targetFeatures.rows();
         registration::NonrigidRegistration nonrigidRegistration;
