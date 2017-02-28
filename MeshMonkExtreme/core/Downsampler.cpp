@@ -27,6 +27,17 @@ void Downsampler::set_output(FeatureMat &outFeatures,
 }//end set_output()
 
 
+void Downsampler::set_output(FeatureMat &outFeatures,
+                            FacesMat &outFaces,
+                            VecDynFloat &outFlags){
+
+    _outFeatures = &outFeatures;
+    _outFaces = &outFaces;
+    _outFlags = &outFlags;
+    _outOriginalIndices = NULL;
+}//end set_output()
+
+
 
 
 void Downsampler::update(){
@@ -112,20 +123,22 @@ void Downsampler::update(){
 
     //# Extract the original indices.
     //## Get handle to the originalIndices property.
-    *_outOriginalIndices = VecDynInt::Zero(numVertices); //resizing
-    bool propertyExist = mesh.get_property_handle(originalIndices, "originalIndices");
-    if (!propertyExist)
-    {
-        std::cerr << "Tried to access the 'originalIndices' property of the mesh after downsampling - couldn't find handle\n";
-        exit(1);
-    }
+    if (_outOriginalIndices != NULL) {
+        *_outOriginalIndices = VecDynInt::Zero(numVertices); //resizing
+        bool propertyExist = mesh.get_property_handle(originalIndices, "originalIndices");
+        if (!propertyExist)
+        {
+            std::cerr << "Tried to access the 'originalIndices' property of the mesh after downsampling - couldn't find handle\n";
+            exit(1);
+        }
 
-    //## Loop over the vertices and save its original index
-    vertexIt = mesh.vertices_begin();
-    vertexEnd = mesh.vertices_end();
-    //## Loop over every face
-    for (size_t i = 0 ; vertexIt != vertexEnd ; i++, vertexIt++) {
-            (*_outOriginalIndices)[i] = mesh.property(originalIndices, vertexIt);
+        //## Loop over the vertices and save its original index
+        vertexIt = mesh.vertices_begin();
+        vertexEnd = mesh.vertices_end();
+        //## Loop over every face
+        for (size_t i = 0 ; vertexIt != vertexEnd ; i++, vertexIt++) {
+                (*_outOriginalIndices)[i] = mesh.property(originalIndices, vertexIt);
+        }
     }
 }
 

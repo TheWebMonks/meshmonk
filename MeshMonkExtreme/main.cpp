@@ -48,58 +48,129 @@ int main()
 //    const string fuckedUpBunnyResultDir = "/home/jonatan/projects/meshmonk/examples/data/kul_gezichten/Outliers/Alspac/4707_Monk.obj";
 
     //# Load meshes and convert to feature matrices
+    FeatureMat originalFloatingFeatures;
+    FeatureMat originalTargetFeatures;
+    FacesMat originalFloatingFaces;
+    FacesMat originalTargetFaces;
+    registration::import_data(fuckedUpBunnyDir, bunnyDir,
+                              originalFloatingFeatures, originalTargetFeatures,
+                              originalFloatingFaces, originalTargetFaces);
+
+    const size_t numFloatingVertices = originalFloatingFeatures.rows();
+    const size_t numTargetVertices = originalTargetFeatures.rows();
+    VecDynFloat originalFloatingFlags = VecDynFloat::Ones(numFloatingVertices);
+    VecDynFloat originalTargetFlags = VecDynFloat::Ones(numTargetVertices);
+
+
+
+
+
+
+
+
+//    //# Downsample the original Mesh, call it downsampleMesh
+//    registration::Downsampler downsampler;
+//    VecDynInt downOriginalIndices;
+//    FeatureMat downFeatures;
+//    FacesMat downFaces;
+//    VecDynFloat downFlags;
+//    downsampler.set_input(&floatingFeatures, &floatingFaces, &originalFloatingFlags);
+//    downsampler.set_output(downFeatures, downFaces, downFlags, downOriginalIndices);
+//    downsampler.set_parameters(0.5f);
+//    downsampler.update();
+//
+//    //# Register it to the target mesh
+//    size_t numNonrigidIterations = 20;
+//    float sigmaSmoothing = 2.0f;
+//    size_t numTargetVertices = targetFeatures.rows();
+//    VecDynFloat targetFlags = VecDynFloat::Ones(numTargetVertices);
+//    registration::NonrigidRegistration nonrigidRegistration;
+//    nonrigidRegistration.set_input(&downFeatures, &targetFeatures, &downFaces, &downFlags, &targetFlags);
+//    nonrigidRegistration.set_parameters(true, 5, 3.0,
+//                                        numNonrigidIterations, sigmaSmoothing,
+//                                        100, 1,
+//                                        100, 1);
+//    nonrigidRegistration.update();
+//
+//
+//
+//    //# Downsample the original again, but leave it at a higher resolution. Call it upsampleMesh.
+//    registration::Downsampler upsampler;
+//    VecDynInt upOriginalIndices;
+//    FeatureMat upFeatures;
+//    FacesMat upFaces;
+//    VecDynFloat upFlags;
+//    upsampler.set_input(&floatingFeatures, &floatingFaces, &originalFloatingFlags);
+//    upsampler.set_output(upFeatures, upFaces, upFlags, upOriginalIndices);
+//    upsampler.set_parameters(0.3f);
+//    upsampler.update();
+//
+//    //# Transfer the vertex positions of downsampleMesh to upsampleMesh using ScaleShifter class
+//    registration::ScaleShifter scaleShifter;
+//    scaleShifter.set_input(downFeatures, downOriginalIndices, upOriginalIndices);
+//    scaleShifter.set_output(upFeatures);
+//    scaleShifter.update();
+
+
+    int numPyramids = 3;
+    size_t numNonrigidIterations = 21;
+    //# Initialize the floating features, their original indices and the faces.
+    /*
+    We need to do this before the pyramid iterations, because those have to be passed from the
+    previous iteration to the next one. The 'ScaleShifter' class makes sure that the properties
+    of the floating mesh of the previous pyramid scale are transferred to the current pyramid
+    scale.
+    */
     FeatureMat floatingFeatures;
-    FeatureMat targetFeatures;
     FacesMat floatingFaces;
-    registration::import_data(fuckedUpBunnyDir, bunnyDir, floatingFeatures,
-                              targetFeatures, floatingFaces);
+    VecDynInt floatingOriginalIndices;
+    for (int i = 0 ; i < numPyramids ; i++){
+        //# Copy the floating features and indices of the previous pyramid scale
+        FeatureMat oldFloatingFeatures;
+        VecDynInt oldFloatingOriginalIndices;
+        if (i > 0) {
+            oldFloatingFeatures = FeatureMat(floatingFeatures);
+            oldFloatingOriginalIndices = VecDynInt(floatingOriginalIndices);
+        }
 
-    size_t numVertices = floatingFeatures.rows();
-    VecDynFloat floatingFlags = VecDynFloat::Ones(numVertices);
+        //# Downsample Floating Mesh
+        registration::Downsampler downsampler;
+        VecDynFloat floatingFlags;
+        downsampler.set_input(&originalFloatingFeatures, &originalFloatingFaces, &originalFloatingFlags);
+        downsampler.set_output(floatingFeatures, floatingFaces, floatingFlags, floatingOriginalIndices);
+        downsampler.set_parameters(0.5f);
+        downsampler.update();
 
+        //# Downsample Target Mesh
+        FeatureMat targetFeatures;
+        FacesMat targetFaces;
+        VecDynFloat targetFlags;
+        downsampler.set_input(&originalTargetFeatures, &originalTargetFaces, &originalTargetFlags);
+        downsampler.set_output(targetFeatures, targetFaces, targetFlags);
+        downsampler.set_parameters(0.5f);
+        downsampler.update();
 
-    //# Downsample the original Mesh, call it downsampleMesh
-    registration::Downsampler downsampler;
-    VecDynInt downOriginalIndices;
-    FeatureMat downFeatures;
-    FacesMat downFaces;
-    VecDynFloat downFlags;
-    downsampler.set_input(&floatingFeatures, &floatingFaces, &floatingFlags);
-    downsampler.set_output(downFeatures, downFaces, downFlags, downOriginalIndices);
-    downsampler.set_parameters(0.5f);
-    downsampler.update();
+        //# Transfer floating mesh properties from previous pyramid scale to the current one.
+        if (i > 0) {
+            //## Scale up
+            registration::ScaleShifter scaleShifter;
+            scaleShifter.set_input(oldFloatingFeatures, oldFloatingOriginalIndices, floatingOriginalIndices);
+            scaleShifter.set_output(floatingFeatures);
+            scaleShifter.update();
+        }
 
-    //# Register it to the target mesh
-    size_t numNonrigidIterations = 20;
-    float sigmaSmoothing = 2.0f;
-    size_t numTargetVertices = targetFeatures.rows();
-    VecDynFloat targetFlags = VecDynFloat::Ones(numTargetVertices);
-    registration::NonrigidRegistration nonrigidRegistration;
-    nonrigidRegistration.set_input(&downFeatures, &targetFeatures, &downFaces, &downFlags, &targetFlags);
-    nonrigidRegistration.set_parameters(true, 5, 3.0,
-                                        numNonrigidIterations, sigmaSmoothing,
-                                        100, 1,
-                                        100, 1);
-    nonrigidRegistration.update();
-
-
-
-    //# Downsample the original again, but leave it at a higher resolution. Call it upsampleMesh.
-    registration::Downsampler upsampler;
-    VecDynInt upOriginalIndices;
-    FeatureMat upFeatures;
-    FacesMat upFaces;
-    VecDynFloat upFlags;
-    upsampler.set_input(&floatingFeatures, &floatingFaces, &floatingFlags);
-    upsampler.set_output(upFeatures, upFaces, upFlags, upOriginalIndices);
-    upsampler.set_parameters(0.3f);
-    upsampler.update();
-
-    //# Transfer the vertex positions of downsampleMesh to upsampleMesh using ScaleShifter class
-    registration::ScaleShifter scaleShifter;
-    scaleShifter.set_input(downFeatures, downOriginalIndices, upOriginalIndices);
-    scaleShifter.set_output(upFeatures);
-    scaleShifter.update();
+        //# Registration
+        size_t iterations = int(std::floor(float(numNonrigidIterations)/3.0f));
+        float sigmaSmoothing = 2.0f;
+        size_t numTargetVertices = targetFeatures.rows();
+        registration::NonrigidRegistration nonrigidRegistration;
+        nonrigidRegistration.set_input(&floatingFeatures, &targetFeatures, &floatingFaces, &floatingFlags, &targetFlags);
+        nonrigidRegistration.set_parameters(true, 5, 3.0,
+                                            iterations, sigmaSmoothing,
+                                            100, 1,
+                                            100, 1);
+        nonrigidRegistration.update();
+    }
 
 
 
@@ -273,7 +344,7 @@ int main()
     */
     //# Write result to file
 //    registration::export_data(floatingFeatures,floatingFaces, fuckedUpBunnyResultDir);
-    registration::export_data(upFeatures,upFaces, fuckedUpBunnyResultDir);
+    registration::export_data(floatingFeatures,floatingFaces, fuckedUpBunnyResultDir);
 //    registration::export_data(downFeatures,downFaces, "/home/jonatan/projects/meshmonk/examples/data/bunnyDown.obj");
 
 

@@ -593,7 +593,8 @@ bool import_data(const std::string inFloatingMeshPath,
                  const std::string inTargetMeshPath,
                  FeatureMat &outFloatingFeatures,
                  FeatureMat &outTargetFeatures,
-                 FacesMat &outFloatingFaces){
+                 FacesMat &outFloatingFaces,
+                 FacesMat &outTargetFaces){
     std::cout << "Importing Data..." << std::endl;
 
     //# Safety check (do the input files exist?)
@@ -644,7 +645,7 @@ bool import_data(const std::string inFloatingMeshPath,
 
     //# Convert OpenMesh meshes to Eigen matrices
     convert_mesh_to_matrices(floatingMesh, outFloatingFeatures, outFloatingFaces);
-    convert_mesh_to_matrices(targetMesh, outTargetFeatures);
+    convert_mesh_to_matrices(targetMesh, outTargetFeatures, outTargetFaces);
 
 
     std::cout << "Imported Data" << std::endl;

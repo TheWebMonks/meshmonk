@@ -34,6 +34,9 @@ class Downsampler
                         FacesMat &outFaces,
                         VecDynFloat &outFlags,
                         VecDynInt &outOriginalIndices);
+        void set_output(FeatureMat &outFeatures,
+                        FacesMat &outFaces,
+                        VecDynFloat &outFlags);
         void set_parameters(float downsampleRatio = 0.8f){ _downsampleRatio = downsampleRatio;};
         void update();
 
@@ -46,10 +49,10 @@ class Downsampler
         const VecDynFloat * _inFlags = NULL;
 
         //# Outputs
-        FeatureMat * _outFeatures;
-        FacesMat * _outFaces;
-        VecDynFloat * _outFlags;
-        VecDynInt *_outOriginalIndices;
+        FeatureMat * _outFeatures = NULL;
+        FacesMat * _outFaces = NULL;
+        VecDynFloat * _outFlags = NULL;
+        VecDynInt *_outOriginalIndices = NULL;
 
 
         //# User Parameters

@@ -74,7 +74,8 @@ bool import_data(const std::string inFloatingMeshPath,
                  const std::string inTargetMeshPath,
                  FeatureMat &outFloatingFeatures,
                  FeatureMat &outTargetFeatures,
-                 FacesMat &outFloatingFaces);
+                 FacesMat &outFloatingFaces,
+                 FacesMat &outTargetFaces);
 
 bool export_data(FeatureMat &inResultFeatures,
                  FacesMat &inResultFaces,
