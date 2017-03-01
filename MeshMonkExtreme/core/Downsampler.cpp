@@ -98,7 +98,7 @@ void Downsampler::update(){
     //## Run the decimater
     size_t numVertices = mesh.n_vertices();
     size_t numDecimations = size_t(round(_downsampleRatio * numVertices));
-    std::cout << "DEBUG - downsampleratio : " << _downsampleRatio << " || numdecimations : " << numDecimations << std::endl;
+//    std::cout << "DEBUG - downsampleratio : " << _downsampleRatio << " || numdecimations : " << numDecimations << std::endl;
     if (numDecimations > 0 ){
         rc = decimater.decimate(numDecimations);
     }

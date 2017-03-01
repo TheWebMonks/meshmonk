@@ -57,6 +57,21 @@ class NonrigidRegistration
                             size_t numElasticIterationsStart,
                             size_t numElasticIterationsEnd);
 
+        void get_annealing_rates(float &viscousAnnealingRate,
+                                 float &elasticAnnealingRate){
+                                 viscousAnnealingRate = _viscousAnnealingRate;
+                                 elasticAnnealingRate = _elasticAnnealingRate;
+                                 }
+        void set_annealing_rates(const float viscousAnnealingRate,
+                                 const float elasticAnnealingRate){
+                                 _viscousAnnealingRate = viscousAnnealingRate;
+                                 _elasticAnnealingRate = elasticAnnealingRate;
+                                 }
+        void get_viscoelastic_iterations(float &numViscousIterations,
+                                         float &numElasticIterations){
+                                         numViscousIterations = _numViscousIterations;
+                                         numElasticIterations = _numElasticIterations;}
+
         void update();
 
     protected:
@@ -82,6 +97,8 @@ class NonrigidRegistration
         size_t _numViscousIterationsEnd = 1;
         size_t _numElasticIterationsStart = 100;
         size_t _numElasticIterationsEnd = 1;
+        size_t _numViscousIterations = 100;
+        size_t _numElasticIterations = 100;
 
         //# Internal Data structures
 

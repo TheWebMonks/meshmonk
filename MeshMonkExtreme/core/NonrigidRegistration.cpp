@@ -32,6 +32,20 @@ void NonrigidRegistration::set_parameters(bool symmetric,
     _numViscousIterationsEnd = numViscousIterationsEnd;
     _numElasticIterationsStart = numElasticIterationsStart;
     _numElasticIterationsEnd = numElasticIterationsEnd;
+    _numViscousIterations = _numViscousIterationsStart;
+    _numElasticIterations = _numElasticIterationsStart;
+
+    _viscousAnnealingRate = exp(log(float(_numViscousIterationsEnd)/float(_numViscousIterationsStart))/(_numIterations-1));
+    _elasticAnnealingRate = exp(log(float(_numElasticIterationsEnd)/float(_numElasticIterationsStart))/(_numIterations-1));
+    //DEBUG
+    std::cout << "viscous rate : " << _viscousAnnealingRate
+    << " | start: " << _numViscousIterationsStart
+    << " | end: " << _numViscousIterationsEnd
+    << " | its: " << _numIterations << std::endl;
+    std::cout << "elastic rate : " << _elasticAnnealingRate
+    << " | start: " << _numElasticIterationsStart
+    << " | end: " << _numElasticIterationsEnd
+    << " | its: " << _numIterations << std::endl;
 }//end set_parameters()
 
 
@@ -69,8 +83,8 @@ void NonrigidRegistration::update(){
     inlierDetector.set_parameters(_kappaa);
     //## Transformation Filter
     const size_t numNonrigidIterations = 12;
-    int viscousSmoothingIterations = _numViscousIterationsStart;
-    int elasticSmoothingIterations = _numElasticIterationsStart;
+    _numViscousIterations = _numViscousIterationsStart;
+    _numElasticIterations = _numElasticIterationsStart;
     ViscoElasticTransformer transformer;
     transformer.set_input(&correspondingFeatures, &floatingWeights, _inFloatingFaces);
     transformer.set_output(_ioFloatingFeatures);
@@ -81,6 +95,17 @@ void NonrigidRegistration::update(){
     std::cout << "Starting Nonrigid Registration process..." << std::endl;
     for (size_t iteration = 0 ; iteration < _numIterations ; iteration++) {
         timePreIteration = time(0);
+
+        //# Anneal parameters
+        _numViscousIterations = int(std::round(_numViscousIterationsStart * std::pow(_viscousAnnealingRate, iteration)));
+        if (_numViscousIterations < _numViscousIterationsEnd) { _numViscousIterations = _numViscousIterationsEnd;}
+        _numElasticIterations = int(std::round(_numElasticIterationsStart * std::pow(_elasticAnnealingRate, iteration)));
+        if (_numElasticIterations < _numElasticIterationsEnd) { _numElasticIterations = _numElasticIterationsEnd;}
+
+        //DEBUG:
+        std::cout<<"DEBUG | num viscous: " << _numViscousIterations << " | num elastic: " << _numElasticIterations
+        << std::endl;
+
         //# Correspondences
         correspondenceFilter->set_floating_input(_ioFloatingFeatures, _inFloatingFlags);
         correspondenceFilter->set_target_input(_inTargetFeatures, _inTargetFlags);
@@ -90,12 +115,8 @@ void NonrigidRegistration::update(){
         inlierDetector.update();
 
         //# Transformation
-        transformer.set_parameters(10, _sigmaSmoothing, viscousSmoothingIterations,elasticSmoothingIterations);
+        transformer.set_parameters(10, _sigmaSmoothing, _numViscousIterations,_numElasticIterations);
         transformer.update();
-
-        //# Update annealing parameters
-        viscousSmoothingIterations = int(round(viscousSmoothingIterations * _viscousAnnealingRate));
-        elasticSmoothingIterations = int(round(elasticSmoothingIterations * _elasticAnnealingRate));
 
         //# Print info
         timePostIteration = time(0);
