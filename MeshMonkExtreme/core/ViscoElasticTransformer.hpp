@@ -25,6 +25,7 @@ class ViscoElasticTransformer
 
         void set_input(const FeatureMat * const inCorrespondingFeatures,
                        const VecDynFloat * const inWeights,
+                       const VecDynFloat * const inFlags,
                        const FacesMat * const inFloatingFaces);
         void set_output(FeatureMat * const ioFloatingFeatures);
         void set_parameters(size_t numNeighbours = 10, float sigma = 3.0,
@@ -39,6 +40,7 @@ class ViscoElasticTransformer
         //##_ioFeatures is used as both an input (to compute the transformation) and output
         const FeatureMat * _inCorrespondingFeatures = NULL;
         const VecDynFloat * _inWeights = NULL;
+        const VecDynFloat * _inFlags = NULL;
         const FacesMat * _inFloatingFaces = NULL;
 
         //# Outputs
@@ -61,7 +63,7 @@ class ViscoElasticTransformer
         //# Internal Parameters
         size_t _numElements = 0;
         bool _neighboursOutdated = true;
-        bool _weightsOutdated = true;
+        bool _flagsOutdated = true;
 
         //# Internal functions
         //## Update the neighbour finder

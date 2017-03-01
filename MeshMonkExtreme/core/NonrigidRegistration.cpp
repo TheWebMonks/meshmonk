@@ -86,7 +86,7 @@ void NonrigidRegistration::update(){
     _numViscousIterations = _numViscousIterationsStart;
     _numElasticIterations = _numElasticIterationsStart;
     ViscoElasticTransformer transformer;
-    transformer.set_input(&correspondingFeatures, &floatingWeights, _inFloatingFaces);
+    transformer.set_input(&correspondingFeatures, &floatingWeights, _inFloatingFlags, _inFloatingFaces);
     transformer.set_output(_ioFloatingFeatures);
 
     //# Perform ICP

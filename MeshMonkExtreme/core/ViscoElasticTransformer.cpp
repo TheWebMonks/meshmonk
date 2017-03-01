@@ -6,18 +6,20 @@ namespace registration {
 
 void ViscoElasticTransformer::set_input(const FeatureMat * const inCorrespondingFeatures,
                                         const VecDynFloat * const inWeights,
+                                        const VecDynFloat * const inFlags,
                                         const FacesMat * const inFloatingFaces){
     _inCorrespondingFeatures = inCorrespondingFeatures;
     _inWeights = inWeights;
+    _inFlags = inFlags;
     _inFloatingFaces = inFloatingFaces;
-    _weightsOutdated = true; //if the user sets new _inWeights, we need to update our smoothing weights.
+    _flagsOutdated = true; //if the user sets new flags, we need to update our smoothing weights.
 }//end set_input()
 
 
 void ViscoElasticTransformer::set_output(FeatureMat * const ioFloatingFeatures){
     _ioFloatingFeatures = ioFloatingFeatures;
     _neighboursOutdated = true; //if the user sets new floating Features, we need to update our neighbours, and hence our smoothing weights.
-    _weightsOutdated = true;
+    _flagsOutdated = true;
 
     _numElements = _ioFloatingFeatures->rows();
     _displacementField = Vec3Mat::Zero(_numElements,3);
@@ -34,10 +36,10 @@ void ViscoElasticTransformer::set_parameters(size_t numNeighbours, float sigma,
 {
     if (_numNeighbours != numNeighbours) {
         _neighboursOutdated = true; //if number of requested neighbours changes, we need to update the neighbours and weights
-        _weightsOutdated = true;
+        _flagsOutdated = true;
     }
     if (std::abs(_sigma - sigma) > 0.0001 * _sigma) {
-        _weightsOutdated = true; //if sigma changes, we need to update the weights
+        _flagsOutdated = true; //if sigma changes, we need to update the weights
         _smoothingWeights = MatDynFloat::Zero(_numElements,_numNeighbours);
     }
     _numNeighbours = numNeighbours;
@@ -63,7 +65,7 @@ void ViscoElasticTransformer::_update_smoothing_weights(){
     The smoothing weights are the weights assigned to each vertex neighbour which
     will be used during the smoothing of the vector fields.
 
-    The weight is a combination of the user inputted weights (_inWeights) and a
+    The weight is a combination of the user inputted flags (_inFlags) and a
     gaussian weight based on the distance to each neighbour.
 
     Therefor, we initialize the smoothing weights as the squared distances to each neighbour.
@@ -86,7 +88,7 @@ void ViscoElasticTransformer::_update_smoothing_weights(){
             //## Compute the gaussian weight
             float gaussianWeight = std::exp(-0.5f * distanceSquared / std::pow(_sigma, 2.0f));
             //## Combine the gaussian weight with the user defined weight
-            float combinedWeight = (*_inWeights)[i] * gaussianWeight;
+            float combinedWeight = (*_inFlags)[i] * gaussianWeight;
 
             //## insert the combined weight into _smoothingWeights
             _smoothingWeights(i,j) = combinedWeight;
@@ -143,7 +145,7 @@ void ViscoElasticTransformer::_update_viscously(){
                 // get neighbour index
                 size_t neighbourIndex = neighbourIndices(i,j);
                 // get neighbour weight and vector
-                float weight = _smoothingWeights(i,j);
+                float weight = (*_inWeights)[neighbourIndex] * _smoothingWeights(i,j);
                 neighbourVector = forceField.row(neighbourIndex);
 
                 // increment the weighted average with current weighted neighbour vector
@@ -186,7 +188,7 @@ void ViscoElasticTransformer::_update_elastically(){
                 // get neighbour index
                 size_t neighbourIndex = neighbourIndices(i,j);
                 // get neighbour weight and vector
-                float weight = _smoothingWeights(i,j);
+                float weight = (*_inWeights)[neighbourIndex] * _smoothingWeights(i,j);
                 neighbourVector = unregulatedDisplacementField.row(neighbourIndex);
 
                 // increment the weighted average with current weighted neighbour vector
@@ -222,14 +224,13 @@ void ViscoElasticTransformer::update(){
 
     if (_neighboursOutdated == true) {
         _update_neighbours();
-        _weightsOutdated = true;
+        _flagsOutdated = true;
         _neighboursOutdated = false;
     }
-    if (_weightsOutdated == true) {
+    if (_flagsOutdated == true) {
         _update_smoothing_weights();
-        _weightsOutdated = false;
+        _flagsOutdated = false;
     }
-
     //# update the transformation
     _update_transformation();
     //# apply the transformation
