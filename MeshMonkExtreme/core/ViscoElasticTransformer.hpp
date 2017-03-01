@@ -54,7 +54,7 @@ class ViscoElasticTransformer
         //# Internal Data structures
         Vec3Mat _displacementField;
         Vec3Mat _oldDisplacementField;
-        NeighbourFinder<FeatureMat> _neighbourFinder;
+        NeighbourFinder<Vec3Mat> _neighbourFinder;
         MatDynFloat _smoothingWeights;
         TriMesh _floatingMesh;
 

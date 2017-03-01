@@ -34,6 +34,7 @@ void ViscoElasticTransformer::set_parameters(size_t numNeighbours, float sigma,
     if (_numNeighbours != numNeighbours) {
         _neighboursOutdated = true; //if number of requested neighbours changes, we need to update the neighbours and weights
         _weightsOutdated = true;
+        std::cout << " ===== Updating Neighbours because num neighbours was changed =====" <<std::endl;
     }
     if (std::abs(_sigma - sigma) > 0.0001 * _sigma) {
         _weightsOutdated = true; //if sigma changes, we need to update the weights
@@ -49,10 +50,12 @@ void ViscoElasticTransformer::set_parameters(size_t numNeighbours, float sigma,
 
 //## Update the neighbour finder
 void ViscoElasticTransformer::_update_neighbours(){
-    _neighbourFinder.set_source_points(_ioFloatingFeatures);
-    _neighbourFinder.set_queried_points(_ioFloatingFeatures);
+    Vec3Mat floatingPositions = _ioFloatingFeatures->leftCols(3);
+    _neighbourFinder.set_source_points(&floatingPositions);
+    _neighbourFinder.set_queried_points(&floatingPositions);
     _neighbourFinder.set_parameters(_numNeighbours);
     _neighbourFinder.update();
+    std::cout << "updating smoothing neighbours ____________________________________" << std::endl;
 }//end _update_neighbours()
 
 
@@ -222,9 +225,11 @@ void ViscoElasticTransformer::update(){
     if (_neighboursOutdated == true) {
         _update_neighbours();
         _weightsOutdated = true;
+        _neighboursOutdated = false;
     }
     if (_weightsOutdated == true) {
         _update_smoothing_weights();
+        _weightsOutdated = false;
     }
 
     //# update the transformation
