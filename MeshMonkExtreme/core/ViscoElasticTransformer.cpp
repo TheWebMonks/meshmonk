@@ -23,6 +23,7 @@ void ViscoElasticTransformer::set_output(FeatureMat * const ioFloatingFeatures){
     _displacementField = Vec3Mat::Zero(_numElements,3);
     _oldDisplacementField = Vec3Mat::Zero(_numElements,3);
     _smoothingWeights = MatDynFloat::Zero(_numElements,_numNeighbours);
+
     convert_matrices_to_mesh(*_ioFloatingFeatures, *_inFloatingFaces, _floatingMesh); //NOTE: We should do actually really be doing this EVERY TIME the user provides a different floating mesh to this class.
 
 }//end set_output()
@@ -38,13 +39,12 @@ void ViscoElasticTransformer::set_parameters(size_t numNeighbours, float sigma,
     }
     if (std::abs(_sigma - sigma) > 0.0001 * _sigma) {
         _weightsOutdated = true; //if sigma changes, we need to update the weights
+        _smoothingWeights = MatDynFloat::Zero(_numElements,_numNeighbours);
     }
     _numNeighbours = numNeighbours;
     _sigma = sigma;
     _viscousIterations = viscousIterations;
     _elasticIterations = elasticIterations;
-
-    _smoothingWeights = MatDynFloat::Zero(_numElements,_numNeighbours);
 }
 
 
@@ -55,7 +55,7 @@ void ViscoElasticTransformer::_update_neighbours(){
     _neighbourFinder.set_queried_points(&floatingPositions);
     _neighbourFinder.set_parameters(_numNeighbours);
     _neighbourFinder.update();
-    std::cout << "updating smoothing neighbours ____________________________________" << std::endl;
+    std::cout << "____________________updating smoothing neighbours________________" << std::endl;
 }//end _update_neighbours()
 
 
@@ -222,6 +222,8 @@ void ViscoElasticTransformer::_apply_transformation(){
 
 void ViscoElasticTransformer::update(){
     //std::cout << "neighbours before:\n" << _neighbourFinder.get_indices().topLeftCorner(3,10) << std::endl;
+    //DEBUG
+    std::cout << "smoothing weights BEFORE : " << _smoothingWeights.topRows(3) << std::endl;
     if (_neighboursOutdated == true) {
         _update_neighbours();
         _weightsOutdated = true;
@@ -229,8 +231,12 @@ void ViscoElasticTransformer::update(){
     }
     if (_weightsOutdated == true) {
         _update_smoothing_weights();
+        std::cout << "______________ SMOOTHING WEIGHTS ______________" << std::endl;
         _weightsOutdated = false;
     }
+
+    //DEBUG
+    std::cout << "smoothing weights AFTER : " << _smoothingWeights.topRows(3) << std::endl;
 
     //# update the transformation
     _update_transformation();
