@@ -102,9 +102,6 @@ void NonrigidRegistration::update(){
         _numElasticIterations = int(std::round(_numElasticIterationsStart * std::pow(_elasticAnnealingRate, iteration)));
         if (_numElasticIterations < _numElasticIterationsEnd) { _numElasticIterations = _numElasticIterationsEnd;}
 
-        //DEBUG:
-        std::cout<<"DEBUG | num viscous: " << _numViscousIterations << " | num elastic: " << _numElasticIterations
-        << std::endl;
 
         //# Correspondences
         correspondenceFilter->set_floating_input(_ioFloatingFeatures, _inFloatingFlags);

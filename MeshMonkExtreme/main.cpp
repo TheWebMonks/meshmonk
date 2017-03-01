@@ -41,21 +41,24 @@ int main()
     */
     //# IO variables
 //    const string fuckedUpBunnyDir = "/home/jonatan/meshmonk/examples/data/bunny_slightly_rotated.obj";
-    const string fuckedUpBunnyDir = "/home/jonatan/projects/meshmonk/examples/data/fucked_up_bunny.obj";
+//    const string fuckedUpBunnyDir = "/home/jonatan/projects/meshmonk/examples/data/fucked_up_bunny.obj";
 //    const string fuckedUpBunnyDir = "/home/jonatan/projects/meshmonk/examples/data/harry/cropped_face_template.obj";
-    const string bunnyDir = "/home/jonatan/projects/meshmonk/examples/data/bunny90.obj";
+//    const string bunnyDir = "/home/jonatan/projects/meshmonk/examples/data/bunny90.obj";
 //    const string bunnyDir = "/home/jonatan/projects/meshmonk/examples/data/harry/HM_cleaned_properly.obj";
-    const string fuckedUpBunnyResultDir = "/home/jonatan/projects/meshmonk/examples/data/bunnyNonRigid.obj";
+//    const string fuckedUpBunnyResultDir = "/home/jonatan/projects/meshmonk/examples/data/bunnyNonRigid.obj";
 //    const string fuckedUpBunnyDir = "/home/jonatan/projects/meshmonk/examples/data/kul_gezichten/Outliers/Alspac/4707_template.obj";
 //    const string bunnyDir = "/home/jonatan/projects/meshmonk/examples/data/kul_gezichten/Outliers/Alspac/4707_mevislab.obj";
 //    const string fuckedUpBunnyResultDir = "/home/jonatan/projects/meshmonk/examples/data/kul_gezichten/Outliers/Alspac/4707_Monk.obj";
 
+    const string floatingDir = "/home/jonatan/projects/meshmonk/examples/data/harry/rigidResult.obj";
+    const string targetDir = "/home/jonatan/projects/meshmonk/examples/data/harry/HM_cleaned_properly.obj";
+    const string resultDir = "/home/jonatan/projects/meshmonk/examples/data/harry/result.obj";
     //# Load meshes and convert to feature matrices
     FeatureMat originalFloatingFeatures;
     FeatureMat originalTargetFeatures;
     FacesMat originalFloatingFaces;
     FacesMat originalTargetFaces;
-    registration::import_data(fuckedUpBunnyDir, bunnyDir,
+    registration::import_data(floatingDir, targetDir,
                               originalFloatingFeatures, originalTargetFeatures,
                               originalFloatingFaces, originalTargetFaces);
 
@@ -115,16 +118,34 @@ int main()
 //    scaleShifter.update();
 
 
-    int numPyramidLayers = 3;
-    int floatPyramidStart = 30;//percentage you want to start downsampling the floating mesh by
-    int targetPyramidStart = 30;//percentage you want to start downsampling the target mesh by
+    //# RIGID
+//    bool symmetric = true;
+//    size_t numNearestNeighbours = 5;
+//    size_t numRigidIterations = 10;
+//    float kappa = 3.0f;
+//    registration::RigidRegistration rigidRegistration;
+//    rigidRegistration.set_input(&originalFloatingFeatures, &originalTargetFeatures,
+//                                &originalFloatingFlags, &originalTargetFlags);
+//    rigidRegistration.set_parameters(symmetric, numNearestNeighbours, kappa, numRigidIterations);
+//    rigidRegistration.update();
+//
+//    const string rigidResultDir = "/home/jonatan/projects/meshmonk/examples/data/harry/rigidResult.obj";
+//    registration::export_data(originalFloatingFeatures,originalFloatingFaces, rigidResultDir);
+
+
+
+
+
+    int numPyramidLayers = 1;
+    int floatPyramidStart = 0;//percentage you want to start downsampling the floating mesh by
+    int targetPyramidStart = 0;//percentage you want to start downsampling the target mesh by
     int floatPyramidEnd = 0;
     int targetPyramidEnd = 0;
-    size_t numNonrigidIterations = 21;
-    int numViscousIterationsStart = 100;
-    int numElasticIterationsStart = 100;
+    size_t numNonrigidIterations = 10;
+    int numViscousIterationsStart = 10;
+    int numElasticIterationsStart = 10;
     int numViscousIterationsStop = 1;
-    int numElasticIterationsStop = 1;
+    int numElasticIterationsStop = 10;
     int iterationsPerLayer = int(std::round(float(numNonrigidIterations)/float(numPyramidLayers)));
     float viscousAnnealingRate = exp(log(float(numViscousIterationsStop)/float(numViscousIterationsStart))/numNonrigidIterations);
     float elasticAnnealingRate = exp(log(float(numElasticIterationsStop)/float(numElasticIterationsStart))/numNonrigidIterations);
@@ -162,8 +183,12 @@ int main()
         }
 
         //# Downsample Floating Mesh
-        float downsampleRatio = float(std::round(floatPyramidStart - i * std::round((floatPyramidStart-floatPyramidEnd)/(numPyramidLayers-1.0))));
+        float downsampleRatio = floatPyramidStart;
+        if (numPyramidLayers > 1) {
+            downsampleRatio = float(std::round(floatPyramidStart - i * std::round((floatPyramidStart-floatPyramidEnd)/(numPyramidLayers-1.0))));
+        }
         downsampleRatio /= 100.0f;
+        std::cout<< " DOWNSAMPLE RATIO: " << downsampleRatio << std::endl;
         registration::Downsampler downsampler;
         VecDynFloat floatingFlags;
         downsampler.set_input(&originalFloatingFeatures, &originalFloatingFaces, &originalFloatingFlags);
@@ -172,7 +197,10 @@ int main()
         downsampler.update();
 
         //# Downsample Target Mesh
-        downsampleRatio = float(std::round(targetPyramidStart - i * std::round((targetPyramidStart-targetPyramidEnd)/(numPyramidLayers-1.0))));
+        downsampleRatio = targetPyramidStart;
+        if (numPyramidLayers > 1){
+            downsampleRatio = float(std::round(targetPyramidStart - i * std::round((targetPyramidStart-targetPyramidEnd)/(numPyramidLayers-1.0))));
+        }
         downsampleRatio /= 100.0f;
         FeatureMat targetFeatures;
         FacesMat targetFaces;
@@ -192,7 +220,8 @@ int main()
         }
 
         //# Registration
-        float sigmaSmoothing = 2.0f;
+        //DEBUG
+        float sigmaSmoothing = 10.0f;
         size_t numTargetVertices = targetFeatures.rows();
         registration::NonrigidRegistration nonrigidRegistration;
         nonrigidRegistration.set_input(&floatingFeatures, &targetFeatures, &floatingFaces, &floatingFlags, &targetFlags);
@@ -201,7 +230,6 @@ int main()
                                             viscousIterationsIntervals[i], viscousIterationsIntervals[i+1],
                                             elasticIterationsIntervals[i], elasticIterationsIntervals[i+1]);
         nonrigidRegistration.update();
-
     }
 
 
@@ -376,7 +404,7 @@ int main()
     */
     //# Write result to file
 //    registration::export_data(floatingFeatures,floatingFaces, fuckedUpBunnyResultDir);
-    registration::export_data(floatingFeatures,floatingFaces, fuckedUpBunnyResultDir);
+    registration::export_data(floatingFeatures,floatingFaces, resultDir);
 //    registration::export_data(downFeatures,downFaces, "/home/jonatan/projects/meshmonk/examples/data/bunnyDown.obj");
 
 

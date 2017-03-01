@@ -35,7 +35,6 @@ void ViscoElasticTransformer::set_parameters(size_t numNeighbours, float sigma,
     if (_numNeighbours != numNeighbours) {
         _neighboursOutdated = true; //if number of requested neighbours changes, we need to update the neighbours and weights
         _weightsOutdated = true;
-        std::cout << " ===== Updating Neighbours because num neighbours was changed =====" <<std::endl;
     }
     if (std::abs(_sigma - sigma) > 0.0001 * _sigma) {
         _weightsOutdated = true; //if sigma changes, we need to update the weights
@@ -55,7 +54,6 @@ void ViscoElasticTransformer::_update_neighbours(){
     _neighbourFinder.set_queried_points(&floatingPositions);
     _neighbourFinder.set_parameters(_numNeighbours);
     _neighbourFinder.update();
-    std::cout << "____________________updating smoothing neighbours________________" << std::endl;
 }//end _update_neighbours()
 
 
@@ -221,9 +219,7 @@ void ViscoElasticTransformer::_apply_transformation(){
 
 
 void ViscoElasticTransformer::update(){
-    //std::cout << "neighbours before:\n" << _neighbourFinder.get_indices().topLeftCorner(3,10) << std::endl;
-    //DEBUG
-    std::cout << "smoothing weights BEFORE : " << _smoothingWeights.topRows(3) << std::endl;
+
     if (_neighboursOutdated == true) {
         _update_neighbours();
         _weightsOutdated = true;
@@ -231,12 +227,8 @@ void ViscoElasticTransformer::update(){
     }
     if (_weightsOutdated == true) {
         _update_smoothing_weights();
-        std::cout << "______________ SMOOTHING WEIGHTS ______________" << std::endl;
         _weightsOutdated = false;
     }
-
-    //DEBUG
-    std::cout << "smoothing weights AFTER : " << _smoothingWeights.topRows(3) << std::endl;
 
     //# update the transformation
     _update_transformation();
