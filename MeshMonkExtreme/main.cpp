@@ -50,9 +50,15 @@ int main()
 //    const string bunnyDir = "/home/jonatan/projects/meshmonk/examples/data/kul_gezichten/Outliers/Alspac/4707_mevislab.obj";
 //    const string fuckedUpBunnyResultDir = "/home/jonatan/projects/meshmonk/examples/data/kul_gezichten/Outliers/Alspac/4707_Monk.obj";
 
-    const string floatingDir = "/home/jonatan/projects/meshmonk/examples/data/harry/rigidResult.obj";
-    const string targetDir = "/home/jonatan/projects/meshmonk/examples/data/harry/HM_cleaned_properly.obj";
-    const string resultDir = "/home/jonatan/projects/meshmonk/examples/data/harry/result.obj";
+//    const string floatingDir = "/home/jonatan/projects/meshmonk/examples/data/harry/rigidResult.obj";
+//    const string targetDir = "/home/jonatan/projects/meshmonk/examples/data/harry/HM_cleaned_properly.obj";
+//    const string resultDir = "/home/jonatan/projects/meshmonk/examples/data/harry/result.obj";
+    const string floatingDir = "/home/jonatan/projects/meshmonk/examples/data/paris/558/bone.obj";
+    const string targetDir = "/home/jonatan/projects/meshmonk/examples/data/paris/559/bone.obj";
+    const string resultDir = "/home/jonatan/projects/meshmonk/examples/data/paris/result.obj";
+//    const string floatingDir = "/home/jonatan/projects/meshmonk/examples/data/fucked_up_bunny.obj";
+//    const string targetDir = "/home/jonatan/projects/meshmonk/examples/data/bunny90.obj";
+//    const string resultDir = "/home/jonatan/projects/meshmonk/examples/data/bunnyNonRigid.obj";
     //# Load meshes and convert to feature matrices
     FeatureMat originalFloatingFeatures;
     FeatureMat originalTargetFeatures;
@@ -135,20 +141,16 @@ int main()
 
 
 
-
-//    int numPyramidLayers = 1;
-//    int floatPyramidStart = 0;//percentage you want to start downsampling the floating mesh by
-//    int targetPyramidStart = 0;//percentage you want to start downsampling the target mesh by
-    int numPyramidLayers = 4;
-    int floatPyramidStart = 70;//percentage you want to start downsampling the floating mesh by
-    int targetPyramidStart = 70;//percentage you want to start downsampling the target mesh by
+    int numPyramidLayers = 3;
+    int floatPyramidStart = 90;//percentage you want to start downsampling the floating mesh by
+    int targetPyramidStart = 90;//percentage you want to start downsampling the target mesh by
     int floatPyramidEnd = 0;
     int targetPyramidEnd = 0;
-    size_t numNonrigidIterations = 20;
-    int numViscousIterationsStart = 10;
-    int numElasticIterationsStart = 10;
+    size_t numNonrigidIterations = 60;
+    int numViscousIterationsStart = 500;
+    int numElasticIterationsStart = 500;
     int numViscousIterationsStop = 1;
-    int numElasticIterationsStop = 1;
+    int numElasticIterationsStop = 10;
     int iterationsPerLayer = int(std::round(float(numNonrigidIterations)/float(numPyramidLayers)));
     float viscousAnnealingRate = exp(log(float(numViscousIterationsStop)/float(numViscousIterationsStart))/numNonrigidIterations);
     float elasticAnnealingRate = exp(log(float(numElasticIterationsStop)/float(numElasticIterationsStart))/numNonrigidIterations);
