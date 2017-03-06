@@ -13,10 +13,10 @@ void ScaleShifter::set_input(const FeatureMat &inLowFeatures,
 
     _numLowNodes = _inLowFeatures->rows();
 
-    _numCorrespondingNodes = 0;
+    _numMatchingNodes = 0;
     _numNewNodes = 0;
 
-    _correspondingIndexPairs.clear();
+    _matchingIndexPairs.clear();
     _newIndices.clear();
 }//end set_input()
 
@@ -26,15 +26,15 @@ void ScaleShifter::set_output(FeatureMat &outHighFeatures){
 
     _numHighNodes = _outHighFeatures->rows();
 
-    _numCorrespondingNodes = 0;
+    _numMatchingNodes = 0;
     _numNewNodes = 0;
 
-    _correspondingIndexPairs.clear();
+    _matchingIndexPairs.clear();
     _newIndices.clear();
 }//end set_output()
 
 
-void ScaleShifter::_find_corresponding_and_new_indices(){
+void ScaleShifter::_find_matching_and_new_indices(){
     //# Put index pairs of original and current indices into arrays
     //## Initialize the lists
     std::vector<std::pair<int,int>> lowIndexPairs;
@@ -68,15 +68,15 @@ void ScaleShifter::_find_corresponding_and_new_indices(){
     });
 
 
-    //# Determine corresponding and new nodes of the high sampled mesh.
-    //##    Determine the current index pairs between the corresponding nodes of the high and low
+    //# Determine matching and new nodes of the high sampled mesh.
+    //##    Determine the current index pairs between the matching nodes of the high and low
     //##    sampled mesh (using matches between the original indices). And determine which nodes
-    //##    of the high sampled mesh have are new (have no corresponding original index in the low
+    //##    of the high sampled mesh have are new (have no matching original index in the low
     //##    sampled mesh).
     //## Loop over nodes of the high mesh
     int counterLow = 0;
     int counterHigh = 0;
-    _correspondingIndexPairs.clear();
+    _matchingIndexPairs.clear();
     for ( ; counterHigh < _numHighNodes ; counterHigh++){
         //## Obtain original and current indices for high sampled mesh
         int highOriginalIndex = highIndexPairs[counterHigh].first;
@@ -93,10 +93,10 @@ void ScaleShifter::_find_corresponding_and_new_indices(){
             int lowOriginalIndex = lowIndexPairs[counterLow].first;
             int lowCurrentIndex = lowIndexPairs[counterLow].second;
 
-            //## if the original indices match, we have found corresponding nodes!
+            //## if the original indices match, we have found matching nodes!
             if (lowOriginalIndex == highOriginalIndex) {
-                std::pair<int,int> correspondingPair(highCurrentIndex, lowCurrentIndex);
-                _correspondingIndexPairs.push_back(correspondingPair);
+                std::pair<int,int> matchingPair(highCurrentIndex, lowCurrentIndex);
+                _matchingIndexPairs.push_back(matchingPair);
                 counterLow++; //counterHigh is incremented in for-loop definition
             }
             //## if one index is smaller than the other, we have to increment that index
@@ -116,14 +116,14 @@ void ScaleShifter::_find_corresponding_and_new_indices(){
 
     }
 
-    //# Save the number of corresponding and new nodes
-    _numCorrespondingNodes = _correspondingIndexPairs.size();
+    //# Save the number of matching and new nodes
+    _numMatchingNodes = _matchingIndexPairs.size();
     _numNewNodes = _newIndices.size();
     //## safety check
-    if((_numCorrespondingNodes + _numNewNodes) != _numHighNodes){
-        std::cerr << "Some nodes were missed as being new or corresponding nodes in ScaleShifter." << std::endl;
+    if((_numMatchingNodes + _numNewNodes) != _numHighNodes){
+        std::cerr << "Some nodes were missed as being new or matching nodes in ScaleShifter." << std::endl;
     }
-}//end _find_corresponding_and_new_indices()
+}//end find_matching_and_new_indices()
 
 
 void ScaleShifter::_interpolate_new_nodes(){
@@ -147,15 +147,15 @@ void ScaleShifter::_interpolate_new_nodes(){
     //# Set up Source and Queried Points
     //## Construct matrix containing the features of the high sampled mesh, but
     //## only for those that have matching nodes in the low sampled mesh!
-    FeatureMat matchingNodesOldFeatures = FeatureMat::Zero(_numCorrespondingNodes, NUM_FEATURES);
-    for (int i = 0 ; i < _numCorrespondingNodes ; i++) {
+    FeatureMat matchingNodesOldFeatures = FeatureMat::Zero(_numMatchingNodes, NUM_FEATURES);
+    for (int i = 0 ; i < _numMatchingNodes ; i++) {
         //## Get the index of the node of the high sampled mesh for which a
         //## matching node in the low sampled mesh was found. In other words,
         //## instead of using 'i' as the index, we are skipping all indices
         //## of the new nodes. We only want to copy the original features
         //## of those nodes of the high sampled mesh that are also present in
         //## the low sampled mesh.
-        int matchingIndex = _correspondingIndexPairs[i].first;
+        int matchingIndex = _matchingIndexPairs[i].first;
         matchingNodesOldFeatures.row(i) = _outHighFeatures->row(matchingIndex);
     }
 
@@ -180,16 +180,37 @@ void ScaleShifter::_interpolate_new_nodes(){
     const IntegerMat neighbourIndices = neighbourFinder.get_indices();
     const FloatMat neighbourSquaredDistances = neighbourFinder.get_distances();
 
-    //# Compute the weighted average positions for the new nodes
+
+    //# Set up the deformation field
     //## Initialization
-    Vec3Float newNodeOldPosition = Vec3Float::Zero();
+    Vec3Mat deformationField = Vec3Mat::Zero(_numHighNodes, 3);
+    Vec3Float deformation = Vec3Float::Zero();
+    Vec3Float oldPosition = Vec3Float::Zero();
+    Vec3Float newPosition = Vec3Float::Zero();
+    //## Loop over the matching nodes
+    for (int i = 0 ; i < _numMatchingNodes ; i++){
+        //## Get the index pairs
+        int highIndex = _matchingIndexPairs[i].first;
+        int lowIndex = _matchingIndexPairs[i].second;
+        //## Get the features and compute the differences
+        oldPosition = (_outHighFeatures->row(highIndex)).head(3);
+        newPosition = (_inLowFeatures->row(lowIndex)).head(3);
+        deformation = newPosition - oldPosition;
+        deformationField.row(highIndex) = deformation;
+    }
+
+
+
+
+    //# Compute the weighted average deformation for the new nodes
+    //## Initialization
     Vec3Float newNodeOldNormal = Vec3Float::Zero();
     //## Loop over the indices of the new nodes
     for (int i = 0 ; i < _numNewNodes ; i++) {
         const int newNodeIndex = _newIndices[i];
         newNodeOldNormal = _outHighFeatures->row(newNodeIndex).tail(3);
-        //## Initialize the features of the current new node to zero
-        _outHighFeatures->row(newNodeIndex).setZero();
+        //## Initialize the deformation of the current new node to zero
+        deformationField.row(newNodeIndex).setZero();
         float sumWeights = 0.0f;
         //## Loop over each found neighbour
         for ( int j = 0 ; j < k ; j++) {
@@ -198,10 +219,10 @@ void ScaleShifter::_interpolate_new_nodes(){
             float distanceSquared = neighbourSquaredDistances(i,j);
 
             //### The neighbourIndex now points to a row of matchingNodesOldFeatures.
-            //### We need to find the corresponding index that points to the right row
+            //### We need to find the matching index that points to the right row
             //### of the low sampled mesh.
-            const int correspondingHighNeighbourIndex = _correspondingIndexPairs[neighbourIndex].first;
-            const int correspondingLowNeighbourIndex = _correspondingIndexPairs[neighbourIndex].second;
+            const int matchingHighNeighbourIndex = _matchingIndexPairs[neighbourIndex].first;
+            const int matchingLowNeighbourIndex = _matchingIndexPairs[neighbourIndex].second;
 
             //### For numerical stability, check if the distance is very small
             const float eps1 = 0.000001f;
@@ -210,10 +231,8 @@ void ScaleShifter::_interpolate_new_nodes(){
             //### Compute the weight as 1/d_squared
             float weight = 1.0f / distanceSquared;
 
-
-
             //### Incorporate the orientation
-            Vec3Float neighbourOldNormal = _outHighFeatures->row(correspondingHighNeighbourIndex).tail(3);
+            Vec3Float neighbourOldNormal = _outHighFeatures->row(matchingHighNeighbourIndex).tail(3);
             float dotProduct = newNodeOldNormal.dot(neighbourOldNormal);
             float orientationWeight = dotProduct / 2.0f + 0.5f;
             weight *= orientationWeight;
@@ -224,12 +243,20 @@ void ScaleShifter::_interpolate_new_nodes(){
             const float eps2 = 0.0001f;
             if (weight < eps2) {weight = eps2;}
 
-            //### Weigh the corresponding features of the low sampled mesh
-            _outHighFeatures->row(newNodeIndex) += weight * _inLowFeatures->row(correspondingLowNeighbourIndex);
+            //### Weigh the matching features of the low sampled mesh
+            deformationField.row(newNodeIndex) += weight * deformationField.row(matchingHighNeighbourIndex);
             sumWeights += weight;
         }
         //### Normalize
-        _outHighFeatures->row(newNodeIndex) /= sumWeights;
+        deformationField.row(newNodeIndex) /= sumWeights;
+    }
+
+
+    //# Deform the new nodes
+    for (int i = 0 ; i < _numNewNodes ; i++) {
+        const int newNodeIndex = _newIndices[i];
+
+        (_outHighFeatures->row(newNodeIndex)).head(3) += deformationField.row(newNodeIndex);
     }
 }//end _interpolate_new_nodes()
 
@@ -237,10 +264,10 @@ void ScaleShifter::_interpolate_new_nodes(){
 void ScaleShifter::_copy_matching_nodes(){
     //# Copy the features of the lowly sampled mesh into the features
     //# of the matching nodes of the highly sampled mesh.
-    for (int i = 0 ; i < _numCorrespondingNodes ; i++){
+    for (int i = 0 ; i < _numMatchingNodes ; i++){
         //## Get the index pairs
-        int highIndex = _correspondingIndexPairs[i].first;
-        int lowIndex = _correspondingIndexPairs[i].second;
+        int highIndex = _matchingIndexPairs[i].first;
+        int lowIndex = _matchingIndexPairs[i].second;
         //## copy the features of the low mesh into the features of the high mesh
         _outHighFeatures->row(highIndex) = _inLowFeatures->row(lowIndex);
     }
@@ -248,8 +275,8 @@ void ScaleShifter::_copy_matching_nodes(){
 
 void ScaleShifter::update(){
 
-    //# Build the list of corresponding indices
-    _find_corresponding_and_new_indices();
+    //# Build the list of matching indices
+    _find_matching_and_new_indices();
 
 
 

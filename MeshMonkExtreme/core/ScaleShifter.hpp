@@ -14,6 +14,7 @@
 typedef Eigen::Vector3f Vec3Float;
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::VectorXi VecDynInt;
+typedef Eigen::Matrix< float, Eigen::Dynamic, 3> Vec3Mat;
 typedef Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> IntegerMat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> FloatMat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
@@ -48,17 +49,17 @@ class ScaleShifter
         //# User Parameters
 
         //# Internal Data structures
-        std::vector<std::pair<int,int>> _correspondingIndexPairs;
+        std::vector<std::pair<int,int>> _matchingIndexPairs;
         std::vector<int> _newIndices;
 
         //# Internal Parameters
         size_t _numLowNodes = 0;
         size_t _numHighNodes = 0;
-        size_t _numCorrespondingNodes = 0;
+        size_t _numMatchingNodes = 0;
         size_t _numNewNodes = 0;
 
         //# Internal functions
-        void _find_corresponding_and_new_indices();
+        void _find_matching_and_new_indices();
         void _interpolate_new_nodes();
         void _copy_matching_nodes();
 };

@@ -136,16 +136,19 @@ int main()
 
 
 
-    int numPyramidLayers = 1;
-    int floatPyramidStart = 0;//percentage you want to start downsampling the floating mesh by
-    int targetPyramidStart = 0;//percentage you want to start downsampling the target mesh by
+//    int numPyramidLayers = 1;
+//    int floatPyramidStart = 0;//percentage you want to start downsampling the floating mesh by
+//    int targetPyramidStart = 0;//percentage you want to start downsampling the target mesh by
+    int numPyramidLayers = 4;
+    int floatPyramidStart = 70;//percentage you want to start downsampling the floating mesh by
+    int targetPyramidStart = 70;//percentage you want to start downsampling the target mesh by
     int floatPyramidEnd = 0;
     int targetPyramidEnd = 0;
-    size_t numNonrigidIterations = 10;
+    size_t numNonrigidIterations = 20;
     int numViscousIterationsStart = 10;
     int numElasticIterationsStart = 10;
     int numViscousIterationsStop = 1;
-    int numElasticIterationsStop = 10;
+    int numElasticIterationsStop = 1;
     int iterationsPerLayer = int(std::round(float(numNonrigidIterations)/float(numPyramidLayers)));
     float viscousAnnealingRate = exp(log(float(numViscousIterationsStop)/float(numViscousIterationsStart))/numNonrigidIterations);
     float elasticAnnealingRate = exp(log(float(numElasticIterationsStop)/float(numElasticIterationsStart))/numNonrigidIterations);
