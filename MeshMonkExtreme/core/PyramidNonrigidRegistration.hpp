@@ -10,8 +10,11 @@
 #include <boost/variant.hpp>
 #include "../global.hpp"
 #include <NonrigidRegistration.hpp>
+#include <Downsampler.hpp>
+#include <ScaleShifter.hpp>
 
 typedef Eigen::VectorXf VecDynFloat;
+typedef Eigen::VectorXi VecDynInt;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
 typedef Eigen::Matrix< int, Eigen::Dynamic, 3> FacesMat;
 
@@ -40,35 +43,27 @@ class PyramidNonrigidRegistration
 
     public:
 
-        void set_input(FeatureMat * const ioFloatingFeatures,
-                       const FeatureMat * const inTargetFeatures,
-                       const FacesMat * const inFloatingFaces,
-                       const VecDynFloat * const inFloatingFlags,
-                       const VecDynFloat * const inTargetFlags);
-        void set_parameters(bool symmetric,
-                            size_t numNeighbours,
-                            float kappaa,
-                            size_t numIterations,
-                            float sigmaSmoothing,
-                            size_t numViscousIterationsStart,
-                            size_t numViscousIterationsEnd,
-                            size_t numElasticIterationsStart,
-                            size_t numElasticIterationsEnd);
+        void set_input(FeatureMat &ioFloatingFeatures,
+                       const FeatureMat &inTargetFeatures,
+                       const FacesMat &inFloatingFaces,
+                       const FacesMat &inTargetFaces,
+                       const VecDynFloat &inFloatingFlags,
+                       const VecDynFloat &inTargetFlags);
 
-        void get_annealing_rates(float &viscousAnnealingRate,
-                                 float &elasticAnnealingRate){
-                                 viscousAnnealingRate = _viscousAnnealingRate;
-                                 elasticAnnealingRate = _elasticAnnealingRate;
-                                 }
-        void set_annealing_rates(const float viscousAnnealingRate,
-                                 const float elasticAnnealingRate){
-                                 _viscousAnnealingRate = viscousAnnealingRate;
-                                 _elasticAnnealingRate = elasticAnnealingRate;
-                                 }
-        void get_viscoelastic_iterations(float &numViscousIterations,
-                                         float &numElasticIterations){
-                                         numViscousIterations = _numViscousIterations;
-                                         numElasticIterations = _numElasticIterations;}
+        void set_parameters(size_t numIterations = 60,
+                            size_t numPyramidLayers = 3,
+                            float downsampleFloatStart = 90.0f,
+                            float downsampleTargetStart = 90.0f,
+                            float downsampleFloatEnd = 0.0f,
+                            float downsampleTargetEnd = 0.0f,
+                            bool correspondencesSymmetric = true,
+                            size_t correspondencesNumNeighbours = 5,
+                            float inlierKappa = 4.0f,
+                            float transformSigma = 3.0f,
+                            size_t transformNumViscousIterationsStart = 200,
+                            size_t transformNumViscousIterationsEnd = 1,
+                            size_t transformNumElasticIterationsStart = 200,
+                            size_t transformNumElasticIterationsEnd = 1);
 
         void update();
 
@@ -79,32 +74,36 @@ class PyramidNonrigidRegistration
         FeatureMat * _ioFloatingFeatures = NULL;
         const FeatureMat * _inTargetFeatures = NULL;
         const FacesMat * _inFloatingFaces;
+        const FacesMat * _inTargetFaces;
         const VecDynFloat * _inFloatingFlags = NULL;
         const VecDynFloat * _inTargetFlags = NULL;
 
         //# User Parameters
         //## Correspondences
-        bool _symmetric = true;
-        size_t _numNeighbours = 3;
-        //## Inliers
-        float _kappaa = 3.0;
-        //## Transformation
-        size_t _numIterations = 10;
-        float _sigmaSmoothing = 3.0;
-        size_t _numViscousIterationsStart = 100;
-        size_t _numViscousIterationsEnd = 1;
-        size_t _numElasticIterationsStart = 100;
-        size_t _numElasticIterationsEnd = 1;
-        size_t _numViscousIterations = 100;
-        size_t _numElasticIterations = 100;
+        size_t _numIterations = 60;
+        size_t _numPyramidLayers = 3;
+        float _downsampleFloatStart = 90.0f; //percentage
+        float _downsampleTargetStart = 90.0f; //percentage
+        float _downsampleFloatEnd = 0.0f; //percentage
+        float _downsampleTargetEnd = 0.0f; //percentage
+        bool _correspondencesSymmetric = true;
+        size_t _correspondencesNumNeighbours = 5;
+        float _inlierKappa = 4.0f;
+        float _transformSigma = 3.0f;
+        size_t _transformNumViscousIterationsStart = 200;
+        size_t _transformNumViscousIterationsEnd = 1;
+        size_t _transformNumElasticIterationsStart = 200;
+        size_t _transformNumElasticIterationsEnd = 1;
 
         //# Internal Data structures
 
         //# Internal Parameters
+        int _iterationsPerLayer = 0;
         //## Transformation
-        float _viscousAnnealingRate = exp(log(float(_numViscousIterationsEnd)/float(_numViscousIterationsStart))/_numIterations);
-        float _elasticAnnealingRate = exp(log(float(_numElasticIterationsEnd)/float(_numElasticIterationsStart))/_numIterations);
-
+        float _viscousAnnealingRate = exp(log(float(_transformNumViscousIterationsEnd)/float(_transformNumViscousIterationsStart))/_numIterations);
+        float _elasticAnnealingRate = exp(log(float(_transformNumElasticIterationsEnd)/float(_transformNumElasticIterationsStart))/_numIterations);
+        std::vector<int> _viscousIterationsIntervals;
+        std::vector<int> _elasticIterationsIntervals;
         //# Internal functions
 };
 
