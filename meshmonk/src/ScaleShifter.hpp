@@ -8,8 +8,8 @@
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 #include "../global.hpp"
-#include <helper_functions.hpp>
-#include <NeighbourFinder.hpp>
+#include "helper_functions.hpp"
+#include "NeighbourFinder.hpp"
 
 typedef Eigen::Vector3f Vec3Float;
 typedef Eigen::VectorXf VecDynFloat;
@@ -49,7 +49,7 @@ class ScaleShifter
         //# User Parameters
 
         //# Internal Data structures
-        std::vector<std::pair<int,int>> _matchingIndexPairs;
+        std::vector<std::pair<int,int> > _matchingIndexPairs;
         std::vector<int> _newIndices;
 
         //# Internal Parameters

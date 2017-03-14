@@ -5,15 +5,12 @@
 #include <stdio.h>
 #include <iostream>
 #include <map>
-#include <boost/variant.hpp> //make sure you have boost: http://stackoverflow.com/questions/12241152/boost-no-such-file-or-directory
 #include "../global.hpp"
 
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
 typedef Eigen::Matrix< float, 1, registration::NUM_FEATURES> FeatureVec; //matrix Mx6 of type float
 typedef Eigen::Vector3f Vec3Float;
-typedef boost::variant<int, float, bool, std::string> ParameterType;
-typedef std::map<std::string, ParameterType> DictionaryType;
 
 namespace registration {
 
@@ -50,7 +47,6 @@ class InlierDetector
         VecDynFloat *_ioProbability = NULL;
 
         //# User Parameters
-        DictionaryType _parameterList;
         float _kappa = 3.0;
 
         //# Internal variables

@@ -7,17 +7,17 @@
 #include <OpenMesh/Tools/Decimater/ModQuadricT.hh>
 #include <Eigen/Dense>
 #include <stdio.h>
-#include <RigidRegistration.hpp>
-#include <NonrigidRegistration.hpp>
-#include <InlierDetector.hpp>
-#include <CorrespondenceFilter.hpp>
-#include <SymmetricCorrespondenceFilter.hpp>
-#include <RigidTransformer.hpp>
-#include <ViscoElasticTransformer.hpp>
-#include <Downsampler.hpp>
-#include <ScaleShifter.hpp>
+#include "src/RigidRegistration.hpp"
+#include "src/NonrigidRegistration.hpp"
+#include "src/InlierDetector.hpp"
+#include "src/CorrespondenceFilter.hpp"
+#include "src/SymmetricCorrespondenceFilter.hpp"
+#include "src/RigidTransformer.hpp"
+#include "src/ViscoElasticTransformer.hpp"
+#include "src/Downsampler.hpp"
+#include "src/ScaleShifter.hpp"
 #include "global.hpp"
-#include <helper_functions.hpp>
+#include "src/helper_functions.hpp"
 #include <math.h>
 
 using namespace std;
@@ -30,6 +30,43 @@ typedef OpenMesh::Decimater::ModQuadricT<TriMesh>::Handle HModQuadric;
 typedef Eigen::Matrix< int, Eigen::Dynamic, 3> FacesMat; //matrix Mx3 of type unsigned int
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
+
+
+// The functions contained in this file are pretty dummy
+// and are included only as a placeholder. Nevertheless,
+// they *will* get included in the shared library if you
+// don't remove them :)
+//
+// Obviously, you 'll have to write yourself the super-duper
+// functions to include in the resulting library...
+// Also, it's not necessary to write every function in this file.
+// Feel free to add more files in this project. They will be
+// included in the resulting library.
+
+//extern "C"
+//{
+//    // A function adding two integers and returning the result
+//    int SampleAddInt(int i1, int i2)
+//    {
+//        return i1 + i2;
+//    }
+//
+//    // A function doing nothing ;)
+//    void SampleFunction1()
+//    {
+//        // insert code here
+//    }
+//
+//    // A function always returning zero
+//    int SampleFunction2()
+//    {
+//        // insert code here
+//
+//        return 0;
+//    }
+//}
+
+
 
 int main()
 {

@@ -9,7 +9,7 @@
 #include <OpenMesh/Tools/Decimater/DecimaterT.hh>
 #include <OpenMesh/Tools/Decimater/ModQuadricT.hh>
 #include "../global.hpp"
-#include <helper_functions.hpp>
+#include "helper_functions.hpp"
 
 typedef Eigen::Vector3f Vec3Float;
 typedef Eigen::VectorXf VecDynFloat;

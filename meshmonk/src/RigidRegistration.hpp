@@ -5,12 +5,11 @@
 #include <stdio.h>
 #include <memory.h>
 #include <time.h>
-#include <boost/variant.hpp>
 #include "../global.hpp"
-#include <CorrespondenceFilter.hpp>
-#include <SymmetricCorrespondenceFilter.hpp>
-#include <InlierDetector.hpp>
-#include <RigidTransformer.hpp>
+#include "CorrespondenceFilter.hpp"
+#include "SymmetricCorrespondenceFilter.hpp"
+#include "InlierDetector.hpp"
+#include "RigidTransformer.hpp"
 
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float

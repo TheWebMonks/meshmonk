@@ -7,11 +7,10 @@
 #include <math.h>
 #include <memory.h>
 #include <time.h>
-#include <boost/variant.hpp>
 #include "../global.hpp"
-#include <NonrigidRegistration.hpp>
-#include <Downsampler.hpp>
-#include <ScaleShifter.hpp>
+#include "NonrigidRegistration.hpp"
+#include "Downsampler.hpp"
+#include "ScaleShifter.hpp"
 
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::VectorXi VecDynInt;

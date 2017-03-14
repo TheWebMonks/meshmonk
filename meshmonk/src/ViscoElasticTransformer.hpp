@@ -2,11 +2,11 @@
 #define VISCOELASTICTRANSFORMER_HPP
 
 #include <Eigen/Dense>
-#include <NeighbourFinder.hpp>
+#include "NeighbourFinder.hpp"
 #include <iostream>
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
-#include <helper_functions.hpp>
+#include "helper_functions.hpp"
 
 typedef Eigen::Vector3f Vec3Float;
 typedef Eigen::VectorXf VecDynFloat;
