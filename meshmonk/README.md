@@ -47,3 +47,6 @@ OpenMesh can be compiled and used as both a static (.a) and shared library (.so)
 6) Build the library: `make`
 7) Move the all the compiled library files to /usr/local/lib/: `sudo mv /home/user/Downloads/OpenMesh-6.3/build/Build/lib/* /usr/local/lib/`
 8) Move the folder with the header files we need to /usr/local/include/: `sudo mv /home/user/Downloads/OpenMesh-6.3/src/OpenMesh/ /usr/local/include/`
+9) Run ldconfig so that your machine has the new libraries in its standard search path: `sudo ldconfig -v`. Somewhere in the printed output should be a version of libOpenMeshCore and libOpenMeshTools.
+
+
