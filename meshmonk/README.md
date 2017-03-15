@@ -38,3 +38,12 @@ The meshmonk library depends on [Eigen](http://eigen.tuxfamily.org/index.php?tit
  3) Move it to /usr/local/include/: `sudo mv /home/user/Downloads/nanoflann-master/include/nanoflann.hpp /usr/local/include/`
  
  ### Installing OpenMesh
+OpenMesh can be compiled and used as both a static (.a) and shared library (.so). We'll download the source, configure build settings with 'cmake', and build it using 'make'. After all that's happened, we move the compiled library files to /usr/local/lib/ and the header files to /usr/local/include/.
+1) Download the latest version of the OpenMesh sourcefiles from their [downloads page](https://www.openmesh.org/download/) (the .tar.gz or .tar.bz2 file)
+2) Extract it locally
+3) Go into the extracted folder and make a new folder inside called 'build'
+4) In your terminal, switch to the newly created 'build' folder: `cd /home/user/Downloads/OpenMesh-6.3/build/`
+5) Configure the makefiles using cmake: `cmake ..` (include the two dots!)
+6) Build the library: `make`
+7) Move the all the compiled library files to /usr/local/lib/: `sudo mv /home/user/Downloads/OpenMesh-6.3/build/Build/lib/* /usr/local/lib/`
+8) Move the folder with the header files we need to /usr/local/include/: `sudo mv /home/user/Downloads/OpenMesh-6.3/src/OpenMesh/ /usr/local/include/`
