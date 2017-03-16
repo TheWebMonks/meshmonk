@@ -1,12 +1,11 @@
 #ifndef PYRAMIDNONRIGIDREGISTRATION_HPP
 #define PYRAMIDNONRIGIDREGISTRATION_HPP
 
-
-#include <Eigen/Dense>
 #include <stdio.h>
 #include <math.h>
 #include <memory.h>
 #include <time.h>
+#include <Eigen/Dense>
 #include "../global.hpp"
 #include "NonrigidRegistration.hpp"
 #include "Downsampler.hpp"
