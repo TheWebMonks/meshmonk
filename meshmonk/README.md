@@ -23,7 +23,9 @@ The meshmonk library depends on [Eigen](http://eigen.tuxfamily.org/index.php?tit
  3) Putting the header files and compiled libs in the right directory
  4) Making sure those directories are searched by the compiler/linker during the compiling/linking process.
  
- Note: if you want to learn more about how libraries work and how to use them, we highly recommend [David Wheeler's How-To](https://www.dwheeler.com/program-library/Program-Library-HOWTO/t1.html)
+ Note: if you want to learn more about how libraries work and how to use them, we highly recommend [David Wheeler's How-To](https://www.dwheeler.com/program-library/Program-Library-HOWTO/t1.html). Some other useful sources are:
+ * How header files matter for shared libraries: [This stackoverflow answer](http://stackoverflow.com/a/1186836)
+ 
  
  ### Installing Eigen
  Eigen is a header-only library, which makes it very easy to use in your own projects. The only thing you have to do is download the header files and put them in a directory which your compiler searches so that it finds whatever it needs from the Eigen library.
@@ -47,7 +49,7 @@ OpenMesh can be compiled and used as both a static (.a) and shared library (.so)
 6) Build the library: `make`
 7) Move the all the compiled library files to /usr/local/lib/: `sudo mv /home/user/Downloads/OpenMesh-6.3/build/Build/lib/* /usr/local/lib/`
 8) Move the folder with the header files we need to /usr/local/include/: `sudo mv /home/user/Downloads/OpenMesh-6.3/src/OpenMesh/ /usr/local/include/`
-9) Run ldconfig so that your machine has the new libraries in its standard search path: `sudo ldconfig -v`. Somewhere in the printed output should be a version of libOpenMeshCore and libOpenMeshTools.
+9) Run ldconfig so that your library loader can find it when running an application that needs the library: `sudo ldconfig -v`. To check, run `ldconfig -p | grep OpenMesh` and it should print a few library names containing OpenMeshCore and OpenMeshTools
 
 
 
