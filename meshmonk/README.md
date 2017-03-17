@@ -50,3 +50,7 @@ OpenMesh can be compiled and used as both a static (.a) and shared library (.so)
 9) Run ldconfig so that your machine has the new libraries in its standard search path: `sudo ldconfig -v`. Somewhere in the printed output should be a version of libOpenMeshCore and libOpenMeshTools.
 
 
+
+# Using meshmonk
+-add '-lmeshmonk' as an option to your compiler when compiling your software that uses the meshmonk library.
+-include the meshmonk.hpp header
