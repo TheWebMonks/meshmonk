@@ -123,7 +123,7 @@ void PyramidNonrigidRegistration::update(){
         downsampleRatio /= 100.0f;
         std::cout<< " DOWNSAMPLE RATIO: " << downsampleRatio << std::endl;
         //## Set up Downsampler
-        registration::Downsampler downsampler;
+        Downsampler downsampler;
         VecDynFloat floatingFlags;
         downsampler.set_input(_ioFloatingFeatures, _inFloatingFaces, _inFloatingFlags);
         downsampler.set_output(floatingFeatures, floatingFaces, floatingFlags, floatingOriginalIndices);
@@ -149,7 +149,7 @@ void PyramidNonrigidRegistration::update(){
         //# Transfer floating mesh properties from previous pyramid scale to the current one.
         if (i > 0) {
             //## Scale up
-            registration::ScaleShifter scaleShifter;
+            ScaleShifter scaleShifter;
             scaleShifter.set_input(oldFloatingFeatures, oldFloatingOriginalIndices, floatingOriginalIndices);
             scaleShifter.set_output(floatingFeatures);
             scaleShifter.update();
@@ -157,7 +157,7 @@ void PyramidNonrigidRegistration::update(){
 
         //# Registration
         size_t numTargetVertices = targetFeatures.rows();
-        registration::NonrigidRegistration nonrigidRegistration;
+        NonrigidRegistration nonrigidRegistration;
         nonrigidRegistration.set_input(&floatingFeatures, &targetFeatures, &floatingFaces, &floatingFlags, &targetFlags);
         nonrigidRegistration.set_parameters(_correspondencesSymmetric, _correspondencesNumNeighbours,
                                             _inlierKappa,
@@ -168,7 +168,7 @@ void PyramidNonrigidRegistration::update(){
     }// Pyramid iteratations
 
     //# Copy result to output
-    registration::ScaleShifter scaleShifter;
+    ScaleShifter scaleShifter;
     scaleShifter.set_input(oldFloatingFeatures, oldFloatingOriginalIndices, floatingOriginalIndices);
     scaleShifter.set_output(*_ioFloatingFeatures);
     scaleShifter.update();
