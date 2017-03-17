@@ -45,17 +45,21 @@ typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> Featur
 
 extern "C"
 {
+    /*
+    Full Pyramid Nonrigid Registration
+    This is the function you'll normally want to call to nonrigidly register a floating mesh to a target mesh.
+    */
     void pyramid_registration(FeatureMat& floatingFeatures, const FeatureMat& targetFeatures,
                                 const FacesMat& floatingFaces, const FacesMat& targetFaces,
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
-                                const size_t numIterations, const size_t numPyramidLayers,
-                                const float downsampleFloatStart, const float downsampleTargetStart,
-                                const float downsampleFloatEnd, const float downsampleTargetEnd,
-                                const bool correspondencesSymmetric, const size_t correspondencesNumNeighbours,
-                                const float inlierKappa,
-                                const float transformSigma,
-                                const size_t transformNumViscousIterationsStart, const size_t transformNumViscousIterationsEnd,
-                                const size_t transformNumElasticIterationsStart, const size_t transformNumElasticIterationsEnd)
+                                const size_t numIterations = 60, const size_t numPyramidLayers = 3,
+                                const float downsampleFloatStart = 90, const float downsampleTargetStart = 90,
+                                const float downsampleFloatEnd = 0, const float downsampleTargetEnd = 0,
+                                const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
+                                const float inlierKappa = 4.0f,
+                                const float transformSigma = 3.0f,
+                                const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
+                                const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1)
     {
         registration::PyramidNonrigidRegistration registrator;
         registrator.set_input(floatingFeatures, targetFeatures,
@@ -69,6 +73,50 @@ extern "C"
                                     transformSigma,
                                     transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
                                     transformNumElasticIterationsStart, transformNumElasticIterationsEnd);
+        registrator.update();
+    }
+
+    /*
+    Standard Nonrigid Registration
+    This is the standard nonrigid registration procedure without pyramid approach, so computationally a bit slower.
+    */
+    void nonrigid_registration(FeatureMat& floatingFeatures, const FeatureMat& targetFeatures,
+                                const FacesMat& floatingFaces, const FacesMat& targetFaces,
+                                const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
+                                const size_t numIterations = 60,
+                                const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
+                                const float inlierKappa = 4.0f,
+                                const float transformSigma = 3.0f,
+                                const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
+                                const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1)
+    {
+        registration::NonrigidRegistration registrator;
+        registrator.set_input(&floatingFeatures, &targetFeatures,
+                                &floatingFaces,
+                                &floatingFlags, &targetFlags);
+        registrator.set_parameters(correspondencesSymmetric, correspondencesNumNeighbours,
+                                    inlierKappa, numIterations,
+                                    transformSigma,
+                                    transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
+                                    transformNumElasticIterationsStart, transformNumElasticIterationsEnd);
+        registrator.update();
+    }
+
+    /*
+    Rigid Registration
+    */
+    void rigid_registration(FeatureMat& floatingFeatures, const FeatureMat& targetFeatures,
+                                const FacesMat& floatingFaces, const FacesMat& targetFaces,
+                                const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
+                                const size_t numIterations = 20,
+                                const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
+                                const float inlierKappa = 4.0f)
+    {
+        registration::RigidRegistration registrator;
+        registrator.set_input(&floatingFeatures, &targetFeatures,
+                                &floatingFlags, &targetFlags);
+        registrator.set_parameters(correspondencesSymmetric, correspondencesNumNeighbours,
+                                    inlierKappa, numIterations);
         registrator.update();
     }
 
