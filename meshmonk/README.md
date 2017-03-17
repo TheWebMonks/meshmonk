@@ -56,3 +56,6 @@ OpenMesh can be compiled and used as both a static (.a) and shared library (.so)
 # Using meshmonk
 -add '-lmeshmonk' as an option to your compiler when compiling your software that uses the meshmonk library.
 -include the meshmonk.hpp header
+
+every time you recompile, don't forget you have to copy the latest shared library to /usr/local/lib/: `sudo cp /home/user/projects/meshmonk/meshmonk/bin/Release/libmeshmonk.so /usr/local/lib/`
+
