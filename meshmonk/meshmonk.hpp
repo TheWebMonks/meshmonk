@@ -1,3 +1,6 @@
+#ifndef MESHMONK_HPP
+#define MESHMONK_HPP
+
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
@@ -62,22 +65,7 @@ extern "C"
                                 const float inlierKappa = 4.0f,
                                 const float transformSigma = 3.0f,
                                 const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
-                                const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1)
-    {
-        registration::PyramidNonrigidRegistration registrator;
-        registrator.set_input(floatingFeatures, targetFeatures,
-                                floatingFaces, targetFaces,
-                                floatingFlags, targetFlags);
-        registrator.set_parameters(numIterations, numPyramidLayers,
-                                    downsampleFloatStart, downsampleTargetStart,
-                                    downsampleFloatEnd, downsampleTargetEnd,
-                                    correspondencesSymmetric, correspondencesNumNeighbours,
-                                    inlierKappa,
-                                    transformSigma,
-                                    transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
-                                    transformNumElasticIterationsStart, transformNumElasticIterationsEnd);
-        registrator.update();
-    }
+                                const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1);
 
     /*
     Standard Nonrigid Registration
@@ -91,19 +79,7 @@ extern "C"
                                 const float inlierKappa = 4.0f,
                                 const float transformSigma = 3.0f,
                                 const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
-                                const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1)
-    {
-        registration::NonrigidRegistration registrator;
-        registrator.set_input(&floatingFeatures, &targetFeatures,
-                                &floatingFaces,
-                                &floatingFlags, &targetFlags);
-        registrator.set_parameters(correspondencesSymmetric, correspondencesNumNeighbours,
-                                    inlierKappa, numIterations,
-                                    transformSigma,
-                                    transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
-                                    transformNumElasticIterationsStart, transformNumElasticIterationsEnd);
-        registrator.update();
-    }
+                                const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1);
 
     /*
     Rigid Registration
@@ -113,15 +89,7 @@ extern "C"
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 const size_t numIterations = 20,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                const float inlierKappa = 4.0f)
-    {
-        registration::RigidRegistration registrator;
-        registrator.set_input(&floatingFeatures, &targetFeatures,
-                                &floatingFlags, &targetFlags);
-        registrator.set_parameters(correspondencesSymmetric, correspondencesNumNeighbours,
-                                    inlierKappa, numIterations);
-        registrator.update();
-    }
+                                const float inlierKappa = 4.0f);
 
 
 
@@ -134,59 +102,23 @@ extern "C"
     void compute_correspondences(const FeatureMat& floatingFeatures, const FeatureMat& targetFeatures,
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 FeatureMat& correspondingFeatures, VecDynFloat& correspondingFlags,
-                                const bool symmetric = true, const size_t numNeighbours = 5){
-        registration::BaseCorrespondenceFilter* correspondenceFilter = NULL;
-        //std::unique_ptr<BaseCorrespondenceFilter> correspondenceFilter = new SymmetricCorrespondenceFilter;
-
-        if (symmetric) {
-            correspondenceFilter = new registration::SymmetricCorrespondenceFilter();
-        }
-        else {
-            correspondenceFilter = new registration::CorrespondenceFilter();
-        }
-        correspondenceFilter->set_floating_input(&floatingFeatures, &floatingFlags);
-        correspondenceFilter->set_target_input(&targetFeatures, &targetFlags);
-        correspondenceFilter->set_output(&correspondingFeatures, &correspondingFlags);
-        correspondenceFilter->set_parameters(numNeighbours);
-        correspondenceFilter->update();
-
-        delete correspondenceFilter;
-    }
+                                const bool symmetric = true, const size_t numNeighbours = 5);
 
     //# Inliers
     void compute_inlier_weights(const FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
                                 const VecDynFloat& correspondingFlags, VecDynFloat& inlierWeights,
-                                const float kappa = 4.0f){
-        registration::InlierDetector inlierDetector;
-        inlierDetector.set_input(&floatingFeatures, &correspondingFeatures,
-                                    &correspondingFlags);
-        inlierDetector.set_output(&inlierWeights);
-        inlierDetector.set_parameters(kappa);
-        inlierDetector.update();
-    }
+                                const float kappa = 4.0f);
 
     //# Rigid Transformation
     void compute_rigid_transformation(FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
-                                    const VecDynFloat& inlierWeights, const bool allowScaling = false){
-        registration::RigidTransformer rigidTransformer;
-        rigidTransformer.set_input(&correspondingFeatures, &inlierWeights);
-        rigidTransformer.set_output(&floatingFeatures);
-        rigidTransformer.set_parameters(allowScaling);
-        rigidTransformer.update();
-    }
+                                    const VecDynFloat& inlierWeights, const bool allowScaling = false);
 
     //# Nonrigid Transformation
     void compute_nonrigid_transformation(FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
                                         const FacesMat& floatingFaces, const VecDynFloat& floatingFlags,
                                         const VecDynFloat& inlierWeights,
                                         const size_t numSmoothingNeighbours = 10, const float sigmaSmoothing = 3.0f,
-                                        const size_t numViscousIterations = 50, const size_t numElasticIterations = 50){
-        registration::ViscoElasticTransformer transformer;
-        transformer.set_input(&correspondingFeatures, &inlierWeights, &floatingFlags, &floatingFaces);
-        transformer.set_output(&floatingFeatures);
-        transformer.set_parameters(numSmoothingNeighbours, sigmaSmoothing, numViscousIterations,numElasticIterations);
-        transformer.update();
-    }
+                                        const size_t numViscousIterations = 50, const size_t numElasticIterations = 50);
 
 
     //# Downsampler
@@ -194,25 +126,13 @@ extern "C"
                         const VecDynFloat& flags,
                         FeatureMat& downsampledFeatures, FacesMat& downsampledFaces,
                         VecDynFloat& downsampledFlags, VecDynInt& originalIndices,
-                        const float downsampleRatio = 0.8f){
-        registration::Downsampler downsampler;
-        downsampler.set_input(&features, &faces, &flags);
-        downsampler.set_output(downsampledFeatures, downsampledFaces,
-                                downsampledFlags, originalIndices);
-        downsampler.set_parameters(downsampleRatio);
-        downsampler.update();
-    }
+                        const float downsampleRatio = 0.8f);
 
 
     //# ScaleShifter
     //## The scaleshifter is meant to transition from one scale in the pyramid to the next.
     void scale_shift_mesh(const FeatureMat& previousFeatures, const VecDynInt& previousIndices,
-                        FeatureMat& newFeatures, const VecDynInt& newIndices){
-        registration::ScaleShifter scaleShifter;
-        scaleShifter.set_input(previousFeatures, previousIndices, newIndices);
-        scaleShifter.set_output(newFeatures);
-        scaleShifter.update();
-    }
+                        FeatureMat& newFeatures, const VecDynInt& newIndices);
 
 
     //######################################################################################
@@ -221,13 +141,9 @@ extern "C"
 
     void read_obj_files(const std::string floatingMeshPath, const std::string targetMeshPath,
                         FeatureMat& floatingFeatures, FeatureMat& targetFeatures,
-                        FacesMat& floatingFaces, FacesMat& targetFaces){
-        registration::import_data(floatingMeshPath, targetMeshPath,
-                                    floatingFeatures, targetFeatures,
-                                    floatingFaces, targetFaces);
-    }
+                        FacesMat& floatingFaces, FacesMat& targetFaces);
 
-    void write_obj_files(FeatureMat& features, FacesMat& faces, const std::string meshPath){
-        registration::export_data(features, faces, meshPath);
-    }
+    void write_obj_files(FeatureMat& features, FacesMat& faces, const std::string meshPath);
 }
+
+#endif //MESHMONK_HPP
