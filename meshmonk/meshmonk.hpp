@@ -35,18 +35,11 @@ typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
 
 
-// The functions contained in this file are pretty dummy
-// and are included only as a placeholder. Nevertheless,
-// they *will* get included in the shared library if you
-// don't remove them :)
-//
-// Obviously, you 'll have to write yourself the super-duper
-// functions to include in the resulting library...
-// Also, it's not necessary to write every function in this file.
-// Feel free to add more files in this project. They will be
-// included in the resulting library.
+namespace meshmonk{
 
+#ifdef __cplusplus
 extern "C"
+#endif // __cplusplus
 {
     //######################################################################################
     //################################  REGISTRATION  ######################################
@@ -144,6 +137,10 @@ extern "C"
                         FacesMat& floatingFaces, FacesMat& targetFaces);
 
     void write_obj_files(FeatureMat& features, FacesMat& faces, const std::string meshPath);
-}
+#ifdef __cplusplus
+}//extern C
+#endif // __cplusplus
+
+}//namespace meshmonk
 
 #endif //MESHMONK_HPP

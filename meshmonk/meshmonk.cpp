@@ -1,7 +1,11 @@
 #include "meshmonk.hpp"
 
+namespace meshmonk{
+
+#ifdef __cplusplus
 extern "C"
 {
+#endif // __cplusplus
     //######################################################################################
     //################################  REGISTRATION  ######################################
     //######################################################################################
@@ -185,4 +189,9 @@ extern "C"
     void write_obj_files(FeatureMat& features, FacesMat& faces, const std::string meshPath){
         registration::export_data(features, faces, meshPath);
     }
-}
+
+#ifdef __cplusplus
+}//extern C
+#endif // __cplusplus
+
+}//namespace meshmonk
