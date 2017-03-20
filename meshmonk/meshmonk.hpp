@@ -42,6 +42,37 @@ extern "C"
 #endif // __cplusplus
 {
     //######################################################################################
+    //################################  TEST SHIZZLE  ######################################
+    //######################################################################################
+    /*
+    We're implementing this function simply to test MEX'ing in MATLAB.
+    */
+    void test_meshmonk_mexing(FeatureMat& floatingFeatures, const FeatureMat& targetFeatures, const float multiplier = 2.0f){
+        floatingFeatures += targetFeatures * multiplier;
+    }
+
+    /*
+    Raw data version of test_meshmonk_mexing()
+    */
+    void test_meshmonk_mexing_raw(float* floatingFeaturesRaw[], const float* targetFeaturesRaw[],
+                                    const size_t numFloatingElements, const size_t numTargetElements,
+                                    const float multiplier = 2.0f){
+        //# Convert raw data pointers to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
+//        float testRaw[9];
+//        for(size_t i = 0 ; i < 9 ; i++) testRaw[i] = float(i);
+//
+//        Eigen::MatrixXf testMatrix = Eigen::Map<Eigen::MatrixXf>(testRaw, numFloatingElements, numTargetElements);
+        FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(*floatingFeaturesRaw, numFloatingElements, registration::NUM_FEATURES);
+        const FeatureMat targetFeatures = Eigen::Map<const FeatureMat>(*targetFeaturesRaw, numTargetElements, registration::NUM_FEATURES);
+
+        //# Call test_meshmonk_mexing()
+        test_meshmonk_mexing(floatingFeatures, targetFeatures, multiplier);
+
+        //# Convert back to raw data
+        Eigen::Map<FeatureMat>(*floatingFeaturesRaw, floatingFeatures.rows(), floatingFeatures.cols()) = floatingFeatures;
+    }
+
+    //######################################################################################
     //################################  REGISTRATION  ######################################
     //######################################################################################
     /*
