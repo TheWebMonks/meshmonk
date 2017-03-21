@@ -48,28 +48,34 @@ extern "C"
     We're implementing this function simply to test MEX'ing in MATLAB.
     */
     void test_meshmonk_mexing(FeatureMat& floatingFeatures, const FeatureMat& targetFeatures, const float multiplier = 2.0f){
+        std::cout <<"Summing floating features with target features multiplied by '" << multiplier << "'." << std::endl;
+        std::cout << "Floating Features INSIDE: \n" << floatingFeatures << std::endl;
+        std::cout << "Target Features INSIDE: \n" << targetFeatures << std::endl;
         floatingFeatures += targetFeatures * multiplier;
+        std::cout << "RESULTING Features INSIDE: \n" << floatingFeatures << std::endl;
     }
 
     /*
     Raw data version of test_meshmonk_mexing()
     */
-    void test_meshmonk_mexing_raw(float* floatingFeaturesRaw[], const float* targetFeaturesRaw[],
+    void test_meshmonk_mexing_raw(float floatingFeaturesRaw[], const float targetFeaturesRaw[],
                                     const size_t numFloatingElements, const size_t numTargetElements,
                                     const float multiplier = 2.0f){
         //# Convert raw data pointers to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
-//        float testRaw[9];
-//        for(size_t i = 0 ; i < 9 ; i++) testRaw[i] = float(i);
-//
-//        Eigen::MatrixXf testMatrix = Eigen::Map<Eigen::MatrixXf>(testRaw, numFloatingElements, numTargetElements);
-        FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(*floatingFeaturesRaw, numFloatingElements, registration::NUM_FEATURES);
-        const FeatureMat targetFeatures = Eigen::Map<const FeatureMat>(*targetFeaturesRaw, numTargetElements, registration::NUM_FEATURES);
+        FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(floatingFeaturesRaw, numFloatingElements, registration::NUM_FEATURES);
+        std::cout << "Floating Features: \n" << floatingFeatures << std::endl;
+        const FeatureMat targetFeatures = Eigen::Map<const FeatureMat>(targetFeaturesRaw, numTargetElements, registration::NUM_FEATURES);
+        std::cout << "Target Features: \n" << targetFeatures << std::endl;
 
         //# Call test_meshmonk_mexing()
         test_meshmonk_mexing(floatingFeatures, targetFeatures, multiplier);
+        floatingFeatures(0,5) *= 2.0f;
+        floatingFeatures(5,1) *= 3.0f;
+
+        std::cout << "Resulting Floating Features Matrix: \n" << floatingFeatures << std::endl;
 
         //# Convert back to raw data
-        Eigen::Map<FeatureMat>(*floatingFeaturesRaw, floatingFeatures.rows(), floatingFeatures.cols()) = floatingFeatures;
+        Eigen::Map<FeatureMat>(floatingFeaturesRaw, floatingFeatures.rows(), floatingFeatures.cols()) = floatingFeatures;
     }
 
     //######################################################################################
