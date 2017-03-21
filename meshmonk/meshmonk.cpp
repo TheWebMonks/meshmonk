@@ -6,6 +6,57 @@ namespace meshmonk{
 extern "C"
 {
 #endif // __cplusplus
+
+
+    //######################################################################################
+    //################################  MEX WRAPPING  ######################################
+    //######################################################################################
+    /*
+    We're wrapping some functionality in the library so it can be easily mexed in Matlab
+    */
+
+//    void pyramid_registration_mex(float floatingFeaturesArray[], const float targetFeaturesArray[],
+//                                const size_t numFloatingElements, const size_t numTargetElements,
+//                                const int floatingFacesArray[], const int targetFacesArray[],
+//                                const size_t numFloatingFaces, const size_t numTargetFaces,
+//                                const float floatingFlagsArray[], const float targetFlagsArray[],
+//                                const size_t numIterations/*= 60*/, const size_t numPyramidLayers/*= 3*/,
+//                                const float downsampleFloatStart/*= 90*/, const float downsampleTargetStart/*= 90*/,
+//                                const float downsampleFloatEnd/*= 0*/, const float downsampleTargetEnd/*= 0*/,
+//                                const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
+//                                const float inlierKappa/*= 4.0f*/,
+//                                const float transformSigma/*= 3.0f*/,
+//                                const size_t transformNumViscousIterationsStart/*= 50*/, const size_t transformNumViscousIterationsEnd/*= 1*/,
+//                                const size_t transformNumElasticIterationsStart/*= 50*/, const size_t transformNumElasticIterationsEnd/*= 1*/){
+//        //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
+//        FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
+//        const FeatureMat targetFeatures = Eigen::Map<const FeatureMat>(targetFeaturesArray, numTargetElements, registration::NUM_FEATURES);
+//        const FacesMat floatingFaces = Eigen::Map<const FacesMat>(floatingFacesArray, numFloatingFaces, 3);
+//        const FacesMat targetFaces = Eigen::Map<const FacesMat>(targetFacesArray, numTargetFaces, 3);
+//        const VecDynFloat floatingFlags = Eigen::Map<const VecDynFloat>(floatingFlagsArray, numFloatingElements);
+//        const VecDynFloat targetFlags = Eigen::Map<const VecDynFloat>(targetFlagsArray, numTargetElements);
+//
+//        //# Call pyramid_registration()
+//        pyramid_registration(floatingFeatures, targetFeatures,
+//                                floatingFaces, targetFaces,
+//                                floatingFlags, targetFlags,
+//                                numIterations, numPyramidLayers,
+//                                downsampleFloatStart, downsampleTargetStart,
+//                                downsampleFloatEnd, downsampleTargetEnd,
+//                                correspondencesSymmetric, correspondencesNumNeighbours,
+//                                inlierKappa,
+//                                transformSigma,
+//                                transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
+//                                transformNumElasticIterationsStart, transformNumElasticIterationsEnd);
+//
+//        //# Convert back to raw data
+//        Eigen::Map<FeatureMat>(floatingFeaturesArray, floatingFeatures.rows(), floatingFeatures.cols()) = floatingFeatures;
+//
+//    }
+
+
+
+
     //######################################################################################
     //################################  REGISTRATION  ######################################
     //######################################################################################
