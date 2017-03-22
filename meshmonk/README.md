@@ -59,3 +59,8 @@ OpenMesh can be compiled and used as both a static (.a) and shared library (.so)
 
 every time you recompile, don't forget you have to copy the latest shared library to /usr/local/lib/: `sudo cp /home/user/projects/meshmonk/meshmonk/bin/Release/libmeshmonk.so /usr/local/lib/`
 
+## Matlab
+
+Compile while linking to meshmonk: `mex functionFile.cpp -lmeshmonk`
+
+start matlab with the command `LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6:/usr/local/lib/libmeshmonk.so:/usr/local/lib/libOpenMeshCore.so:/usr/local/lib/libOpenMeshTools.so matlab` to make sure all the libraries are loaded.
