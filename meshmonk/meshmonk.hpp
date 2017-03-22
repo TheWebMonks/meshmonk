@@ -189,32 +189,7 @@ extern "C"
                                 const float inlierKappa = 4.0f,
                                 const float transformSigma = 3.0f,
                                 const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
-                                const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1){
-        //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
-        FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
-        const FeatureMat targetFeatures = Eigen::Map<const FeatureMat>(targetFeaturesArray, numTargetElements, registration::NUM_FEATURES);
-        const FacesMat floatingFaces = Eigen::Map<const FacesMat>(floatingFacesArray, numFloatingFaces, 3);
-        const FacesMat targetFaces = Eigen::Map<const FacesMat>(targetFacesArray, numTargetFaces, 3);
-        const VecDynFloat floatingFlags = Eigen::Map<const VecDynFloat>(floatingFlagsArray, numFloatingElements);
-        const VecDynFloat targetFlags = Eigen::Map<const VecDynFloat>(targetFlagsArray, numTargetElements);
-
-        //# Call pyramid_registration()
-        pyramid_registration(floatingFeatures, targetFeatures,
-                                floatingFaces, targetFaces,
-                                floatingFlags, targetFlags,
-                                numIterations, numPyramidLayers,
-                                downsampleFloatStart, downsampleTargetStart,
-                                downsampleFloatEnd, downsampleTargetEnd,
-                                correspondencesSymmetric, correspondencesNumNeighbours,
-                                inlierKappa,
-                                transformSigma,
-                                transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
-                                transformNumElasticIterationsStart, transformNumElasticIterationsEnd);
-
-        //# Convert back to raw data
-        Eigen::Map<FeatureMat>(floatingFeaturesArray, floatingFeatures.rows(), floatingFeatures.cols()) = floatingFeatures;
-
-    }
+                                const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1);
 
 #ifdef __cplusplus
 }//extern C
