@@ -374,6 +374,12 @@ void convert_matrices_to_mesh(const FeatureMat &inFeatures,
     to be an empty mesh !!
     */
 
+    //DEBUG
+    std::cout << " - inside 'convert_matrices_to_mesh' - " << std::endl;
+    std::cout << "inFeatures.topRows(10) : \n" << inFeatures.topRows(10) << std::endl;
+    std::cout << "inFaces.topRows(10)    : \n" << inFaces.topRows(10) << std::endl;
+    //END DEBUG
+
     //# Info and Initialization
     const size_t numVertices = inFeatures.rows();
     const size_t numFaces = inFaces.rows();
@@ -407,6 +413,10 @@ void convert_matrices_to_mesh(const FeatureMat &inFeatures,
         //## Add the list of vertex handles as a face to the mesh
         outMesh.add_face(faceVertexHandles);
     }
+
+    //DEBUG
+    std::cout << "... about to update face normals ... " << std::endl;
+    //END DEBUG
 
     //# Make sure the mesh has computed/updated its vertex normals
     outMesh.request_face_normals();

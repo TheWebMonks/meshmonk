@@ -111,8 +111,8 @@ void Downsampler::update(){
     const size_t numEdges = mesh.n_edges();
     const size_t numFaces = mesh.n_faces();
     if (rc){
-        std::cout << "Downsampled mesh from " << numOriginalVertices << "v | " << numOriginalEdges << "e | " << numOriginalFaces
-        << "f to " << numVertices << "v | " << numEdges << "e | " << numFaces << "f." << std::endl;
+        std::cout << "Downsampled mesh " << _downsampleRatio*100.0f << "\% from " << numOriginalVertices << " vertices to " <<
+        numVertices << " vertices." << std::endl;
     }
     else{
         std::cerr << "DOWNSAMPLING FAILED !" << std::endl;

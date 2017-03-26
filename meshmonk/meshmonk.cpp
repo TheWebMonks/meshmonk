@@ -35,8 +35,46 @@ extern "C"
         const FacesMat targetFaces = Eigen::Map<const FacesMat>(targetFacesArray, numTargetFaces, 3);
         const VecDynFloat floatingFlags = Eigen::Map<const VecDynFloat>(floatingFlagsArray, numFloatingElements);
         const VecDynFloat targetFlags = Eigen::Map<const VecDynFloat>(targetFlagsArray, numTargetElements);
+//        //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
+//        FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
+//        const FeatureMat targetFeatures = Eigen::Map<const FeatureMat>(targetFeaturesArray, numTargetElements, registration::NUM_FEATURES);
+//        const FacesMat floatingFacesMatlab = Eigen::Map<const FacesMat>(floatingFacesArray, numFloatingFaces, 3);
+//        const FacesMat targetFacesMatlab = Eigen::Map<const FacesMat>(targetFacesArray, numTargetFaces, 3);
+//        const VecDynFloat floatingFlags = Eigen::Map<const VecDynFloat>(floatingFlagsArray, numFloatingElements);
+//        const VecDynFloat targetFlags = Eigen::Map<const VecDynFloat>(targetFlagsArray, numTargetElements);
+//        //## Convert the face indices from Matlab to c++ convention
+//        const FacesMat floatingFaces = floatingFacesMatlab - FacesMat::Ones(numFloatingFaces, 3);
+//        const FacesMat targetFaces = targetFacesMatlab - FacesMat::Ones(numFloatingFaces, 3);
+        //DEBUG
+        std::cout << " -- Floating Features --\n" << floatingFeatures.topRows(10) << std::endl;
+        std::cout << " -- Target Features --\n" << targetFeatures.topRows(10) << std::endl;
+        std::cout << " -- Floating Faces --\n" << floatingFaces.topRows(10) << std::endl;
+        std::cout << " -- Target Faces --\n" << targetFaces.topRows(10) << std::endl;
+        std::cout << " -- Floating Flags --\n" << floatingFlags.topRows(10) << std::endl;
+        std::cout << " -- Target Flags --\n" << targetFlags.topRows(10) << std::endl;
+        //END DEBUG
 
         //# Call pyramid_registration()
+        //DEBUG
+        std::cout << "Num Floating Elements              - " << numFloatingElements << std::endl;
+        std::cout << "Num Target Elements                - " << numTargetElements << std::endl;
+        std::cout << "Num Floating Faces                 - " << numFloatingFaces << std::endl;
+        std::cout << "Num Target Faces                   - " << numTargetFaces << std::endl;
+        std::cout << "Num Iterations                     - " << numIterations << std::endl;
+        std::cout << "Num Pyramid Layers                 - " << numPyramidLayers << std::endl;
+        std::cout << "Downsample Float Start             - " << downsampleFloatStart << std::endl;
+        std::cout << "Downsample Target Start            - " << downsampleTargetStart << std::endl;
+        std::cout << "Downsample Float End               - " << downsampleFloatEnd << std::endl;
+        std::cout << "Downsample Target End              - " << downsampleTargetEnd << std::endl;
+        std::cout << "Symmetric Correspondences          - " << correspondencesSymmetric << std::endl;
+        std::cout << "Num Neighbours                     - " << correspondencesNumNeighbours << std::endl;
+        std::cout << "Inlier Kappa                       - " << inlierKappa << std::endl;
+        std::cout << "Transform Sigma                    - " << transformSigma << std::endl;
+        std::cout << "transformNumViscousIterationsStart - " << transformNumViscousIterationsStart << std::endl;
+        std::cout << "transformNumViscousIterationsEnd   - " << transformNumViscousIterationsEnd << std::endl;
+        std::cout << "transformNumElasticIterationsStart - " << transformNumElasticIterationsStart << std::endl;
+        std::cout << "transformNumElasticIterationsEnd   - " << transformNumElasticIterationsEnd << std::endl;
+        //END DEBUG
         pyramid_registration(floatingFeatures, targetFeatures,
                                 floatingFaces, targetFaces,
                                 floatingFlags, targetFlags,

@@ -24,6 +24,22 @@ typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits>  TriMesh;
 
 namespace registration{
 
+
+/*
+ScaleShifter class.
+
+This class is tailored to 'shift scales' between pyramid layers of the nonrigid registration. This means it has to
+transfer the features of the mesh of the previous scale to the mesh of the current scale.
+
+This is done by finding matches between the elements of each mesh, and interpolating the features for the elements
+for which no matches are found.
+
+Because both meshes are a subsampled version of the same original mesh, matches can be efficiently found through the
+original indices of each element. Therefor, the ScaleShifter expects the original indices for each mesh as input:
+-inLowOriginalIndices for the original indices of the (lower sampled) mesh of the previous scale.
+-inHighOriginalIndicies for the original indices of the (higher sampled) mesh of the current scale.
+*/
+
 class ScaleShifter
 {
     public:

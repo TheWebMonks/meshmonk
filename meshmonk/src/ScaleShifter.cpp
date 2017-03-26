@@ -48,6 +48,7 @@ void ScaleShifter::_find_matching_and_new_indices(){
         //## Save it into the list of index pairs.
         lowIndexPairs.push_back(indexPair);
     }
+
     //## Loop over the high sampled indices
     for (int i = 0 ; i < _numHighNodes ; i++){
         //## Get the original index
@@ -57,7 +58,6 @@ void ScaleShifter::_find_matching_and_new_indices(){
         //## Save it into the list of index pairs.
         highIndexPairs.push_back(indexPair);
     }
-
 
     //# Sort the index pair lists by the original indices
     std::stable_sort(lowIndexPairs.begin(), lowIndexPairs.end(), [](auto &left, auto &right) {
@@ -276,14 +276,17 @@ void ScaleShifter::_copy_matching_nodes(){
 void ScaleShifter::update(){
 
     //# Build the list of matching indices
+    std::cout << "ScaleShifter: _find_matching_and_new_indices()" << std::endl;
     _find_matching_and_new_indices();
 
 
 
     //# Interpolate the features of new nodes
+    std::cout << "ScaleShifter: _interpolate_new_nodes()" << std::endl;
     _interpolate_new_nodes();
 
     //# Copy the features of matching nodes.
+    std::cout << "ScaleShifter: _copy_matching_nodes()" << std::endl;
     _copy_matching_nodes();
 
 }//end update()

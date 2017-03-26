@@ -30,23 +30,24 @@ void PyramidNonrigidRegistration::set_parameters(size_t numIterations /*= 60*/,
                                                 size_t transformNumViscousIterationsEnd /* = 1*/,
                                                 size_t transformNumElasticIterationsStart /* = 200*/,
                                                 size_t transformNumElasticIterationsEnd /* = 1*/){
+
         //# User Parameters
-        size_t _numIterations = numIterations;
+        _numIterations = numIterations;
         if (_numIterations <= 0) {
             _numIterations = 1;
             std::cout << "Number of iterations has to be a positive integer larger than 0!" <<std::endl;
         }
-        size_t _numPyramidLayers = numPyramidLayers;
+        _numPyramidLayers = numPyramidLayers;
         if (_numPyramidLayers <= 0) {
             _numPyramidLayers = 1;
             std::cout << "Number of pyramid layers has to be a positive integer larger than 0!" <<std::endl;
         }
-        float _downsampleFloatStart = downsampleFloatStart; //percentage
+        _downsampleFloatStart = downsampleFloatStart; //percentage
         if ((_downsampleFloatStart < 0.0f) || (_downsampleFloatStart >= 100.0f)) {
             _downsampleFloatStart = 90.0f;
             std::cout << "Downsample percentages have to be larger or equal to 0.0 and smaller than 100.0" <<std::endl;
         }
-        float _downsampleTargetStart = downsampleTargetStart; //percentage
+        _downsampleTargetStart = downsampleTargetStart; //percentage
         if ((_downsampleTargetStart < 0.0f) || (_downsampleFloatStart >= 100.0f)) {
             _downsampleTargetStart = 90.0f;
             std::cout << "Downsample percentages have to be larger or equal to 0.0 and smaller than 100.0" <<std::endl;
@@ -101,18 +102,15 @@ void PyramidNonrigidRegistration::update(){
     of the floating mesh of the previous pyramid scale are transferred to the current pyramid
     scale.
     */
+    size_t numFloatingFeatures = _ioFloatingFeatures->rows();
     FeatureMat floatingFeatures;
     FacesMat floatingFaces;
     VecDynInt floatingOriginalIndices;
     FeatureMat oldFloatingFeatures;
     VecDynInt oldFloatingOriginalIndices;
-    for (int i = 0 ; i < _numPyramidLayers ; i++){
-        //# Copy the floating features and indices of the previous pyramid scale
 
-        if (i > 0) {
-            oldFloatingFeatures = FeatureMat(floatingFeatures);
-            oldFloatingOriginalIndices = VecDynInt(floatingOriginalIndices);
-        }
+    //# Start Pyramid Nonrigid Registration
+    for (int i = 0 ; i < _numPyramidLayers ; i++){
 
         //# Downsample Floating Mesh
         //## Determine the downsample ratio for the current pyramid layer
@@ -121,7 +119,7 @@ void PyramidNonrigidRegistration::update(){
             downsampleRatio = float(std::round(_downsampleFloatStart - i * std::round((_downsampleFloatStart-_downsampleFloatEnd)/(_numPyramidLayers-1.0))));
         }
         downsampleRatio /= 100.0f;
-        std::cout<< " DOWNSAMPLE RATIO: " << downsampleRatio << std::endl;
+        std::cout<< " DOWNSAMPLE RATIO       : " << downsampleRatio << std::endl;
         //## Set up Downsampler
         Downsampler downsampler;
         VecDynFloat floatingFlags;
@@ -165,11 +163,17 @@ void PyramidNonrigidRegistration::update(){
                                             _viscousIterationsIntervals[i], _viscousIterationsIntervals[i+1],
                                             _elasticIterationsIntervals[i], _elasticIterationsIntervals[i+1]);
         nonrigidRegistration.update();
+
+        //# Copy the result in temporary variables for use in the next pyramid scale
+        oldFloatingFeatures = FeatureMat(floatingFeatures);
+        oldFloatingOriginalIndices = VecDynInt(floatingOriginalIndices);
     }// Pyramid iteratations
 
     //# Copy result to output
+    VecDynInt originalIndices = VecDynInt::Zero(numFloatingFeatures);
+    for (int j = 0 ; j < numFloatingFeatures ; j++){ originalIndices(j) = j; }
     ScaleShifter scaleShifter;
-    scaleShifter.set_input(oldFloatingFeatures, oldFloatingOriginalIndices, floatingOriginalIndices);
+    scaleShifter.set_input(floatingFeatures, floatingOriginalIndices, originalIndices);
     scaleShifter.set_output(*_ioFloatingFeatures);
     scaleShifter.update();
 
