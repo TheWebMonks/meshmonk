@@ -667,6 +667,12 @@ bool export_data(FeatureMat &inResultFeatures,
                  const std::string inResultMeshPath) {
     std::cout << "Exporting Data..." << std::endl;
 
+    //DEBUG
+    std::cout << "export_data - inResultFeatures.topRows(10) : \n" << inResultFeatures.topRows(10) << std::endl;
+    std::cout << "export_data - inResultFaces.topRows(10) : \n" << inResultFaces.topRows(10) << std::endl;
+    std::cout << "export_data - inResultMeshPath : \n" << inResultMeshPath << std::endl;
+    //END DEBUG
+
     //# Convert the matrices to a mesh
     TriMesh resultMesh;
     convert_matrices_to_mesh(inResultFeatures, inResultFaces, resultMesh);
@@ -677,8 +683,8 @@ bool export_data(FeatureMat &inResultFeatures,
         std::cerr << "write error\n";
         exit(1);
     }
+    else {std::cout << "Data Exported." << std::endl;}
 
-    std::cout << "Data Exported." << std::endl;
 }
 
 void update_normals_for_altered_positions(TriMesh &ioMesh,

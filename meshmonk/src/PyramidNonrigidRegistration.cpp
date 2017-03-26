@@ -169,6 +169,7 @@ void PyramidNonrigidRegistration::update(){
         oldFloatingOriginalIndices = VecDynInt(floatingOriginalIndices);
     }// Pyramid iteratations
 
+    std::cout << "A - _ioFloatingFeatures->topRows(10) : \n" << _ioFloatingFeatures->topRows(10) << std::endl;
     //# Copy result to output
     VecDynInt originalIndices = VecDynInt::Zero(numFloatingFeatures);
     for (int j = 0 ; j < numFloatingFeatures ; j++){ originalIndices(j) = j; }
@@ -176,6 +177,8 @@ void PyramidNonrigidRegistration::update(){
     scaleShifter.set_input(floatingFeatures, floatingOriginalIndices, originalIndices);
     scaleShifter.set_output(*_ioFloatingFeatures);
     scaleShifter.update();
+
+    std::cout << "B - _ioFloatingFeatures->topRows(10) : \n" << _ioFloatingFeatures->topRows(10) << std::endl;
 
 }//end update()
 
