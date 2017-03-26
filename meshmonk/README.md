@@ -2,7 +2,26 @@
 The following is a dummy-proof guide to install meshmonk on your ubuntu 16.04 machine.
 
 ## Install git
-`sudo apt install git'
+`sudo apt install git`
+
+## Install gcc/g++ 4.9
+Because matlab only supports gcc's and g++'s earlier version (not the 5.x versions), we'll have to downgrade.
+First, we'll remove the symbolic links of gcc and g++ to the 5.x versions, we'll install the older versions, and relink gcc and g++ symbols to those older versions:
+1. Check which versions you have. If they are 4.9, you can skip the other steps:
+`gcc -v`
+`g++ -v`
+2. Remove the symbolic links:
+`sudo rm /usr/bin/gcc`
+`sudo rm /usr/bin/g++`
+3. Install the older versions:
+`sudo apt-get install gcc-4.9`
+`sudo apt-get install g++-4.9`
+4. Set symbolic links to the right binaries
+`sudo ln -s /usr/bin/gcc-4.9 /usr/bin/gcc`
+`sudo ln -s /usr/bin/g++-4.9 /usr/bin/g++`
+5. Check if the versions now are indeed 4.9
+`gcc -v`
+`g++ -v`
 
 ## Clone meshmonk
 1) Make a folder 'projects' in home (`/home/user/projects/')
@@ -54,8 +73,14 @@ OpenMesh can be compiled and used as both a static (.a) and shared library (.so)
 
 
 # Using meshmonk
--add '-lmeshmonk' as an option to your compiler when compiling your software that uses the meshmonk library.
+-add '-lmeshmonk -lOpenMeshCore -lOpenMeshTools' as an option to your compiler when compiling your software that uses the meshmonk library.
 -include the meshmonk.hpp header
 
 every time you recompile, don't forget you have to copy the latest shared library to /usr/local/lib/: `sudo cp /home/user/projects/meshmonk/meshmonk/bin/Release/libmeshmonk.so /usr/local/lib/`
 
+## Matlab
+change gcc version to 4.9: [explanation](http://askubuntu.com/a/26502/664811)
+
+Compile while linking to meshmonk: `mex functionFile.cpp -lmeshmonk`
+
+start matlab with the command `LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6:/usr/local/lib/libmeshmonk.so:/usr/local/lib/libOpenMeshCore.so:/usr/local/lib/libOpenMeshTools.so matlab` to make sure all the libraries are loaded.
