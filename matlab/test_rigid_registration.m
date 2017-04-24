@@ -1,9 +1,5 @@
 clear all
 
-%Add Peter's toolbox
-addpath('/home/jonatan/Documents/MATLAB/CodePeter20161028/')
-addpath('/home/jonatan/Documents/MATLAB/wobj_toolbox/')
-
 %Load a mesh
 [floatingPoints,floatingFaces] = read_vertices_and_faces_from_obj_file('/home/jonatan/projects/meshmonk/examples/faceTemplate.obj');
 floatingFeatures = [floatingPoints, 1/3.0*ones(size(floatingPoints))];
@@ -25,32 +21,17 @@ clear targetPoints;
 %mex pyramid_registration.cpp -lmeshmonk
 
 %# Set Parameters
-numIterations = 60;
-numPyramidLayers = 3;
-downsampleFloatStart = 70;
-downsampleTargetStart = 70;
-downsampleFloatEnd = 0.0;
-downsampleTargetEnd = 0.0;
+numIterations = 20;
 correspondencesSymmetric = true;
 correspondencesNumNeighbours = 5;
-inlierKappa = 4.0;
-transformSigma = 3.0;
-transformNumViscousIterationsStart = 50;
-transformNumViscousIterationsEnd = 1;
-transformNumElasticIterationsStart = 50;
-transformNumElasticIterationsEnd = 1;
+inlierKappa = 3.0;
 
-floatingFeatures = pyramid_registration(floatingFeatures, targetFeatures,...
+floatingFeatures = rigid_registration(floatingFeatures, targetFeatures,...
                                 floatingFaces, targetFaces,...
                                 floatingFlags, targetFlags,...
-                                numIterations, numPyramidLayers,...
-                                downsampleFloatStart, downsampleTargetStart,...
-                                downsampleFloatEnd, downsampleTargetEnd,...
+                                numIterations,...
                                 correspondencesSymmetric, correspondencesNumNeighbours,...
-                                inlierKappa,...
-                                transformSigma,...
-                                transformNumViscousIterationsStart, transformNumViscousIterationsEnd,...
-                                transformNumElasticIterationsStart, transformNumElasticIterationsEnd);
+                                inlierKappa);
                             
 %% Write Result
 vertface2obj(floatingFeatures(:,1:3),floatingFaces,'/home/jonatan/projects/meshmonk/examples/matlabResult.obj')

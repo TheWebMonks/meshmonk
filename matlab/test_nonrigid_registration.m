@@ -1,9 +1,5 @@
 clear all
 
-%Add Peter's toolbox
-addpath('/home/jonatan/Documents/MATLAB/CodePeter20161028/')
-addpath('/home/jonatan/Documents/MATLAB/wobj_toolbox/')
-
 %Load a mesh
 [floatingPoints,floatingFaces] = read_vertices_and_faces_from_obj_file('/home/jonatan/projects/meshmonk/examples/faceTemplate.obj');
 floatingFeatures = [floatingPoints, 1/3.0*ones(size(floatingPoints))];
@@ -26,11 +22,6 @@ clear targetPoints;
 
 %# Set Parameters
 numIterations = 60;
-numPyramidLayers = 3;
-downsampleFloatStart = 70;
-downsampleTargetStart = 70;
-downsampleFloatEnd = 0.0;
-downsampleTargetEnd = 0.0;
 correspondencesSymmetric = true;
 correspondencesNumNeighbours = 5;
 inlierKappa = 4.0;
@@ -40,12 +31,10 @@ transformNumViscousIterationsEnd = 1;
 transformNumElasticIterationsStart = 50;
 transformNumElasticIterationsEnd = 1;
 
-floatingFeatures = pyramid_registration(floatingFeatures, targetFeatures,...
+floatingFeatures = nonrigid_registration(floatingFeatures, targetFeatures,...
                                 floatingFaces, targetFaces,...
                                 floatingFlags, targetFlags,...
-                                numIterations, numPyramidLayers,...
-                                downsampleFloatStart, downsampleTargetStart,...
-                                downsampleFloatEnd, downsampleTargetEnd,...
+                                numIterations,...
                                 correspondencesSymmetric, correspondencesNumNeighbours,...
                                 inlierKappa,...
                                 transformSigma,...

@@ -191,6 +191,27 @@ extern "C"
                                 const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
                                 const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1);
 
+    void nonrigid_registration_mex(float floatingFeaturesArray[], const float targetFeaturesArray[],
+                                const size_t numFloatingElements, const size_t numTargetElements,
+                                const int floatingFacesArray[], const int targetFacesArray[],
+                                const size_t numFloatingFaces, const size_t numTargetFaces,
+                                const float floatingFlagsArray[], const float targetFlagsArray[],
+                                const size_t numIterations = 60,
+                                const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
+                                const float inlierKappa = 4.0f,
+                                const float transformSigma = 3.0f,
+                                const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
+                                const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1);
+
+    void rigid_registration_mex(float floatingFeaturesArray[], const float targetFeaturesArray[],
+                                const size_t numFloatingElements, const size_t numTargetElements,
+                                const int floatingFacesArray[], const int targetFacesArray[],
+                                const size_t numFloatingFaces, const size_t numTargetFaces,
+                                const float floatingFlagsArray[], const float targetFlagsArray[],
+                                const size_t numIterations = 60,
+                                const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
+                                const float inlierKappa = 4.0f);
+
 #ifdef __cplusplus
 }//extern C
 #endif // __cplusplus

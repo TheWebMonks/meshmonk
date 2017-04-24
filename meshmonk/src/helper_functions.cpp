@@ -676,6 +676,10 @@ bool export_data(FeatureMat &inResultFeatures,
     //# Convert the matrices to a mesh
     TriMesh resultMesh;
     convert_matrices_to_mesh(inResultFeatures, inResultFaces, resultMesh);
+    //DEBUG
+    std::cout << "resultMesh.n_vertices() : " << resultMesh.n_vertices() << std::endl;
+    std::cout << "resultMesh.n_faces()    : " << resultMesh.n_faces() << std::endl;
+    //END DEBUG
     //# Write the mesh to file
     OpenMesh::IO::_OBJWriter_();
     if (!OpenMesh::IO::write_mesh(resultMesh, inResultMeshPath))
