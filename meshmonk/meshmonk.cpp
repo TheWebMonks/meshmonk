@@ -157,6 +157,142 @@ extern "C"
     }
 
 
+    void compute_correspondences_mex(const float floatingFeaturesArray[], const float targetFeaturesArray[],
+                                    const size_t numFloatingElements, const size_t numTargetElements,
+                                    const float floatingFlagsArray[], const float targetFlagsArray[],
+                                    float correspondingFeaturesArray[], float correspondingFlagsArray[],
+                                    const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/){
+        //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
+        const FeatureMat floatingFeatures = Eigen::Map<const FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
+        const FeatureMat targetFeatures = Eigen::Map<const FeatureMat>(targetFeaturesArray, numTargetElements, registration::NUM_FEATURES);
+        const VecDynFloat floatingFlags = Eigen::Map<const VecDynFloat>(floatingFlagsArray, numFloatingElements);
+        const VecDynFloat targetFlags = Eigen::Map<const VecDynFloat>(targetFlagsArray, numTargetElements);
+        FeatureMat correspondingFeatures = Eigen::Map<FeatureMat>(correspondingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
+        VecDynFloat correspondingFlags = Eigen::Map<VecDynFloat>(correspondingFlagsArray, numFloatingElements);
+
+        //# Compute Correspondences
+        compute_correspondences(floatingFeatures, targetFeatures,
+                                floatingFlags, targetFlags,
+                                correspondingFeatures, correspondingFlags,
+                                correspondencesSymmetric, correspondencesNumNeighbours);
+
+        //# Convert back to raw data
+        Eigen::Map<FeatureMat>(correspondingFeaturesArray, correspondingFeatures.rows(), correspondingFeatures.cols()) = correspondingFeatures;
+        Eigen::Map<VecDynFloat>(correspondingFlagsArray, correspondingFlags.rows(), correspondingFlags.cols()) = correspondingFlags;
+    }
+
+
+    void compute_inlier_weights_mex(const float floatingFeaturesArray[], const float correspondingFeaturesArray[],
+                                    const size_t numFloatingElements,
+                                    const float correspondingFlagsArray[], float inlierWeightsArray[],
+                                    const float inlierKappa/*= 4.0f*/){
+        //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
+        const FeatureMat floatingFeatures = Eigen::Map<const FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
+        const FeatureMat correspondingFeatures = Eigen::Map<const FeatureMat>(correspondingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
+        const VecDynFloat correspondingFlags = Eigen::Map<const VecDynFloat>(correspondingFlagsArray, numFloatingElements);
+        VecDynFloat inlierWeights = Eigen::Map<VecDynFloat>(inlierWeightsArray, numFloatingElements);
+
+        //# Computer Inlier Weights
+        compute_inlier_weights(floatingFeatures, correspondingFeatures,
+                                correspondingFlags, inlierWeights,
+                                inlierKappa);
+
+        //# Convert back to raw data
+        Eigen::Map<VecDynFloat>(inlierWeightsArray, inlierWeights.rows(), inlierWeights.cols()) = inlierWeights;
+    }
+
+
+    void compute_rigid_transformation_mex(float floatingFeaturesArray[], const size_t numFloatingElements,
+                                        const float correspondingFeaturesArray[], const float inlierWeightsArray[],
+                                        const bool allowScaling /*= fakse*/){
+        //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
+        FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
+        const FeatureMat correspondingFeatures = Eigen::Map<const FeatureMat>(correspondingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
+        const VecDynFloat inlierWeights = Eigen::Map<const VecDynFloat>(inlierWeightsArray, numFloatingElements);
+
+        //# Run nonrigid registration
+        compute_rigid_transformation(floatingFeatures, correspondingFeatures,
+                                    inlierWeights, allowScaling);
+
+        //# Convert back to raw data
+        Eigen::Map<FeatureMat>(floatingFeaturesArray, floatingFeatures.rows(), floatingFeatures.cols()) = floatingFeatures;
+    }
+
+
+    void compute_nonrigid_transformation_mex(float floatingFeaturesArray[], const float correspondingFeaturesArray[],
+                                            const size_t numFloatingElements, const size_t numTargetElements,
+                                            const int floatingFacesArray[], const size_t numFloatingFaces,
+                                            const float floatingFlagsArray[], const float inlierWeightsArray[],
+                                            const size_t transformNumNeighbours/*= 10*/, const float transformSigma/*= 3.0f*/,
+                                            const size_t transformNumViscousIterations/*= 50*/, const size_t transformNumElasticIterations/*= 50*/){
+        //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
+        FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
+        const FeatureMat correspondingFeatures = Eigen::Map<const FeatureMat>(correspondingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
+        const FacesMat floatingFaces = Eigen::Map<const FacesMat>(floatingFacesArray, numFloatingFaces, 3);
+        const VecDynFloat floatingFlags = Eigen::Map<const VecDynFloat>(floatingFlagsArray, numFloatingElements);
+        const VecDynFloat inlierWeights = Eigen::Map<const VecDynFloat>(inlierWeightsArray, numFloatingElements);
+
+        //# Run nonrigid registration
+        compute_nonrigid_transformation(floatingFeatures, correspondingFeatures,
+                                        floatingFaces, floatingFlags,
+                                        inlierWeights,
+                                        transformNumNeighbours, transformSigma,
+                                        transformNumViscousIterations, transformNumElasticIterations);
+
+        //# Convert back to raw data
+        Eigen::Map<FeatureMat>(floatingFeaturesArray, floatingFeatures.rows(), floatingFeatures.cols()) = floatingFeatures;
+    }
+
+
+    void downsample_mesh_mex(const float featuresArray[], const size_t numElements,
+                            const int facesArray[], const size_t numFaces,
+                            const float flagsArray[],
+                            float sampledFeaturesArray[], const size_t numSampledElements,
+                            int sampledFacesArray[], const size_t numSampledFaces,
+                            float sampledFlagsArray[],
+                            int originalIndicesArray[],
+                            const float downsampleRatio/* = 0.8f*/){
+        //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
+        const FeatureMat features = Eigen::Map<const FeatureMat>(featuresArray, numElements, registration::NUM_FEATURES);
+        const FacesMat faces = Eigen::Map<const FacesMat>(facesArray, numFaces, 3);
+        const VecDynFloat flags = Eigen::Map<const VecDynFloat>(flagsArray, numElements, 3);
+        FeatureMat sampledFeatures = Eigen::Map<FeatureMat>(sampledFeaturesArray, numSampledElements, registration::NUM_FEATURES);
+        FacesMat sampledFaces = Eigen::Map<FacesMat>(sampledFacesArray, numSampledFaces, 3);
+        VecDynFloat sampledFlags = Eigen::Map<VecDynFloat>(sampledFlagsArray, numSampledElements);
+        VecDynInt originalIndices = Eigen::Map<VecDynInt>(originalIndicesArray, numSampledElements);
+
+        //# Downsample
+        downsample_mesh(features, faces, flags,
+                        sampledFeatures, sampledFaces, sampledFlags,
+                        originalIndices, downsampleRatio);
+
+        //# Convert back to raw data
+        Eigen::Map<FeatureMat>(sampledFeaturesArray, sampledFeatures.rows(), sampledFeatures.cols()) = sampledFeatures;
+        Eigen::Map<FacesMat>(sampledFacesArray, sampledFaces.rows(), sampledFaces.cols()) = sampledFaces;
+        Eigen::Map<VecDynFloat>(sampledFlagsArray, sampledFlags.rows(), sampledFlags.cols()) = sampledFlags;
+        Eigen::Map<VecDynInt>(originalIndicesArray, originalIndices.rows(), originalIndices.cols()) = originalIndices;
+    }
+
+
+    void scaleshift_mesh_mex(const float oldFeaturesArray[], const size_t numOldElements,
+                            const int oldIndicesArray[],
+                            float newFeaturesArray[], const size_t numNewElements,
+                            const int newIndicesArray[]){
+        //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
+        const FeatureMat oldFeatures = Eigen::Map<const FeatureMat>(oldFeaturesArray, numOldElements, registration::NUM_FEATURES);
+        const VecDynInt oldIndices = Eigen::Map<const VecDynInt>(oldIndicesArray, numOldElements);
+        FeatureMat newFeatures = Eigen::Map<FeatureMat>(newFeaturesArray, numNewElements, registration::NUM_FEATURES);
+        const VecDynInt newIndices = Eigen::Map<const VecDynInt>(newIndicesArray, numNewElements);
+
+        //# ScaleShift
+        scale_shift_mesh(oldFeatures, oldIndices,
+                        newFeatures, newIndices);
+
+        //# Convert back to raw data
+        Eigen::Map<FeatureMat>(newFeaturesArray, newFeatures.rows(), newFeatures.cols()) = newFeatures;
+    }
+
+
 
     //######################################################################################
     //################################  REGISTRATION  ######################################
