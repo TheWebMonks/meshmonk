@@ -23,11 +23,6 @@ First, we'll remove the symbolic links of gcc and g++ to the 5.x versions, we'll
 `gcc -v`
 `g++ -v`
 
-## Clone meshmonk
-1) Make a folder 'projects' in home (`/home/user/projects/`)
-2) Go into the folder: `cd /home/user/projects/`)
-3) Clone the online repository into the current projects folder: `git clone https://...`
-
 ## Install code::blocks
 We'll use an IDE to make compiling the code easier.
 `sudo add-apt-repository ppa:damien-moore/codeblocks-stable`
@@ -71,13 +66,17 @@ OpenMesh can be compiled and used as both a static (.a) and shared library (.so)
 9) Run ldconfig so that your library loader can find it when running an application that needs the library: `sudo ldconfig -v`. To check, run `ldconfig -p | grep OpenMesh` and it should print a few library names containing OpenMeshCore and OpenMeshTools
 
 ### Installing MeshMonk
+First, clone the meshmonk repository:
+1) Make a folder 'projects' in home (`/home/user/projects/`)
+2) Go into the folder: `cd /home/user/projects/`)
+3) Clone the online repository into the current projects folder: `git clone https://...`
+
+Next, let's compile MeshMonk using Code::Blocks.
 Compiler options:
 1) add option to use c++14 : `-std=c++14`
 2) make the compiled code position independent: `-fPIC`
 3) add verbose option to the linker (to inspect what's happening): `-Wl,-V`
 4) Optimize the compilation for speed using `-O2` (not `-O3` !)
-
-
 
 # Using meshmonk
 -add '-lmeshmonk -lOpenMeshCore -lOpenMeshTools' as an option to your compiler when compiling your software that uses the meshmonk library.
