@@ -19,6 +19,7 @@ function [V,F] = read_vertices_and_faces_from_obj_file(filename)
   while ischar(line)
     vertex = sscanf(line,'v %f %f %f');
     face = sscanf(line,'f %d %d %d');
+    face_slash = sscanf(line,'f %d/%d %d/%d %d/%d',6);
     face_long = sscanf(line,'f %d//%d %d//%d %d//%d',6);
     face_long_long = sscanf(line,'f %d/%d/%d %d/%d/%d %d/%d/%d',9);
 
@@ -31,6 +32,11 @@ function [V,F] = read_vertices_and_faces_from_obj_file(filename)
       F(face_index,:) = face;
       face_index = face_index+1;
     % see if line is a face with normal indices command if so add to faces
+    elseif(size(face_slash,1)==6)
+      % remove normal
+      face_slash = face_slash(1:2:end);
+      F(face_index,:) = face_slash;
+      face_index = face_index+1;
     elseif(size(face_long,1)==6)
       % remove normal
       face_long = face_long(1:2:end);

@@ -218,12 +218,17 @@ extern "C"
                                     float correspondingFeaturesArray[], float correspondingFlagsArray[],
                                     const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5);
 
+    void compute_inlier_weights_mex(const float floatingFeaturesArray[], const float correspondingFeaturesArray[],
+                                    const size_t numFloatingElements,
+                                    const float correspondingFlagsArray[], float inlierWeightsArray[],
+                                    const float inlierKappa/*= 4.0f*/);
+
     void compute_rigid_transformation_mex(float floatingFeaturesArray[], const size_t numFloatingElements,
                                         const float correspondingFeaturesArray[], const float inlierWeightsArray[],
                                         const bool allowScaling /*= fakse*/);
 
     void compute_nonrigid_transformation_mex(float floatingFeaturesArray[], const float correspondingFeaturesArray[],
-                                            const size_t numFloatingElements, const size_t numTargetElements,
+                                            const size_t numFloatingElements,
                                             const int floatingFacesArray[], const size_t numFloatingFaces,
                                             const float floatingFlagsArray[], const float inlierWeightsArray[],
                                             const size_t transformNumNeighbours/*= 10*/, const float transformSigma/*= 3.0f*/,

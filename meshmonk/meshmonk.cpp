@@ -220,7 +220,7 @@ extern "C"
 
 
     void compute_nonrigid_transformation_mex(float floatingFeaturesArray[], const float correspondingFeaturesArray[],
-                                            const size_t numFloatingElements, const size_t numTargetElements,
+                                            const size_t numFloatingElements,
                                             const int floatingFacesArray[], const size_t numFloatingFaces,
                                             const float floatingFlagsArray[], const float inlierWeightsArray[],
                                             const size_t transformNumNeighbours/*= 10*/, const float transformSigma/*= 3.0f*/,

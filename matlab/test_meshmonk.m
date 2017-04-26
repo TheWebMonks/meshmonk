@@ -1,11 +1,9 @@
 clear all
 
-%Add Peter's toolbox
-addpath('/home/jonatan/Documents/MATLAB/CodePeter20161028/')
-addpath('/home/jonatan/Documents/MATLAB/wobj_toolbox/')
-
 %Load a mesh
-[floatingPoints,floatingFaces] = read_vertices_and_faces_from_obj_file('/home/jonatan/projects/meshmonk/examples/faceTemplate.obj');
+floatingPath = '/home/jonatan/projects/meshmonk/examples/faceTemplate.obj';
+floatingPath = '/home/jonatan/projects/meshmonk/examples/ExPeter/floating.obj';
+[floatingPoints,floatingFaces] = read_vertices_and_faces_from_obj_file(floatingPath);
 floatingFeatures = [floatingPoints, 1/3.0*ones(size(floatingPoints))];
 floatingFeatures = single(floatingFeatures);
 floatingFaces = uint32(floatingFaces-1); %-1 to make it compatible with C++ indexing ?
@@ -14,7 +12,9 @@ floatingFlags = single(ones(numFloatingElements,1));
 clear floatingPoints;
 
 %Load a mesh
-[targetPoints,targetFaces] = read_vertices_and_faces_from_obj_file('/home/jonatan/projects/meshmonk/examples/faceTarget.obj');
+targetPath = '/home/jonatan/projects/meshmonk/examples/faceTarget.obj';
+targetPath = '/home/jonatan/projects/meshmonk/examples/ExPeter/target.obj';
+[targetPoints,targetFaces] = read_vertices_and_faces_from_obj_file(targetPath);
 targetFeatures = single([targetPoints, 1/3.0*ones(size(targetPoints))]);
 targetFaces = uint32(targetFaces-1);%-1 to make it compatible with C++ indexing ?
 numTargetElements = size(targetFeatures,1);
@@ -40,7 +40,7 @@ transformNumViscousIterationsEnd = 1;
 transformNumElasticIterationsStart = 50;
 transformNumElasticIterationsEnd = 1;
 
-floatingFeatures = pyramid_registration(floatingFeatures, targetFeatures,...
+newfloatingFeatures = pyramid_registration(floatingFeatures, targetFeatures,...
                                 floatingFaces, targetFaces,...
                                 floatingFlags, targetFlags,...
                                 numIterations, numPyramidLayers,...
@@ -53,6 +53,6 @@ floatingFeatures = pyramid_registration(floatingFeatures, targetFeatures,...
                                 transformNumElasticIterationsStart, transformNumElasticIterationsEnd);
                             
 %% Write Result
-vertface2obj(floatingFeatures(:,1:3),floatingFaces,'/home/jonatan/projects/meshmonk/examples/matlabResult.obj')
+vertface2obj(newfloatingFeatures(:,1:3),floatingFaces,'/home/jonatan/projects/meshmonk/examples/matlabResult.obj')
                             
                           
