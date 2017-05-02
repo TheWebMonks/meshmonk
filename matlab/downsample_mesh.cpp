@@ -6,9 +6,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     //# Check input
     //## Number of input arguments
-    if(nlhs != 4) {
+    if(nlhs != 0) {
     mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nlhs",
-                      "4 outputs required.");
+                      "Zero LHS outputs required.");
     }
     //## Number of output arguments
     if(nrhs != 8) {
@@ -55,38 +55,38 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                                   originalIndices,
                                   downsampleRatio);
     
-    //# Set Output
-    //## Downsampled Features
-    plhs[0] = mxCreateDoubleMatrix(numDownsampledElements, 6, mxREAL); // output: double matrix
-    auto output0 = mxGetPr(plhs[0]);
-    //### Copy result from c++ function into the output
-    for (unsigned i = 0 ; i < numDownsampledElements * 6 ; i++){
-        output0[i] = downsampledFeatures[i];
-    }
-    
-    //## Downsampled Faces
-    plhs[1] = mxCreateNumericMatrix(numDownsampledElements, 3, mxUINT32_CLASS, mxREAL);
-    auto output1 = mxGetPr(plhs[1]);
-    //### Copy result from c++ function into the output
-    for (unsigned i = 0 ; i < numDownsampledFaces * 3 ; i++){
-        output1[i] = downsampledFaces[i];
-    }
-    
-    //## Downsampled Flags
-    plhs[2] = mxCreateNumericMatrix(numDownsampledElements, 1, mxSINGLE_CLASS, mxREAL);
-    auto output2 = mxGetPr(plhs[2]);
-    //### Copy result from c++ function into the output
-    for (unsigned i = 0 ; i < numDownsampledElements * 1 ; i++){
-        output2[i] = downsampledFlags[i];
-    }
-    
-    //## Original Indices
-    plhs[3] = mxCreateNumericMatrix(numDownsampledElements, 1, mxUINT32_CLASS, mxREAL);
-    auto output3 = mxGetPr(plhs[3]);
-    //### Copy result from c++ function into the output
-    for (unsigned i = 0 ; i < numDownsampledElements * 1 ; i++){
-        output3[i] = originalIndices[i];
-    }
+//     //# Set Output
+//     //## Downsampled Features
+//     plhs[0] = mxCreateNumericMatrix(numDownsampledElements, 6, mxSINGLE_CLASS, mxREAL);
+//     auto output0 = mxGetPr(plhs[0]);
+//     //### Copy result from c++ function into the output
+//     for (unsigned i = 0 ; i < numDownsampledElements * 6 ; i++){
+//         output0[i] = downsampledFeatures[i];
+//     }
+//     
+//     //## Downsampled Faces
+//     plhs[1] = mxCreateNumericMatrix(numDownsampledElements, 3, mxUINT32_CLASS, mxREAL);
+//     auto output1 = mxGetPr(plhs[1]);
+//     //### Copy result from c++ function into the output
+//     for (unsigned i = 0 ; i < numDownsampledFaces * 3 ; i++){
+//         output1[i] = downsampledFaces[i];
+//     }
+//     
+//     //## Downsampled Flags
+//     plhs[2] = mxCreateNumericMatrix(numDownsampledElements, 1, mxSINGLE_CLASS, mxREAL);
+//     auto output2 = mxGetPr(plhs[2]);
+//     //### Copy result from c++ function into the output
+//     for (unsigned i = 0 ; i < numDownsampledElements * 1 ; i++){
+//         output2[i] = downsampledFlags[i];
+//     }
+//     
+//     //## Original Indices
+//     plhs[3] = mxCreateNumericMatrix(numDownsampledElements, 1, mxUINT32_CLASS, mxREAL);
+//     auto output3 = mxGetPr(plhs[3]);
+//     //### Copy result from c++ function into the output
+//     for (unsigned i = 0 ; i < numDownsampledElements * 1 ; i++){
+//         output3[i] = originalIndices[i];
+//     }
     
   
 }

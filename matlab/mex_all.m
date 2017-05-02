@@ -1,0 +1,9 @@
+mex compute_correspondences.cpp -lmeshmonk
+mex compute_inlier_weights.cpp -lmeshmonk
+mex compute_nonrigid_transformation.cpp -lmeshmonk
+mex compute_rigid_transformation.cpp -lmeshmonk
+mex downsample_mesh.cpp -lmeshmonk
+mex nonrigid_registration.cpp -lmeshmonk
+mex pyramid_registration.cpp -lmeshmonk
+mex rigid_registration.cpp -lmeshmonk
+mex scaleshift_mesh.cpp -lmeshmonk

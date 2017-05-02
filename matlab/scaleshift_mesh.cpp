@@ -6,9 +6,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     //# Check input
     //## Number of input arguments
-    if(nlhs != 1) {
+    if(nlhs != 0) {
     mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nlhs",
-                      "1 output required.");
+                      "Zero LHS output required.");
     }
     //## Number of output arguments
     if(nrhs != 4) {
@@ -36,13 +36,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                                   newFeatures, numNewElements,
                                   newOriginalIndices);
     
-    //# Set Output
-    //## New Features
-    plhs[0] = mxCreateNumericMatrix(numNewElements, 6, mxSINGLE_CLASS, mxREAL);
-    auto output = mxGetPr(plhs[0]);
-    //### Copy result from c++ function into the output
-    for (unsigned i = 0 ; i < numNewElements * 6 ; i++){
-        output[i] = newFeatures[i];
-    }
+//     //# Set Output
+//     //## New Features
+//     int numCols = 6;
+//     plhs[0] = mxCreateNumericMatrix(numNewElements, numCols, mxSINGLE_CLASS, mxREAL);
+//     auto output = mxGetPr(plhs[0]);
+//     //### Copy result from c++ function into the output
+//     for (unsigned i = 0 ; i < numNewElements * numCols ; i++){
+//         output[i] = newFeatures[i];
+//     }
   
 }

@@ -6,9 +6,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     //# Check input
     //## Number of input arguments
-    if(nlhs != 1) {
+    if(nlhs != 0) {
     mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nlhs",
-                      "One output required.");
+                      "Zero LHS output required.");
     }
     //## Number of output arguments
     if(nrhs != 15) {
@@ -36,11 +36,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                                                 allowScaling);
     
     //# Set Output
-    plhs[0] = mxCreateDoubleMatrix(numFloatingElements, 6, mxREAL); // output: double matrix
-    auto output = mxGetPr(plhs[0]);
-    //## Copy result form c++ function into the output
-    for (unsigned i = 0 ; i < numFloatingElements * 6 ; i++){
-        output[i] = floatingFeatures[i];
-    }
+//     plhs[0] = mxCreateNumericMatrix(numFloatingElements, 6, mxSINGLE_CLASS, mxREAL); // output: double matrix
+//     auto output = mxGetPr(plhs[0]);
+//     //## Copy result form c++ function into the output
+//     for (unsigned i = 0 ; i < numFloatingElements * 6 ; i++){
+//         output[i] = floatingFeatures[i];
+//     }
   
 }
