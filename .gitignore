@@ -11,10 +11,15 @@ venv/
 
 MeshMonkExtreme/bin/*
 MeshMonkExtreme/obj/*
+meshmonk/bin/*
+meshmonk/meshmonkexe/
+meshmonk/registrationexample/
 *.cbp
 *.depend
 *.layout
 *.o
+*.cpp~
+*.mexa64
 
 
  examples/data/
