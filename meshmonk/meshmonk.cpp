@@ -24,7 +24,7 @@ extern "C"
                                 const float downsampleFloatStart/*= 90*/, const float downsampleTargetStart/*= 90*/,
                                 const float downsampleFloatEnd/*= 0*/, const float downsampleTargetEnd/*= 0*/,
                                 const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
-                                const float inlierKappa/*= 4.0f*/,
+                                const float inlierKappa/*= 4.0f*/, const bool inlierUseOrientation/*=true*/,
                                 const float transformSigma/*= 3.0f*/,
                                 const size_t transformNumViscousIterationsStart/*= 50*/, const size_t transformNumViscousIterationsEnd/*= 1*/,
                                 const size_t transformNumElasticIterationsStart/*= 50*/, const size_t transformNumElasticIterationsEnd/*= 1*/){
@@ -100,7 +100,7 @@ extern "C"
                                 const float floatingFlagsArray[], const float targetFlagsArray[],
                                 const size_t numIterations/*= 60*/,
                                 const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
-                                const float inlierKappa/*= 4.0f*/,
+                                const float inlierKappa/*= 4.0f*/, const bool inlierUseOrientation/*=true*/,
                                 const float transformSigma/*= 3.0f*/,
                                 const size_t transformNumViscousIterationsStart/*= 50*/, const size_t transformNumViscousIterationsEnd/*= 1*/,
                                 const size_t transformNumElasticIterationsStart/*= 50*/, const size_t transformNumElasticIterationsEnd/*= 1*/){
@@ -111,6 +111,14 @@ extern "C"
         const FacesMat targetFaces = Eigen::Map<const FacesMat>(targetFacesArray, numTargetFaces, 3);
         const VecDynFloat floatingFlags = Eigen::Map<const VecDynFloat>(floatingFlagsArray, numFloatingElements);
         const VecDynFloat targetFlags = Eigen::Map<const VecDynFloat>(targetFlagsArray, numTargetElements);
+
+        //DEBUG
+        std::cout << "nonrigid_registration_mex parameters: \n"
+        << "  transformNumViscousIterationsStart: " << transformNumViscousIterationsStart << "\n"
+        << "  transformNumViscousIterationsEnd: " << transformNumViscousIterationsEnd << "\n"
+        << "  transformNumElasticIterationsStart: " << transformNumElasticIterationsStart << "\n"
+        << "  transformNumElasticIterationsEnd: " << transformNumElasticIterationsEnd << std::endl;
+        //END DEBUG
 
         //# Run nonrigid registration
         nonrigid_registration(floatingFeatures, targetFeatures,
@@ -135,7 +143,7 @@ extern "C"
                                 const float floatingFlagsArray[], const float targetFlagsArray[],
                                 const size_t numIterations/*= 60*/,
                                 const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
-                                const float inlierKappa/*= 4.0f*/){
+                                const float inlierKappa/*= 4.0f*/, const bool inlierUseOrientation/*=true*/){
         //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
         FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
         const FeatureMat targetFeatures = Eigen::Map<const FeatureMat>(targetFeaturesArray, numTargetElements, registration::NUM_FEATURES);
@@ -185,7 +193,7 @@ extern "C"
     void compute_inlier_weights_mex(const float floatingFeaturesArray[], const float correspondingFeaturesArray[],
                                     const size_t numFloatingElements,
                                     const float correspondingFlagsArray[], float inlierWeightsArray[],
-                                    const float inlierKappa/*= 4.0f*/){
+                                    const float inlierKappa/*= 4.0f*/, const bool useOrientation/*= true*/){
         //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
         const FeatureMat floatingFeatures = Eigen::Map<const FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
         const FeatureMat correspondingFeatures = Eigen::Map<const FeatureMat>(correspondingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
@@ -195,7 +203,7 @@ extern "C"
         //# Computer Inlier Weights
         compute_inlier_weights(floatingFeatures, correspondingFeatures,
                                 correspondingFlags, inlierWeights,
-                                inlierKappa);
+                                inlierKappa, useOrientation);
 
         //# Convert back to raw data
         Eigen::Map<VecDynFloat>(inlierWeightsArray, inlierWeights.rows(), inlierWeights.cols()) = inlierWeights;
@@ -292,6 +300,21 @@ extern "C"
         Eigen::Map<FeatureMat>(newFeaturesArray, newFeatures.rows(), newFeatures.cols()) = newFeatures;
     }
 
+    void compute_normals_mex(const float positionsArray[], const size_t numElements,
+                            const int facesArray[], const size_t numFaces,
+                            float normalsArray[]){
+        //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
+        const Vec3Mat inPositions = Eigen::Map<const Vec3Mat>(positionsArray, numElements, 3);
+        const FacesMat inFaces = Eigen::Map<const FacesMat>(facesArray, numFaces, 3);
+        Vec3Mat outNormals = Eigen::Map<Vec3Mat>(normalsArray, numElements, 3);
+
+        //# ScaleShift
+        compute_normals(inPositions, inFaces, outNormals);
+
+        //# Convert back to raw data
+        Eigen::Map<Vec3Mat>(normalsArray, outNormals.rows(), outNormals.cols()) = outNormals;
+    }
+
 
 
     //######################################################################################
@@ -308,7 +331,7 @@ extern "C"
                                 const float downsampleFloatStart/* = 90*/, const float downsampleTargetStart/* = 90*/,
                                 const float downsampleFloatEnd/* = 0*/, const float downsampleTargetEnd/* = 0*/,
                                 const bool correspondencesSymmetric/* = true*/, const size_t correspondencesNumNeighbours/* = 5*/,
-                                const float inlierKappa/* = 4.0f*/,
+                                const float inlierKappa/* = 4.0f*/, const bool inlierUseOrientation/* = true*/,
                                 const float transformSigma/* = 3.0f*/,
                                 const size_t transformNumViscousIterationsStart/* = 50*/, const size_t transformNumViscousIterationsEnd/* = 1*/,
                                 const size_t transformNumElasticIterationsStart/* = 50*/, const size_t transformNumElasticIterationsEnd/* = 1*/)
@@ -337,17 +360,26 @@ extern "C"
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 const size_t numIterations/* = 60*/,
                                 const bool correspondencesSymmetric/* = true*/, const size_t correspondencesNumNeighbours/* = 5*/,
-                                const float inlierKappa/* = 4.0f*/,
+                                const float inlierKappa/* = 4.0f*/, const bool inlierUseOrientation/* = true*/,
                                 const float transformSigma/* = 3.0f*/,
                                 const size_t transformNumViscousIterationsStart/* = 50*/, const size_t transformNumViscousIterationsEnd/* = 1*/,
                                 const size_t transformNumElasticIterationsStart/* = 50*/, const size_t transformNumElasticIterationsEnd/* = 1*/)
     {
+        //DEBUG
+        std::cout << "nonrigid_registration parameters: \n"
+        << " transformNumViscousIterationsStart: " << transformNumViscousIterationsStart << "\n"
+        << " transformNumViscousIterationsEnd: " << transformNumViscousIterationsEnd << "\n"
+        << " transformNumElasticIterationsStart: " << transformNumElasticIterationsStart << "\n"
+        << " transformNumElasticIterationsEnd: " << transformNumElasticIterationsEnd << std::endl;
+        //END DEBUG
+
         registration::NonrigidRegistration registrator;
         registrator.set_input(&floatingFeatures, &targetFeatures,
                                 &floatingFaces,
                                 &floatingFlags, &targetFlags);
         registrator.set_parameters(correspondencesSymmetric, correspondencesNumNeighbours,
-                                    inlierKappa, numIterations,
+                                    inlierKappa, inlierUseOrientation,
+                                    numIterations,
                                     transformSigma,
                                     transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
                                     transformNumElasticIterationsStart, transformNumElasticIterationsEnd);
@@ -362,13 +394,13 @@ extern "C"
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 const size_t numIterations/* = 20*/,
                                 const bool correspondencesSymmetric/* = true*/, const size_t correspondencesNumNeighbours/* = 5*/,
-                                const float inlierKappa/* = 4.0f*/)
+                                const float inlierKappa/* = 4.0f*/, const bool inlierUseOrientation/*=true*/)
     {
         registration::RigidRegistration registrator;
         registrator.set_input(&floatingFeatures, &targetFeatures,
                                 &floatingFlags, &targetFlags);
         registrator.set_parameters(correspondencesSymmetric, correspondencesNumNeighbours,
-                                    inlierKappa, numIterations);
+                                    inlierKappa, inlierUseOrientation, numIterations);
         registrator.update();
     }
 
@@ -403,12 +435,12 @@ extern "C"
     //# Inliers
     void compute_inlier_weights(const FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
                                 const VecDynFloat& correspondingFlags, VecDynFloat& inlierWeights,
-                                const float kappa/* = 4.0f*/){
+                                const float kappa/* = 4.0f*/, const bool useOrientation/* = true*/){
         registration::InlierDetector inlierDetector;
         inlierDetector.set_input(&floatingFeatures, &correspondingFeatures,
                                     &correspondingFlags);
         inlierDetector.set_output(&inlierWeights);
-        inlierDetector.set_parameters(kappa);
+        inlierDetector.set_parameters(kappa, useOrientation);
         inlierDetector.update();
     }
 
@@ -461,6 +493,15 @@ extern "C"
         scaleShifter.update();
     }
 
+
+    //######################################################################################
+    //###############################  MESH OPERATIONS  ####################################
+    //######################################################################################
+    //# Compute Normals from positions and faces
+    void compute_normals(const Vec3Mat &inPositions, const FacesMat &inFaces,
+                        Vec3Mat &outNormals){
+        registration::update_normals_for_altered_positions(inPositions, inFaces, outNormals);
+    }
 
     //######################################################################################
     //################################  INPUT/OUTPUT  ######################################

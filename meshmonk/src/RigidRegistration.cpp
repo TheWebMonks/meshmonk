@@ -13,10 +13,12 @@ void RigidRegistration::set_input(FeatureMat * const ioFloatingFeatures,
 }//end set_input()
 
 void RigidRegistration::set_parameters(bool symmetric, size_t numNeighbours,
-                                       float kappaa, size_t numIterations){
+                                       float kappaa, bool inlierUseOrientation,
+                                       size_t numIterations){
     _symmetric = symmetric;
     _numNeighbours = numNeighbours;
     _kappaa = kappaa;
+    _inlierUseOrientation = inlierUseOrientation;
     _numIterations = numIterations;
 }//end set_parameters()
 
@@ -25,7 +27,6 @@ void RigidRegistration::update(){
 
     //# Initializes
     size_t numFloatingVertices = _ioFloatingFeatures->rows();
-    size_t numTargetVertices = _inTargetFeatures->rows();
     FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
     VecDynFloat correspondingFlags = VecDynFloat::Zero(numFloatingVertices);
 
@@ -52,7 +53,7 @@ void RigidRegistration::update(){
     inlierDetector.set_input(_ioFloatingFeatures, &correspondingFeatures,
                                 &correspondingFlags);
     inlierDetector.set_output(&floatingWeights);
-    inlierDetector.set_parameters(_kappaa);
+    inlierDetector.set_parameters(_kappaa, _inlierUseOrientation);
     //## Transformation Filter
     RigidTransformer rigidTransformer;
     rigidTransformer.set_input(&correspondingFeatures, &floatingWeights);

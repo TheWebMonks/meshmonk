@@ -1,27 +1,6 @@
 #include "mex.h"
 #include "/home/jonatan/projects/meshmonk/meshmonk/meshmonk.hpp"
-
-/*
-Note: if matlab complains about the std library, follow http://stackoverflow.com/a/41383926
-and https://nl.mathworks.com/matlabcentral/answers/132527-in-mex-files-where-does-output-to-stdout-and-stderr-go
-*/
-class mystream : public std::streambuf //from https://nl.mathworks.com/matlabcentral/answers/132527-in-mex-files-where-does-output-to-stdout-and-stderr-go
-{
-protected:
-virtual std::streamsize xsputn(const char *s, std::streamsize n) { mexPrintf("%.*s", n, s); return n; }
-virtual int overflow(int c=EOF) { if (c != EOF) { mexPrintf("%.1s", &c); } return 1; }
-};
-class scoped_redirect_cout
-{
-public:
-	scoped_redirect_cout() { old_buf = std::cout.rdbuf(); std::cout.rdbuf(&mout); }
-	~scoped_redirect_cout() { std::cout.rdbuf(old_buf); }
-private:
-	mystream mout;
-	std::streambuf *old_buf;
-};
-
-scoped_redirect_cout mycout_redirect;
+#include "mystream.cpp"
 
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
@@ -33,9 +12,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                       "Zero LHS output required.");
     }
     //## Number of output arguments
-    if(nrhs != 20) {
+    if(nrhs != 21) {
     mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nrhs",
-                      "20 inputs required.");
+                      "21 inputs required.");
     }
     
     //# Get Inputs
@@ -87,24 +66,26 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //### Inlier kappa
     float inlierKappa = static_cast<float>(mxGetScalar(prhs[14]));
     std::cout << "Inlier Kappa                       - " << inlierKappa << std::endl;
+    //### Inlier Orientation
+    float inlierUseOrientation = static_cast<float>(mxGetScalar(prhs[15]));
+    std::cout << "Inlier Use Orientation             - " << inlierUseOrientation << std::endl;
     //### Sigma of gaussian used in visco-elastic smoothing of deformation field
-    float transformSigma = static_cast<float>(mxGetScalar(prhs[15]));
+    float transformSigma = static_cast<float>(mxGetScalar(prhs[16]));
     std::cout << "Transform Sigma                    - " << transformSigma << std::endl;
     //### Starting number of viscous smoothing iterations
-    mwSize transformNumViscousIterationsStart = static_cast<mwSize>(mxGetScalar(prhs[16]));
+    mwSize transformNumViscousIterationsStart = static_cast<mwSize>(mxGetScalar(prhs[17]));
     std::cout << "transformNumViscousIterationsStart - " << transformNumViscousIterationsStart << std::endl;
     //### Final number of viscous smoothing iterations
-    mwSize transformNumViscousIterationsEnd = static_cast<mwSize>(mxGetScalar(prhs[17]));
+    mwSize transformNumViscousIterationsEnd = static_cast<mwSize>(mxGetScalar(prhs[18]));
     std::cout << "transformNumViscousIterationsEnd   - " << transformNumViscousIterationsEnd << std::endl;
     //### Starting number of elastic smoothing iterations
-    mwSize transformNumElasticIterationsStart = static_cast<mwSize>(mxGetScalar(prhs[18]));
+    mwSize transformNumElasticIterationsStart = static_cast<mwSize>(mxGetScalar(prhs[19]));
     std::cout << "transformNumElasticIterationsStart - " << transformNumElasticIterationsStart << std::endl;
     //### Final number of elastic smoothing iterations
-    mwSize transformNumElasticIterationsEnd = static_cast<mwSize>(mxGetScalar(prhs[19]));
+    mwSize transformNumElasticIterationsEnd = static_cast<mwSize>(mxGetScalar(prhs[20]));
     std::cout << "transformNumElasticIterationsEnd   - " << transformNumElasticIterationsEnd << std::endl;
     
     //# Execute c++ function
-//     meshmonk::test_meshmonk_mexing_raw(floatingFeatures, targetFeatures, numFloatingElements, numTargetElements, transformSigma);
     meshmonk::pyramid_registration_mex(floatingFeatures, targetFeatures,
                                 numFloatingElements, numTargetElements,
                                 floatingFaces, targetFaces,
@@ -114,7 +95,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                                 downsampleFloatStart, downsampleTargetStart,
                                 downsampleFloatEnd, downsampleTargetEnd,
                                 correspondencesSymmetric, correspondencesNumNeighbours,
-                                inlierKappa,
+                                inlierKappa, inlierUseOrientation,
                                 transformSigma,
                                 transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
                                 transformNumElasticIterationsStart, transformNumElasticIterationsEnd);

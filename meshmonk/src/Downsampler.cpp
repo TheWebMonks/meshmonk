@@ -62,8 +62,8 @@ void Downsampler::update(){
 
     //# Downsample using OpenMesh library
     const size_t numOriginalVertices = mesh.n_vertices();
-    const size_t numOriginalEdges = mesh.n_edges();
-    const size_t numOriginalFaces = mesh.n_faces();
+//    const size_t numOriginalEdges = mesh.n_edges();
+//    const size_t numOriginalFaces = mesh.n_faces();
     //## block boundary vertices
     mesh.request_vertex_status();
     //### Get an iterator over all halfedges
@@ -83,6 +83,7 @@ void Downsampler::update(){
     DecimaterType decimater(mesh);  // a decimater object, connected to a mesh
     HModQuadric hModQuadric;      // use a quadric module
     bool addSucces = decimater.add( hModQuadric ); // register module at the decimater
+    if (!addSucces){std::cerr << "registering quadric module to decimater failed!" << std::endl;}
     decimater.module(hModQuadric).unset_max_err();
 
     //## Initialize the decimater
@@ -108,8 +109,8 @@ void Downsampler::update(){
 
     //## Print Mesh property
     numVertices = mesh.n_vertices();
-    const size_t numEdges = mesh.n_edges();
-    const size_t numFaces = mesh.n_faces();
+//    const size_t numEdges = mesh.n_edges();
+//    const size_t numFaces = mesh.n_faces();
     if (rc){
         std::cout << "Downsampled mesh " << _downsampleRatio*100.0f << "\% from " << numOriginalVertices << " vertices to " <<
         numVertices << " vertices." << std::endl;

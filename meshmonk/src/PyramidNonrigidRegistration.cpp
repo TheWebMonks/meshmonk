@@ -25,6 +25,7 @@ void PyramidNonrigidRegistration::set_parameters(size_t numIterations /*= 60*/,
                                                 bool correspondencesSymmetric /* = true*/,
                                                 size_t correspondencesNumNeighbours /* = 5*/,
                                                 float inlierKappa /* = 4.0f*/,
+                                                bool inlierUseOrientation /* = true*/,
                                                 float transformSigma /* = 3.0f*/,
                                                 size_t transformNumViscousIterationsStart /* = 200*/,
                                                 size_t transformNumViscousIterationsEnd /* = 1*/,
@@ -57,6 +58,7 @@ void PyramidNonrigidRegistration::set_parameters(size_t numIterations /*= 60*/,
         _correspondencesSymmetric = correspondencesSymmetric;
         _correspondencesNumNeighbours = correspondencesNumNeighbours;
         _inlierKappa = inlierKappa;
+        _inlierUseOrientation = inlierUseOrientation;
         _transformSigma = transformSigma;
         _transformNumViscousIterationsStart = transformNumViscousIterationsStart;
         _transformNumViscousIterationsEnd = transformNumViscousIterationsEnd;
@@ -80,7 +82,7 @@ void PyramidNonrigidRegistration::set_parameters(size_t numIterations /*= 60*/,
         _elasticIterationsIntervals.resize(_numPyramidLayers + 1);
         std::cout << "viscous / elastic annealing rate : " << _viscousAnnealingRate << " / " << _elasticAnnealingRate << std::endl;
         std::cout << "num viscous / elastic iterations : " << std::endl;
-        for (int i = 0 ; i < _numPyramidLayers ; i++) {
+        for (size_t i = 0 ; i < _numPyramidLayers ; i++) {
             _viscousIterationsIntervals[i] = std::round(_transformNumViscousIterationsStart * pow(_viscousAnnealingRate, i * _iterationsPerLayer));
             _elasticIterationsIntervals[i] = std::round(_transformNumElasticIterationsStart * pow(_elasticAnnealingRate, i * _iterationsPerLayer));
             std::cout << "num viscous iterations : " << _viscousIterationsIntervals[i] << std::endl;
@@ -110,7 +112,7 @@ void PyramidNonrigidRegistration::update(){
     VecDynInt oldFloatingOriginalIndices;
 
     //# Start Pyramid Nonrigid Registration
-    for (int i = 0 ; i < _numPyramidLayers ; i++){
+    for (size_t i = 0 ; i < _numPyramidLayers ; i++){
 
         //# Downsample Floating Mesh
         //## Determine the downsample ratio for the current pyramid layer
@@ -154,11 +156,10 @@ void PyramidNonrigidRegistration::update(){
         }
 
         //# Registration
-        size_t numTargetVertices = targetFeatures.rows();
         NonrigidRegistration nonrigidRegistration;
         nonrigidRegistration.set_input(&floatingFeatures, &targetFeatures, &floatingFaces, &floatingFlags, &targetFlags);
         nonrigidRegistration.set_parameters(_correspondencesSymmetric, _correspondencesNumNeighbours,
-                                            _inlierKappa,
+                                            _inlierKappa, _inlierUseOrientation,
                                             _iterationsPerLayer, _transformSigma,
                                             _viscousIterationsIntervals[i], _viscousIterationsIntervals[i+1],
                                             _elasticIterationsIntervals[i], _elasticIterationsIntervals[i+1]);
@@ -172,7 +173,7 @@ void PyramidNonrigidRegistration::update(){
     std::cout << "A - _ioFloatingFeatures->topRows(10) : \n" << _ioFloatingFeatures->topRows(10) << std::endl;
     //# Copy result to output
     VecDynInt originalIndices = VecDynInt::Zero(numFloatingFeatures);
-    for (int j = 0 ; j < numFloatingFeatures ; j++){ originalIndices(j) = j; }
+    for (size_t j = 0 ; j < numFloatingFeatures ; j++){ originalIndices(j) = j; }
     ScaleShifter scaleShifter;
     scaleShifter.set_input(floatingFeatures, floatingOriginalIndices, originalIndices);
     scaleShifter.set_output(*_ioFloatingFeatures);

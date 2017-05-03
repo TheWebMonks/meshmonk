@@ -33,6 +33,7 @@ typedef OpenMesh::Decimater::ModQuadricT<TriMesh>::Handle HModQuadric;
 typedef Eigen::Matrix< int, Eigen::Dynamic, 3> FacesMat; //matrix Mx3 of type unsigned int
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
+typedef Eigen::MatrixX3f Vec3Mat;
 
 
 namespace meshmonk{
@@ -87,7 +88,7 @@ extern "C"
                                 const float downsampleFloatStart = 90, const float downsampleTargetStart = 90,
                                 const float downsampleFloatEnd = 0, const float downsampleTargetEnd = 0,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                const float inlierKappa = 4.0f,
+                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
                                 const float transformSigma = 3.0f,
                                 const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
                                 const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1);
@@ -101,7 +102,7 @@ extern "C"
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 const size_t numIterations = 60,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                const float inlierKappa = 4.0f,
+                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
                                 const float transformSigma = 3.0f,
                                 const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
                                 const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1);
@@ -114,7 +115,7 @@ extern "C"
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 const size_t numIterations = 20,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                const float inlierKappa = 4.0f);
+                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true);
 
 
 
@@ -132,7 +133,7 @@ extern "C"
     //# Inliers
     void compute_inlier_weights(const FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
                                 const VecDynFloat& correspondingFlags, VecDynFloat& inlierWeights,
-                                const float kappa = 4.0f);
+                                const float kappa = 4.0f, const bool useOrientation = true);
 
     //# Rigid Transformation
     void compute_rigid_transformation(FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
@@ -158,6 +159,12 @@ extern "C"
     //## The scaleshifter is meant to transition from one scale in the pyramid to the next.
     void scale_shift_mesh(const FeatureMat& previousFeatures, const VecDynInt& previousIndices,
                         FeatureMat& newFeatures, const VecDynInt& newIndices);
+
+    //######################################################################################
+    //###############################  MESH OPERATIONS  ####################################
+    //######################################################################################
+    void compute_normals(const Vec3Mat &inPositions, const FacesMat &inFaces,
+                        Vec3Mat &outNormals);
 
 
     //######################################################################################
@@ -186,7 +193,7 @@ extern "C"
                                 const float downsampleFloatStart = 90, const float downsampleTargetStart = 90,
                                 const float downsampleFloatEnd = 0, const float downsampleTargetEnd = 0,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                const float inlierKappa = 4.0f,
+                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
                                 const float transformSigma = 3.0f,
                                 const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
                                 const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1);
@@ -198,7 +205,7 @@ extern "C"
                                 const float floatingFlagsArray[], const float targetFlagsArray[],
                                 const size_t numIterations = 60,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                const float inlierKappa = 4.0f,
+                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
                                 const float transformSigma = 3.0f,
                                 const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
                                 const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1);
@@ -210,7 +217,7 @@ extern "C"
                                 const float floatingFlagsArray[], const float targetFlagsArray[],
                                 const size_t numIterations = 60,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                const float inlierKappa = 4.0f);
+                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true);
 
     void compute_correspondences_mex(const float floatingFeaturesArray[], const float targetFeaturesArray[],
                                     const size_t numFloatingElements, const size_t numTargetElements,
@@ -221,7 +228,7 @@ extern "C"
     void compute_inlier_weights_mex(const float floatingFeaturesArray[], const float correspondingFeaturesArray[],
                                     const size_t numFloatingElements,
                                     const float correspondingFlagsArray[], float inlierWeightsArray[],
-                                    const float inlierKappa/*= 4.0f*/);
+                                    const float inlierKappa/*= 4.0f*/, const bool useOrientation/*= true*/);
 
     void compute_rigid_transformation_mex(float floatingFeaturesArray[], const size_t numFloatingElements,
                                         const float correspondingFeaturesArray[], const float inlierWeightsArray[],
@@ -247,6 +254,10 @@ extern "C"
                             const int oldIndicesArray[],
                             float newFeaturesArray[], const size_t numNewElements,
                             const int newIndicesArray[]);
+
+    void compute_normals_mex(const float positionsArray[], const size_t numElements,
+                            const int facesArray[], const size_t numFaces,
+                            float normalsArray[]);
 
 #ifdef __cplusplus
 }//extern C

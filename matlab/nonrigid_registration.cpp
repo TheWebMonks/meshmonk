@@ -11,9 +11,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                       "Zero LHS output required.");
     }
     //## Number of output arguments
-    if(nrhs != 15) {
+    if(nrhs != 16) {
     mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nrhs",
-                      "20 inputs required.");
+                      "16 inputs required.");
     }
     
     //# Get Inputs
@@ -50,20 +50,23 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //### Inlier kappa
     float inlierKappa = static_cast<float>(mxGetScalar(prhs[9]));
     std::cout << "Inlier Kappa                       - " << inlierKappa << std::endl;
+    //### Inlier Orientation
+    float inlierUseOrientation = static_cast<float>(mxGetScalar(prhs[10]));
+    std::cout << "Inlier Use Orientation             - " << inlierUseOrientation << std::endl;
     //### Sigma of gaussian used in visco-elastic smoothing of deformation field
-    float transformSigma = static_cast<float>(mxGetScalar(prhs[10]));
+    float transformSigma = static_cast<float>(mxGetScalar(prhs[11]));
     std::cout << "Transform Sigma                    - " << transformSigma << std::endl;
     //### Starting number of viscous smoothing iterations
-    mwSize transformNumViscousIterationsStart = static_cast<mwSize>(mxGetScalar(prhs[11]));
+    mwSize transformNumViscousIterationsStart = static_cast<mwSize>(mxGetScalar(prhs[12]));
     std::cout << "transformNumViscousIterationsStart - " << transformNumViscousIterationsStart << std::endl;
     //### Final number of viscous smoothing iterations
-    mwSize transformNumViscousIterationsEnd = static_cast<mwSize>(mxGetScalar(prhs[12]));
+    mwSize transformNumViscousIterationsEnd = static_cast<mwSize>(mxGetScalar(prhs[13]));
     std::cout << "transformNumViscousIterationsEnd   - " << transformNumViscousIterationsEnd << std::endl;
     //### Starting number of elastic smoothing iterations
-    mwSize transformNumElasticIterationsStart = static_cast<mwSize>(mxGetScalar(prhs[13]));
+    mwSize transformNumElasticIterationsStart = static_cast<mwSize>(mxGetScalar(prhs[14]));
     std::cout << "transformNumElasticIterationsStart - " << transformNumElasticIterationsStart << std::endl;
     //### Final number of elastic smoothing iterations
-    mwSize transformNumElasticIterationsEnd = static_cast<mwSize>(mxGetScalar(prhs[14]));
+    mwSize transformNumElasticIterationsEnd = static_cast<mwSize>(mxGetScalar(prhs[15]));
     std::cout << "transformNumElasticIterationsEnd   - " << transformNumElasticIterationsEnd << std::endl;
     
     //# Execute c++ function
@@ -75,7 +78,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                                 floatingFlags, targetFlags,
                                 numIterations,
                                 correspondencesSymmetric, correspondencesNumNeighbours,
-                                inlierKappa,
+                                inlierKappa, inlierUseOrientation,
                                 transformSigma,
                                 transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
                                 transformNumElasticIterationsStart, transformNumElasticIterationsEnd);

@@ -349,6 +349,42 @@ void convert_mesh_to_matrices(const TriMesh &inMesh,
 }
 
 
+void convert_matrices_to_mesh(const Vec3Mat &inPositions,
+                                const FacesMat &inFaces,
+                                TriMesh &outMesh){
+    /*
+    GOAL
+    This function converts a mesh representation using eigen matrices
+    into a mesh representation using OpenMesh's TriMesh.
+
+    INPUT
+    -inPositions:
+    a numVertices x 3 Eigen dense matrix where the three columns are made
+    up of the positions of the vertices.
+    -inFaces:
+    a numFaces x 3 Eigen dense matrix where each row contains the corresponding
+    indices of the vertices belonging to that face.
+
+    PARAMETERS
+
+    OUTPUT
+    -outMesh:
+    this has to be a mesh of openmesh's TriMesh type. The function expects this
+    to be an empty mesh !!
+    */
+
+    //# Info & Initialization
+    const size_t numElements = inPositions.rows();
+    FeatureMat features = FeatureMat::Zero(numElements,registration::NUM_FEATURES);
+
+    //# Convert position matrix to feature matrix.
+    features.leftCols(3) = inPositions;
+
+    //# Call conversion function.
+    convert_matrices_to_mesh(features, inFaces, outMesh);
+
+}
+
 void convert_matrices_to_mesh(const FeatureMat &inFeatures,
                             const FacesMat &inFaces,
                             TriMesh &outMesh) {
@@ -659,6 +695,8 @@ bool import_data(const std::string inFloatingMeshPath,
 
 
     std::cout << "Imported Data" << std::endl;
+
+    return true;
 }//end import_data()
 
 
@@ -689,6 +727,7 @@ bool export_data(FeatureMat &inResultFeatures,
     }
     else {std::cout << "Data Exported." << std::endl;}
 
+    return true;
 }
 
 void update_normals_for_altered_positions(TriMesh &ioMesh,
@@ -765,5 +804,50 @@ void update_normals_for_altered_positions(TriMesh &ioMesh,
     }
 
 }
+
+void update_normals_for_altered_positions(const Vec3Mat &inPositions,
+                                        const FacesMat &inFaces,
+                                        Vec3Mat &outNormals){
+    /*
+    GOAL
+    This function takes the positions and faces, creates a mesh internally,
+    and uses OpenMesh's functionality to recompute the vertex normals
+    given those vertex positions.
+
+    INPUT
+    -inPositions
+    -inFaces
+
+    PARAMETERS
+
+    OUTPUT
+    -outNormals
+    */
+
+    //# Convert matrices to mesh
+    TriMesh mesh;
+    convert_matrices_to_mesh(inPositions, inFaces, mesh);
+
+    //# let the mesh update its normals
+    mesh.request_face_normals();
+    mesh.request_vertex_normals();
+    mesh.update_normals();
+    mesh.release_face_normals();
+
+    //# Copy mesh's new normals into 'outNormals'.
+    TriMesh::Point normal(0.0f,0.0f,0.0f);
+    TriMesh::VertexIter vertexIt(mesh.vertices_begin());
+    TriMesh::VertexIter vertexEnd(mesh.vertices_end());
+    for (unsigned int i = 0 ; vertexIt != vertexEnd ; ++i, ++vertexIt) {
+        //## Get normal
+        normal = mesh.normal(vertexIt);
+        //## Insert normal into ioFeatures
+        outNormals(i,0) = normal[0];
+        outNormals(i,1) = normal[1];
+        outNormals(i,2) = normal[2];
+    }
+
+}
+
 
 }//namespace registration

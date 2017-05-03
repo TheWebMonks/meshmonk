@@ -18,6 +18,7 @@ typedef Eigen::Matrix< int, Eigen::Dynamic, 3> FacesMat; //matrix Mx3 of type un
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat; //matrix MxN of type float
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
+typedef Eigen::MatrixX3f Vec3Mat;
 
 namespace registration {
 
@@ -50,6 +51,10 @@ void convert_mesh_to_matrices(const TriMesh &inMesh,
                                 FeatureMat &outFeatures,
                                 FacesMat &outFaces,
                                 VecDynFloat &outFlags);
+
+void convert_matrices_to_mesh(const Vec3Mat &inPositions,
+                                const FacesMat &inFaces,
+                                TriMesh &outMesh);
 
 void convert_matrices_to_mesh(const FeatureMat &inFeatures,
                                 const FacesMat &inFaces,
@@ -84,6 +89,10 @@ bool export_data(FeatureMat &inResultFeatures,
 
 void update_normals_for_altered_positions(TriMesh &ioMesh,
                                         FeatureMat &ioFeatures);
+
+void update_normals_for_altered_positions(const Vec3Mat &inPositions,
+                                        const FacesMat &inFaces,
+                                        Vec3Mat &outNormals);
 
 }//namespace registration
 #endif // HELPER_FUNCTIONS_HPP_INCLUDED

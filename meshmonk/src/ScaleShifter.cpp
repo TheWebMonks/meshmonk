@@ -40,7 +40,7 @@ void ScaleShifter::_find_matching_and_new_indices(){
     std::vector<std::pair<int,int>> lowIndexPairs;
     std::vector<std::pair<int,int>> highIndexPairs;
     //## Loop over the low sampled indices
-    for (int i = 0 ; i < _numLowNodes ; i++){
+    for (size_t i = 0 ; i < _numLowNodes ; i++){
         //## Get the original index
         int originalIndex = (*_inLowOriginalIndices)[i];
         //## Make a pair of the original index with its current index
@@ -50,7 +50,7 @@ void ScaleShifter::_find_matching_and_new_indices(){
     }
 
     //## Loop over the high sampled indices
-    for (int i = 0 ; i < _numHighNodes ; i++){
+    for (size_t i = 0 ; i < _numHighNodes ; i++){
         //## Get the original index
         int originalIndex = (*_inHighOriginalIndices)[i];
         //## Make a pair of the original index with its current index
@@ -74,8 +74,8 @@ void ScaleShifter::_find_matching_and_new_indices(){
     //##    of the high sampled mesh have are new (have no matching original index in the low
     //##    sampled mesh).
     //## Loop over nodes of the high mesh
-    int counterLow = 0;
-    int counterHigh = 0;
+    size_t counterLow = 0;
+    size_t counterHigh = 0;
     _matchingIndexPairs.clear();
     for ( ; counterHigh < _numHighNodes ; counterHigh++){
         //## Obtain original and current indices for high sampled mesh
@@ -148,7 +148,7 @@ void ScaleShifter::_interpolate_new_nodes(){
     //## Construct matrix containing the features of the high sampled mesh, but
     //## only for those that have matching nodes in the low sampled mesh!
     FeatureMat matchingNodesOldFeatures = FeatureMat::Zero(_numMatchingNodes, NUM_FEATURES);
-    for (int i = 0 ; i < _numMatchingNodes ; i++) {
+    for (size_t i = 0 ; i < _numMatchingNodes ; i++) {
         //## Get the index of the node of the high sampled mesh for which a
         //## matching node in the low sampled mesh was found. In other words,
         //## instead of using 'i' as the index, we are skipping all indices
@@ -161,7 +161,7 @@ void ScaleShifter::_interpolate_new_nodes(){
 
     //# Set up Queried Points
     FeatureMat newNodesOldFeatures = FeatureMat::Zero(_numNewNodes, NUM_FEATURES);
-    for (int i = 0 ; i < _numNewNodes ; i++) {
+    for (size_t i = 0 ; i < _numNewNodes ; i++) {
         //## Get the index of the new nodes of the high sampled mesh. We are skipping
         //## all the nodes for which a match was found in the low sampled mesh.
         int newIndex = _newIndices[i];
@@ -188,7 +188,7 @@ void ScaleShifter::_interpolate_new_nodes(){
     Vec3Float oldPosition = Vec3Float::Zero();
     Vec3Float newPosition = Vec3Float::Zero();
     //## Loop over the matching nodes
-    for (int i = 0 ; i < _numMatchingNodes ; i++){
+    for (size_t i = 0 ; i < _numMatchingNodes ; i++){
         //## Get the index pairs
         int highIndex = _matchingIndexPairs[i].first;
         int lowIndex = _matchingIndexPairs[i].second;
@@ -206,14 +206,14 @@ void ScaleShifter::_interpolate_new_nodes(){
     //## Initialization
     Vec3Float newNodeOldNormal = Vec3Float::Zero();
     //## Loop over the indices of the new nodes
-    for (int i = 0 ; i < _numNewNodes ; i++) {
+    for (size_t i = 0 ; i < _numNewNodes ; i++) {
         const int newNodeIndex = _newIndices[i];
         newNodeOldNormal = _outHighFeatures->row(newNodeIndex).tail(3);
         //## Initialize the deformation of the current new node to zero
         deformationField.row(newNodeIndex).setZero();
         float sumWeights = 0.0f;
         //## Loop over each found neighbour
-        for ( int j = 0 ; j < k ; j++) {
+        for ( size_t j = 0 ; j < k ; j++) {
             //### Get index of neighbour and squared distance to it
             const int neighbourIndex = neighbourIndices(i,j);
             float distanceSquared = neighbourSquaredDistances(i,j);
@@ -222,7 +222,6 @@ void ScaleShifter::_interpolate_new_nodes(){
             //### We need to find the matching index that points to the right row
             //### of the low sampled mesh.
             const int matchingHighNeighbourIndex = _matchingIndexPairs[neighbourIndex].first;
-            const int matchingLowNeighbourIndex = _matchingIndexPairs[neighbourIndex].second;
 
             //### For numerical stability, check if the distance is very small
             const float eps1 = 0.000001f;
@@ -253,7 +252,7 @@ void ScaleShifter::_interpolate_new_nodes(){
 
 
     //# Deform the new nodes
-    for (int i = 0 ; i < _numNewNodes ; i++) {
+    for (size_t i = 0 ; i < _numNewNodes ; i++) {
         const int newNodeIndex = _newIndices[i];
 
         (_outHighFeatures->row(newNodeIndex)).head(3) += deformationField.row(newNodeIndex);
@@ -264,7 +263,7 @@ void ScaleShifter::_interpolate_new_nodes(){
 void ScaleShifter::_copy_matching_nodes(){
     //# Copy the features of the lowly sampled mesh into the features
     //# of the matching nodes of the highly sampled mesh.
-    for (int i = 0 ; i < _numMatchingNodes ; i++){
+    for (size_t i = 0 ; i < _numMatchingNodes ; i++){
         //## Get the index pairs
         int highIndex = _matchingIndexPairs[i].first;
         int lowIndex = _matchingIndexPairs[i].second;

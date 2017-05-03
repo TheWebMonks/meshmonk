@@ -17,6 +17,7 @@ void NonrigidRegistration::set_input(FeatureMat * const ioFloatingFeatures,
 void NonrigidRegistration::set_parameters(bool symmetric,
                             size_t numNeighbours,
                             float kappaa,
+                            bool inlierUseOrientation,
                             size_t numIterations,
                             float sigmaSmoothing,
                             size_t numViscousIterationsStart,
@@ -26,6 +27,7 @@ void NonrigidRegistration::set_parameters(bool symmetric,
     _symmetric = symmetric;
     _numNeighbours = numNeighbours;
     _kappaa = kappaa;
+    _inlierUseOrientation = inlierUseOrientation;
     _numIterations = numIterations;
     _sigmaSmoothing = sigmaSmoothing;
     _numViscousIterationsStart = numViscousIterationsStart;
@@ -34,6 +36,14 @@ void NonrigidRegistration::set_parameters(bool symmetric,
     _numElasticIterationsEnd = numElasticIterationsEnd;
     _numViscousIterations = _numViscousIterationsStart;
     _numElasticIterations = _numElasticIterationsStart;
+
+    //DEBUG
+        std::cout << "NonrigidRegistration::set_parameters parameters: \n"
+        << " numViscousIterationsStart: " << numViscousIterationsStart << "\n"
+        << " numViscousIterationsEnd: " << numViscousIterationsEnd << "\n"
+        << " numElasticIterationsStart: " << numElasticIterationsStart << "\n"
+        << " numElasticIterationsEnd: " << numElasticIterationsEnd << std::endl;
+        //END DEBUG
 
     _viscousAnnealingRate = exp(log(float(_numViscousIterationsEnd)/float(_numViscousIterationsStart))/(_numIterations-1));
     _elasticAnnealingRate = exp(log(float(_numElasticIterationsEnd)/float(_numElasticIterationsStart))/(_numIterations-1));
@@ -53,7 +63,6 @@ void NonrigidRegistration::update(){
 
     //# Initializes
     size_t numFloatingVertices = _ioFloatingFeatures->rows();
-    size_t numTargetVertices = _inTargetFeatures->rows();
     FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
     VecDynFloat correspondingFlags = VecDynFloat::Zero(numFloatingVertices);
 
@@ -80,9 +89,8 @@ void NonrigidRegistration::update(){
     inlierDetector.set_input(_ioFloatingFeatures, &correspondingFeatures,
                                 &correspondingFlags);
     inlierDetector.set_output(&floatingWeights);
-    inlierDetector.set_parameters(_kappaa);
+    inlierDetector.set_parameters(_kappaa, _inlierUseOrientation);
     //## Transformation Filter
-    const size_t numNonrigidIterations = 12;
     _numViscousIterations = _numViscousIterationsStart;
     _numElasticIterations = _numElasticIterationsStart;
     ViscoElasticTransformer transformer;

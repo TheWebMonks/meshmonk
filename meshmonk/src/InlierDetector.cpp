@@ -20,9 +20,10 @@ void InlierDetector::set_output(VecDynFloat * const ioProbability)
     _ioProbability = ioProbability;
 }
 
-void InlierDetector::set_parameters(const float kappa)
+void InlierDetector::set_parameters(const float kappa, const bool useOrientation)
 {
     _kappa = kappa;
+    _useOrientation = useOrientation;
 }
 
 
@@ -62,6 +63,9 @@ void InlierDetector::update() {
     }
     //### sigma and lambda
     sigmaa = std::sqrt(sigmaNumerator/sigmaDenominator);
+    if (sigmaa < _minimalSigma) {sigmaa = _minimalSigma;}
+    else if (sigmaa > _maximalSigma) {sigmaa = _maximalSigma;}
+
     lambdaa = 1.0/(std::sqrt(2.0 * 3.14159) * sigmaa) * std::exp(-0.5 * _kappa * _kappa);
 
     //## Recalculate the distance-based probabilities
@@ -77,16 +81,32 @@ void InlierDetector::update() {
 
 
     //#Gradient Based inlier/outlier classification
-    for (size_t i = 0 ; i < _numElements ; i++) {
-        const Vec3Float normal = _inFeatures->row(i).tail(3);
-        const Vec3Float correspondingNormal = _inCorrespondingFeatures->row(i).tail(3);
-        //## Dot product gives an idea of how well they point in the same
-        //## direction. This gives a weight between -1.0 and +1.0
-        const float dotProduct = normal.dot(correspondingNormal);
-        //## Rescale this result so that it's continuous between 0.0 and +1.0
-        float probability = dotProduct / 2.0 + 0.5;
-        (*_ioProbability)[i] *= probability;
+    if (_useOrientation){
+        for (size_t i = 0 ; i < _numElements ; i++) {
+            const Vec3Float normal = _inFeatures->row(i).tail(3);
+            const Vec3Float correspondingNormal = _inCorrespondingFeatures->row(i).tail(3);
+            //## Dot product gives an idea of how well they point in the same
+            //## direction. This gives a weight between -1.0 and +1.0
+            const float dotProduct = normal.dot(correspondingNormal);
+            //## Rescale this result so that it's continuous between 0.0 and +1.0
+            float probability = dotProduct / 2.0 + 0.5;
+            (*_ioProbability)[i] *= probability;
+        }
     }
+
+//    //DEBUG
+//    std::cout<< "Inlier Weights: \n"
+//    << "[0]: " << (*_ioProbability)[0] << "  || "
+//    << "[1]: " << (*_ioProbability)[1] << "  || "
+//    << "[2]: " << (*_ioProbability)[2] << "  || "
+//    << "[3]: " << (*_ioProbability)[3] << "  || "
+//    << "[4]: " << (*_ioProbability)[4] << "  || "
+//    << "[5]: " << (*_ioProbability)[5] << "  || "
+//    << "[6]: " << (*_ioProbability)[6] << "  || "
+//    << "[7]: " << (*_ioProbability)[7] << "  || "
+//    << "[8]: " << (*_ioProbability)[8] << "  || "
+//    << "[9]: " << (*_ioProbability)[9] << std::endl;
+//    //END DEBUG
 
 }//end inlier_detection
 

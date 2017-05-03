@@ -233,6 +233,9 @@ void ViscoElasticTransformer::update(){
     }
     //# update the transformation
     _update_transformation();
+    //DEBUG
+    std::cout << "Viscous and Elastic iterations : " << _viscousIterations << " - " << _elasticIterations << std::endl;
+    //END DEBUG
     //# apply the transformation
     _apply_transformation();
 }

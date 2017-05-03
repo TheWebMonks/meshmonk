@@ -49,6 +49,7 @@ class NonrigidRegistration
         void set_parameters(bool symmetric,
                             size_t numNeighbours,
                             float kappaa,
+                            bool inlierUseOrientation,
                             size_t numIterations,
                             float sigmaSmoothing,
                             size_t numViscousIterationsStart,
@@ -89,6 +90,7 @@ class NonrigidRegistration
         size_t _numNeighbours = 3;
         //## Inliers
         float _kappaa = 3.0;
+        bool _inlierUseOrientation = true;
         //## Transformation
         size_t _numIterations = 10;
         float _sigmaSmoothing = 3.0;

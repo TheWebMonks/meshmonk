@@ -5,9 +5,11 @@ floatingPath = '/home/jonatan/projects/meshmonk/examples/faceTemplate.obj';
 floatingPath = '/home/jonatan/projects/meshmonk/examples/ExPeter/floating.obj';
 %floatingPath = '/home/jonatan/projects/meshmonk/examples/data/bunny.obj';
 [floatingPoints,floatingFaces] = read_vertices_and_faces_from_obj_file(floatingPath);
-floatingFeatures = [floatingPoints, 1/sqrt(3.0)*ones(size(floatingPoints))];
-floatingFeatures = single(floatingFeatures);
-floatingFaces = uint32(floatingFaces-1); %-1 to make it compatible with C++ indexing ?
+floatingFaces = uint32(floatingFaces-1); %-1 to make it compatible with C++ indexing
+floatingPoints = single(floatingPoints);
+floatingNormals = single(zeros(size(floatingPoints)));
+compute_normals(floatingPoints, floatingFaces, floatingNormals);
+floatingFeatures = single([floatingPoints, floatingNormals]);
 numFloatingElements = size(floatingFeatures,1);
 floatingFlags = single(ones(numFloatingElements,1));
 clear floatingPoints;
@@ -17,8 +19,11 @@ targetPath = '/home/jonatan/projects/meshmonk/examples/faceTarget.obj';
 targetPath = '/home/jonatan/projects/meshmonk/examples/ExPeter/target.obj';
 %targetPath = '/home/jonatan/projects/meshmonk/examples/data/bunny2.obj';
 [targetPoints,targetFaces] = read_vertices_and_faces_from_obj_file(targetPath);
-targetFeatures = single([targetPoints, 1/sqrt(3.0)*ones(size(targetPoints))]);
-targetFaces = uint32(targetFaces-1);%-1 to make it compatible with C++ indexing ?
+targetPoints = single(targetPoints);
+targetFaces = uint32(targetFaces-1);%-1 to make it compatible with C++ indexing
+targetNormals = single(zeros(size(targetPoints)));
+compute_normals(targetPoints, targetFaces, targetNormals);
+targetFeatures = single([targetPoints, -1.0 * targetNormals]); % WARNING: we had to flip the normals in this case!
 numTargetElements = size(targetFeatures,1);
 targetFlags = single(ones(numTargetElements,1));
 clear targetPoints;
@@ -31,6 +36,7 @@ numIterations = 60;
 correspondencesSymmetric = true;
 correspondencesNumNeighbours = 5;
 inlierKappa = 4.0;
+inlierUseOrientation = true;
 transformSigma = 3.0;
 transformNumViscousIterationsStart = 50;
 transformNumViscousIterationsEnd = 1;
@@ -63,7 +69,7 @@ for i=1:numIterations
     %# Compute Inlier Weights
     compute_inlier_weights(floatingFeatures, correspondingFeatures,...
                            correspondingFlags, inlierWeights,...
-                           inlierKappa);
+                           inlierKappa, inlierUseOrientation);
     
     %# Compute Transformation
     compute_nonrigid_transformation(floatingFeatures, correspondingFeatures,...

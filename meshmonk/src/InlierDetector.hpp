@@ -48,9 +48,12 @@ class InlierDetector
 
         //# User Parameters
         float _kappa = 3.0;
+        bool _useOrientation = true;
 
         //# Internal variables
         size_t _numElements;
+        float _minimalSigma = 0.1f;
+        float _maximalSigma = 10.0f;
 
     protected:
 
@@ -59,7 +62,7 @@ class InlierDetector
                         const FeatureMat * const inCorrespondingFeatures,
                         const VecDynFloat * const inCorrespondingFlags);
         void set_output(VecDynFloat * const _ioProbability);
-        void set_parameters(const float kappa);
+        void set_parameters(const float kappa, const bool useOrientation);
         void update();
 };
 

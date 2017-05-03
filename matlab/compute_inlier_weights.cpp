@@ -11,9 +11,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                       "Zero LHS output required.");
     }
     //## Number of output arguments
-    if(nrhs != 5) {
+    if(nrhs != 6) {
     mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nrhs",
-                      "5 inputs required.");
+                      "6 inputs required.");
     }
     
     //# Get Inputs
@@ -31,12 +31,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //### Inlier kappa
     float inlierKappa = static_cast<float>(mxGetScalar(prhs[4]));
     std::cout << "Inlier Kappa                       - " << inlierKappa << std::endl;
+    //### Inlier Orientation
+    float inlierUseOrientation = static_cast<float>(mxGetScalar(prhs[5]));
+    std::cout << "Inlier Use Orientation             - " << inlierUseOrientation << std::endl;
     
     //# Execute c++ function
     meshmonk::compute_inlier_weights_mex(floatingFeatures, correspondingFeatures,
                                         numFloatingElements,
                                         correspondingFlags, inlierWeights,
-                                        inlierKappa);
+                                        inlierKappa, inlierUseOrientation);
     
 //     //# Set Output
 //     int numCols = 1;
