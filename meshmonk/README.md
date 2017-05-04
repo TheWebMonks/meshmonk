@@ -69,14 +69,25 @@ OpenMesh can be compiled and used as both a static (.a) and shared library (.so)
 First, clone the meshmonk repository:
 1) Make a folder 'projects' in home (`/home/user/projects/`)
 2) Go into the folder: `cd /home/user/projects/`)
-3) Clone the online repository into the current projects folder: `git clone https://...`
+3) Clone the online repository into the current projects folder: `git clone https://github.com/TheWebMonks/meshmonk.git`
 
 Next, let's compile MeshMonk using Code::Blocks.
-Compiler options:
-1) add option to use c++14 : `-std=c++14`
-2) make the compiled code position independent: `-fPIC`
-3) add verbose option to the linker (to inspect what's happening): `-Wl,-V`
-4) Optimize the compilation for speed using `-O2` (not `-O3` !)
+1) Select 'Create a new project' and choose 'Shared library'
+2) Choose C++
+3) Fill in the project form:
+* Project title: 'meshmonk'
+* Folder to create project in: '/home/user/projects/meshmonk/'
+* The other fields are filled in automatically, just verify the 'Resulting filename' equals '/home/user/projects/meshmonk/meshmonk/meshmonk.cbp'
+4) Set configurations:
+* Compiler: 'GNU GCC Compiler'
+* Tick both the Debug and Release box
+
+After clicking 'Finish', the meshmonk project is opened automatically. We're going to set some compiler/linker options now:
+1) Right-click the project (called 'meshmonk' with the symbol of Code::Blocks in front of it) and select 'Build options...'
+2) In the 'Compiler settings' tab, select the 'Compiler Flags' subtabtick the 'Optimize even more (for speed) [-O2]' option
+3) In the 'Compiler settings' tab, select the 'Other compiler options' and write `-std=c++14 -Wl,-V -fPIC` in the text field.
+
+Now, compile the bunch by clicking the small yellow cog in the top toolbar ('Build'). Make sure the version is set to 'Release' and not 'Debug' (should be to the right of the build buttons).
 
 # Using meshmonk
 -add '-lmeshmonk -lOpenMeshCore -lOpenMeshTools' as an option to your compiler when compiling your software that uses the meshmonk library.
