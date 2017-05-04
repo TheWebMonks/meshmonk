@@ -444,16 +444,84 @@ void convert_matrices_to_mesh(const FeatureMat &inFeatures,
         outMesh.add_face(faceVertexHandles);
     }
 
-    //DEBUG
-    std::cout << "... about to update face normals ... " << std::endl;
-    //END DEBUG
+    //# Update the vertex normals of the mesh (while taking care not to flip them)
+    update_normals_safely(inFeatures, outMesh);
+
+}//end convert_matrices_to_mesh()
+
+
+
+
+void update_normals_safely(const FeatureMat &features, TriMesh &mesh){
+    /*
+    GOAL
+    Before updating the normals we're gonna check the current average normal.
+    After recomputing the normals, we'll check the average normal again. If the
+    dot product between them is negative, we assume the normals are flipped and
+    we'll return flip them again.
+
+    INPUT
+    -features:
+    the features should contain the normals of the mesh BEFORE using the mesh to
+    update those normals.
+    -mesh:
+    The mesh should should already have the positions updated, but not yet the normals.
+
+    PARAMETERS
+
+    OUTPUT
+    -mesh:
+    the output is the mesh with safely updated normals
+    */
+
+    //# Info & Initialization
+    const size_t numVertices = features.rows();
+
+    //# Compute normal before updating.
+    Eigen::Vector3f avgNormalBefore(0.0f,0.0f,0.0f);
+    for(size_t i = 0 ; i < numVertices ; i++){
+        avgNormalBefore += features.row(i).tail(3);
+    }
+    avgNormalBefore /= numVertices;
 
     //# Make sure the mesh has computed/updated its vertex normals
-    outMesh.request_face_normals();
-    outMesh.request_vertex_normals();
-    outMesh.update_normals();
-    outMesh.release_face_normals();
-}//end convert_matrices_to_mesh()
+    mesh.request_face_normals();
+    mesh.request_vertex_normals();
+    mesh.update_normals();
+    mesh.release_face_normals();
+
+    //# Compute average normal after updating
+    Eigen::Vector3f avgNormalAfter(0.0f,0.0f,0.0f);
+    TriMesh::Normal normal(0.0f,0.0f,0.0f);
+    TriMesh::VertexIter vertexIt(mesh.vertices_begin());
+    TriMesh::VertexIter vertexEnd(mesh.vertices_end());
+    for (size_t i = 0 ; vertexIt != vertexEnd ; ++i, ++vertexIt) {
+        //## Get normal
+        normal = mesh.normal(vertexIt);
+        //## Insert position and normal into 'outputFeatures'
+        avgNormalAfter(0) += normal[0];
+        avgNormalAfter(1) += normal[1];
+        avgNormalAfter(2) += normal[2];
+    }
+    avgNormalAfter /= numVertices;
+
+    //# See if the normals are flipped
+    bool normalsAreFlipped = false;
+    //## compute the dot product of the average normals
+    float dotProduct = avgNormalBefore.dot(avgNormalAfter);
+    if (dotProduct < 0.0f){
+        normalsAreFlipped = true;
+    }
+
+    //# If the normals are flipped, flip them again
+    vertexIt = mesh.vertices_begin();
+    if (normalsAreFlipped) {
+        for (size_t i = 0 ; vertexIt != vertexEnd ; ++i, ++vertexIt) {
+            //## Set the vertex normal to itself but flipped.
+            mesh.set_normal(vertexIt, -1.0 * mesh.normal(vertexIt));
+        }
+    }
+}
 
 void convert_matrices_to_mesh(const FeatureMat &inFeatures,
                             const FacesMat &inFaces,
@@ -779,10 +847,7 @@ void update_normals_for_altered_positions(TriMesh &ioMesh,
     }
 
     //# Given the new positions, let ioMesh update its normals
-    ioMesh.request_face_normals();
-    ioMesh.request_vertex_normals();
-    ioMesh.update_normals();
-    ioMesh.release_face_normals();
+    update_normals_safely(ioFeatures, ioMesh);
 
     //# Copy ioMesh's new normals into 'ioFeatures' last three columns.
     TriMesh::Point updatedNormal(0.0f,0.0f,0.0f);
@@ -822,7 +887,10 @@ void update_normals_for_altered_positions(const Vec3Mat &inPositions,
     TriMesh mesh;
     convert_matrices_to_mesh(inPositions, inFaces, mesh);
 
-    //# let the mesh update its normals
+    //# let the mesh update its normals (note: can't use update_normals_safely() here
+    //# because that requires having older values for the normals, whereas
+    //# this function is called when there are no normals at all and they need to be
+    //# determined.)
     mesh.request_face_normals();
     mesh.request_vertex_normals();
     mesh.update_normals();

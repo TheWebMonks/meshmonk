@@ -275,17 +275,12 @@ void ScaleShifter::_copy_matching_nodes(){
 void ScaleShifter::update(){
 
     //# Build the list of matching indices
-    std::cout << "ScaleShifter: _find_matching_and_new_indices()" << std::endl;
     _find_matching_and_new_indices();
 
-
-
     //# Interpolate the features of new nodes
-    std::cout << "ScaleShifter: _interpolate_new_nodes()" << std::endl;
     _interpolate_new_nodes();
 
     //# Copy the features of matching nodes.
-    std::cout << "ScaleShifter: _copy_matching_nodes()" << std::endl;
     _copy_matching_nodes();
 
 }//end update()

@@ -34,7 +34,7 @@ clear targetPoints;
 %# Set Parameters
 numIterations = 60;
 numPyramidLayers = 3;
-downsampleFloatStart = 70;
+downsampleFloatStart = 50;
 downsampleTargetStart = 70;
 downsampleFloatEnd = 0.0;
 downsampleTargetEnd = 0.0;

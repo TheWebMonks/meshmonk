@@ -354,7 +354,7 @@ extern "C"
                                     downsampleFloatStart, downsampleTargetStart,
                                     downsampleFloatEnd, downsampleTargetEnd,
                                     correspondencesSymmetric, correspondencesNumNeighbours,
-                                    inlierKappa,
+                                    inlierKappa, inlierUseOrientation,
                                     transformSigma,
                                     transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
                                     transformNumElasticIterationsStart, transformNumElasticIterationsEnd);

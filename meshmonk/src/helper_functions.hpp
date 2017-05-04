@@ -94,5 +94,7 @@ void update_normals_for_altered_positions(const Vec3Mat &inPositions,
                                         const FacesMat &inFaces,
                                         Vec3Mat &outNormals);
 
+void update_normals_safely(const FeatureMat &features, TriMesh &mesh);
+
 }//namespace registration
 #endif // HELPER_FUNCTIONS_HPP_INCLUDED
