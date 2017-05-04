@@ -1,5 +1,5 @@
 #include "mex.h"
-//#include <meshmonk.hpp>
+#include <meshmonk/meshmonk.hpp>
 
 /*
 Note: if matlab complains about the std library, follow http://stackoverflow.com/a/41383926

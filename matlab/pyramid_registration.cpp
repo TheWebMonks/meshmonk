@@ -1,5 +1,5 @@
 #include "mex.h"
-#include "/home/jonatan/projects/meshmonk/meshmonk/meshmonk.hpp"
+#include <meshmonk/meshmonk.hpp>
 #include "mystream.cpp"
 
 

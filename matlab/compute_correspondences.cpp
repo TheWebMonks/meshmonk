@@ -1,5 +1,5 @@
 #include "mex.h"
-#include "/home/jonatan/projects/meshmonk/meshmonk/meshmonk.hpp"
+#include <meshmonk/meshmonk.hpp>
 #include "mystream.cpp"
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
