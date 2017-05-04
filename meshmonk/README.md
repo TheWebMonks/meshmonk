@@ -107,11 +107,8 @@ Now that you've compiled everything, we're going to put the library files in the
 Note(!): every time you recompile, don't forget you have to copy the latest shared library to /usr/local/lib/!
 
 # Using meshmonk
--add '-lmeshmonk -lOpenMeshCore -lOpenMeshTools' as an option to your compiler when compiling your software that uses the meshmonk library.
--include the meshmonk.hpp header
 
-
-## Matlab
+## In Matlab
 Being able to wrap meshmonk in matlab is the reason we had to change the gcc version to 4.9 [explanation](http://askubuntu.com/a/26502/664811)
 
 ### (Pre-)Loading required libraries
@@ -121,3 +118,7 @@ So start matlab from the terminal with the command `LD_PRELOAD=/usr/lib/x86_64-l
 
 ### Mexing meshmonk functions
 In matlab, just run the mex_all.m script to mex all the meshmonk functions you need.
+
+## In other software
+If you're creating your own c++ project and want to use meshmonk, simply add '-lmeshmonk -lOpenMeshCore -lOpenMeshTools' as an option to your compiler when compiling your software that uses the meshmonk library.
+-include the meshmonk.hpp header
