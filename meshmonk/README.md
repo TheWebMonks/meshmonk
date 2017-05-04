@@ -65,31 +65,60 @@ OpenMesh can be compiled and used as both a static (.a) and shared library (.so)
 8) Move the folder with the header files we need to /usr/local/include/: `sudo mv /home/user/Downloads/OpenMesh-6.3/src/OpenMesh/ /usr/local/include/`
 9) Run ldconfig so that your library loader can find it when running an application that needs the library: `sudo ldconfig -v`. To check, run `ldconfig -p | grep OpenMesh` and it should print a few library names containing OpenMeshCore and OpenMeshTools
 
-### Installing MeshMonk
+### Compiling MeshMonk
+#### Getting the sources
 First, clone the meshmonk repository:
 1) Make a folder 'projects' in home (`/home/user/projects/`)
 2) Go into the folder: `cd /home/user/projects/`)
-3) Clone the online repository into the current projects folder: `git clone https://...`
+3) Clone the online repository into the current projects folder: `git clone https://github.com/TheWebMonks/meshmonk.git`
 
+#### Setting up the Shared library project
 Next, let's compile MeshMonk using Code::Blocks.
-Compiler options:
-1) add option to use c++14 : `-std=c++14`
-2) make the compiled code position independent: `-fPIC`
-3) add verbose option to the linker (to inspect what's happening): `-Wl,-V`
-4) Optimize the compilation for speed using `-O2` (not `-O3` !)
+1) Select 'Create a new project' and choose 'Shared library'
+2) Choose C++
+3) Fill in the project form:
+* Project title: 'meshmonk'
+* Folder to create project in: '/home/user/projects/meshmonk/'
+* The other fields are filled in automatically, just verify the 'Resulting filename' equals '/home/user/projects/meshmonk/meshmonk/meshmonk.cbp'
+4) Set configurations:
+* Compiler: 'GNU GCC Compiler'
+* Tick both the Debug and Release box
+
+After clicking 'Finish', the meshmonk project is opened automatically. We're going to set some compiler/linker options now:
+1) Right-click the project (called 'meshmonk' with the symbol of Code::Blocks in front of it) and select 'Build options...'
+2) In the 'Compiler settings' tab, select the 'Compiler Flags' subtabtick the 'Optimize even more (for speed) [-O2]' option
+3) In the 'Compiler settings' tab, select the 'Other compiler options' and write `-std=c++14 -Wl,-V -fPIC` in the text field.
+
+One big thing is still missing from the project, namely the sources themselves! Delete the current main.cpp that is in the meshmonk project (which was automatically generated but we're gonna use our own sources). Now add the sources:
+* Right-click the meshmonk project and select 'Add files recursively...'. Choose the `/home/user/projects/meshmonk/meshmonk/src` folder that you obtained by cloning the repository earlier.
+* Right-click the meshmonk project and select 'Add files...'. Choose the meshmonk.hpp and meshmonk.cpp files located in the `home/user/projects/meshmonk/meshmonk/` folder.
+
+#### Compile the project
+Now, compile the code by clicking the small yellow cog in the top toolbar ('Build'). Make sure the version is set to 'Release' and not 'Debug' (should be to the right of the build buttons).
+
+Code::Blocks will print a lot of output, including warnings (in blue). Don't worry about those.
+
+### Installing meshmonk
+Now that you've compiled everything, we're going to put the library files in the right places so that other applications can access them:
+1) Copy the shared library 'libmeshmonk.so' to /usr/local/lib/: `sudo cp /home/user/projects/meshmonk/meshmonk/bin/Release/libmeshmonk.so /usr/local/lib/`
+2) Copy the header files to /usr/local/include/: `(cd /home/user/projects/meshmonk/ && find . -name '*.hpp' -print | tar --create --files-from -) | (cd /usr/local/include/ && sudo tar xvfp -)`
+3) Run ldconfig to update your library list: `sudo ldconfig -v`
+
+Note(!): every time you recompile, don't forget you have to copy the latest shared library to /usr/local/lib/!
 
 # Using meshmonk
--add '-lmeshmonk -lOpenMeshCore -lOpenMeshTools' as an option to your compiler when compiling your software that uses the meshmonk library.
--include the meshmonk.hpp header
 
-every time you recompile, don't forget you have to copy the latest shared library to /usr/local/lib/: `sudo cp /home/user/projects/meshmonk/meshmonk/bin/Release/libmeshmonk.so /usr/local/lib/`
-
-## Matlab
-change gcc version to 4.9: [explanation](http://askubuntu.com/a/26502/664811)
-
-Compile while linking to meshmonk: `mex functionFile.cpp -lmeshmonk`
+## In Matlab
+Being able to wrap meshmonk in matlab is the reason we had to change the gcc version to 4.9 [explanation](http://askubuntu.com/a/26502/664811)
 
 ### (Pre-)Loading required libraries
 Setting the library paths inside Matlab has some unresolved [problems](https://nl.mathworks.com/matlabcentral/newsreader/view_thread/253412). It seems overwriting the library paths to use inside matlab doesn't work. So instead, we'll preload the necessary libs when starting Matlab:
 
 So start matlab from the terminal with the command `LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6:/usr/local/lib/libmeshmonk.so:/usr/local/lib/libOpenMeshCore.so:/usr/local/lib/libOpenMeshTools.so matlab` to make sure all the libraries are loaded.
+
+### Mexing meshmonk functions
+In matlab, just run the mex_all.m script to mex all the meshmonk functions you need.
+
+## In other software
+If you're creating your own c++ project and want to use meshmonk, simply add '-lmeshmonk -lOpenMeshCore -lOpenMeshTools' as an option to your compiler when compiling your software that uses the meshmonk library.
+-include the meshmonk.hpp header
