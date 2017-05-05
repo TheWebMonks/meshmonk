@@ -20,7 +20,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //## Floating Features
     float *floatingFeatures = reinterpret_cast<float *>(mxGetData(prhs[0]));
     mwSize numFloatingElements = mxGetM(prhs[0]);
-    std::cout << "Num Floating Elements - " << numFloatingElements << std::endl;
     //## Corresponding Features
     float *correspondingFeatures = reinterpret_cast<float *>(mxGetData(prhs[1]));
     //## Corresponding Flags
@@ -30,10 +29,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //## Parameters
     //### Inlier kappa
     float inlierKappa = static_cast<float>(mxGetScalar(prhs[4]));
-    std::cout << "Inlier Kappa                       - " << inlierKappa << std::endl;
     //### Inlier Orientation
     float inlierUseOrientation = static_cast<float>(mxGetScalar(prhs[5]));
-    std::cout << "Inlier Use Orientation             - " << inlierUseOrientation << std::endl;
     
     //# Execute c++ function
     meshmonk::compute_inlier_weights_mex(floatingFeatures, correspondingFeatures,

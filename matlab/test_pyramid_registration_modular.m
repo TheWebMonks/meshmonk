@@ -14,7 +14,7 @@ compute_normals(floatingPoints, floatingFaces, floatingNormals);
 floatingFeatures = single([floatingPoints, floatingNormals]);
 numFloatingElements = size(floatingFeatures,1);
 floatingFlags = single(ones(numFloatingElements,1));
-clear floatingPoints;
+clear floatingPoints floatingNormals;
 
 %Load a mesh
 targetPath = '/home/jonatan/projects/meshmonk/examples/faceTarget.obj';
@@ -28,7 +28,7 @@ compute_normals(targetPoints, targetFaces, targetNormals);
 targetFeatures = single([targetPoints, -1.0 * targetNormals]); % WARNING: we had to flip the normals in this case!
 numTargetElements = size(targetFeatures,1);
 targetFlags = single(ones(numTargetElements,1));
-clear targetPoints;
+clear targetPoints targetNormals;
 
 %% Prepare parameters and variables
 %mex pyramid_registration.cpp -lmeshmonk
@@ -64,57 +64,98 @@ inlierWeights = single(ones(numFloatingElements,1));
 
 floatingFeaturesTemp = [];
 floatingFacesTemp = [];
-floatingOriginalIndicesTemp = [];
+floatingFlagsTemp = [];
+floatingOriginalIndices = [];
 floatingFeaturesTempOld = [];
-floatingOriginalIndicesTempOld = [];
+floatingOriginalIndicesOld = [];
 
 %% Execute Pyramid Registration via submodules
 
 %# Iterative Registration process
 for i=1:numPyramidLayers
     
-    %## Downsample Floating Mesh
-    %### Determine downsample ratio
+    %##########################
+    %##### DOWNSAMPLING #######
+    %##########################
+    
+    %# Downsample Floating Mesh
+    %## Determine downsample ratio
     downsampleRatio = downsampleFloatStart;
     if (numPyramidLayers > 1)
-        downsampleRatio = single(round(downsampleFloatStart - i * round((downsampleFloatStart-downsampleFloatEnd)/(numPyramidLayers-1.0))));
+        downsampleRatio = single(round(downsampleFloatStart - (i-1) * round((downsampleFloatStart-downsampleFloatEnd)/(numPyramidLayers-1.0))));
     end
     downsampleRatio = downsampleRatio / 100.0;
-    %### Downsample
-    floatingFlagsTemp = 
-    downsample_mesh(floatingFeatures, floatingFaces, floatingFlags,...
-                    floatingFeaturesTemp, floatingFacesTemp, sampledFlags,...
-                    originalIndices, downsampleRatio);
+    %## Downsample
+    [ floatingFeaturesTemp, floatingFacesTemp, floatingFlagsTemp, floatingOriginalIndices ]...
+        = downsample_mesh_clean( floatingFeatures, floatingFaces, floatingFlags, downsampleRatio );
     
-    for i=1:numIterations
+    %# Downsample Target Mesh
+    %## Determine downsample ratio
+    downsampleRatio = downsampleTargetStart;
+    if (numPyramidLayers > 1)
+        downsampleRatio = single(round(downsampleTargetStart - (i-1) * round((downsampleTargetStart-downsampleTargetEnd)/(numPyramidLayers-1.0))));
+    end
+    downsampleRatio = downsampleRatio / 100.0;
+    %## Downsample
+    [ targetFeaturesTemp, targetFacesTemp, targetFlagsTemp ]...
+        = downsample_mesh_clean( targetFeatures, targetFaces, targetFlags, downsampleRatio );
+    
+    %##########################
+    %##### SCALESHIFTING ######
+    %##########################
+    if (i > 1)
+        scaleshift_mesh(floatingFeaturesTempOld, floatingOriginalIndicesOld,...
+                        floatingFeaturesTemp, floatingOriginalIndices);
+    end
+    
+    %##########################
+    %##### REGISTRATION #######
+    %##########################
+    
+    for j=1:numIterations
         %# Compute Correspondences
-        compute_correspondences(floatingFeatures, targetFeatures,...
-                                floatingFlags, targetFlags,...
+        compute_correspondences(floatingFeaturesTemp, targetFeaturesTemp,...
+                                floatingFlagsTemp, targetFlagsTemp,...
                                 correspondingFeatures, correspondingFlags,...
                                 correspondencesSymmetric, correspondencesNumNeighbours);
         
         %# Compute Inlier Weights
-        compute_inlier_weights(floatingFeatures, correspondingFeatures,...
+        compute_inlier_weights(floatingFeaturesTemp, correspondingFeatures,...
                                correspondingFlags, inlierWeights,...
                                inlierKappa, inlierUseOrientation);
         
         %# Compute Transformation
-        compute_nonrigid_transformation(floatingFeatures, correspondingFeatures,...
-                                        floatingFaces,...
-                                        floatingFlags, inlierWeights,...
+        compute_nonrigid_transformation(floatingFeaturesTemp, correspondingFeatures,...
+                                        floatingFacesTemp,...
+                                        floatingFlagsTemp, inlierWeights,...
                                         10, transformSigma,...
                                         numViscousIterations, numElasticIterations);
         
         %# Annealing
-        numViscousIterations = uint32(round(transformNumViscousIterationsStart * viscousAnnealingRate^(i)));
+        numViscousIterations = uint32(round(transformNumViscousIterationsStart * viscousAnnealingRate^(j)));
         if (numViscousIterations < transformNumViscousIterationsEnd) numViscousIterations = transformNumViscousIterationsEnd;end
-        numElasticIterations = uint32(round(transformNumElasticIterationsStart * elasticAnnealingRate^(i)));
+        numElasticIterations = uint32(round(transformNumElasticIterationsStart * elasticAnnealingRate^(j)));
         if (numElasticIterations < transformNumElasticIterationsEnd) numElasticIterations = transformNumElasticIterationsEnd;end
     end
     
+    %#########################################
+    %##### COPY FOR NEXT PYRAMID LAYER #######
+    %#########################################
+    floatingFeaturesTempOld = floatingFeaturesTemp;
+    floatingOriginalIndicesOld = floatingOriginalIndices;
+    
 end
 
-
+%#############################
+%##### FINAL SCALESHIFT ######
+%#############################
+originalIndices = uint32(0:numFloatingElements-1);
+scaleshift_mesh(floatingFeaturesTemp, floatingOriginalIndices,...
+                floatingFeatures, originalIndices);
+            
+clear correspondingFeatures correspondingFlags floatingFacesTemp floatingFeaturesTemp floatingFeaturesTempOld...
+    floatingFlagsTemp floatingOriginalIndices floatingOriginalIndicesOld originalIndices targetFacesTemp targetFeaturesTemp...
+    targetFlagsTemp 
 %% Write Result
 resultPath = '/home/jonatan/projects/meshmonk/examples/matlabResult.obj';
 %resultPath = '/home/jonatan/projects/meshmonk/examples/data/bunnyResult.obj';

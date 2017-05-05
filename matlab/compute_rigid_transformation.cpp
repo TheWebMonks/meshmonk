@@ -20,7 +20,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //## Floating Features
     float *floatingFeatures = reinterpret_cast<float *>(mxGetData(prhs[0]));
     mwSize numFloatingElements = mxGetM(prhs[0]);
-    std::cout << "Num Floating Elements - " << numFloatingElements << std::endl;
     //## Corresponding Features
     float *correspondingFeatures = reinterpret_cast<float *>(mxGetData(prhs[1]));
     //## Inlier Weights
@@ -28,7 +27,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //## Parameters
     //### Allow Scaling
     bool allowScaling = static_cast<bool>(mxGetScalar(prhs[3]));
-    std::cout << "Allow Scaling          - " << allowScaling << std::endl;
     
     //# Execute c++ function                                        
     meshmonk::compute_rigid_transformation_mex(floatingFeatures, numFloatingElements,

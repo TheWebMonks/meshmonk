@@ -20,11 +20,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //## Positions
     float *positions = reinterpret_cast<float *>(mxGetData(prhs[0]));
     mwSize numElements = mxGetM(prhs[0]);
-    std::cout << "Num Elements - " << numElements << std::endl;
     //## Faces
     int *faces = reinterpret_cast<int *>(mxGetData(prhs[1]));
     mwSize numFaces = mxGetM(prhs[1]);
-    std::cout << "Num Faces - " << numFaces << std::endl;
     //## Normals
     float *normals = reinterpret_cast<float *>(mxGetData(prhs[2]));
     

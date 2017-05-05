@@ -20,21 +20,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //## Features
     float *features = reinterpret_cast<float *>(mxGetData(prhs[0]));
     mwSize numElements = mxGetM(prhs[0]);
-    std::cout << "Num Elements - " << numElements << std::endl;
     //## Faces
     int *faces = reinterpret_cast<int *>(mxGetData(prhs[1]));
     mwSize numFaces = mxGetM(prhs[1]);
-    std::cout << "Num Faces    - " << numFaces << std::endl;
     //## Flags
     float *flags = reinterpret_cast<float *>(mxGetData(prhs[2]));
     //## Downsampled Features (output)
     float *downsampledFeatures = reinterpret_cast<float *>(mxGetData(prhs[3]));
     mwSize numDownsampledElements = mxGetM(prhs[3]);
-    std::cout << "Num Downsampled Elements - " << numDownsampledElements << std::endl;
     //## Downsampled Faces (output)
     int *downsampledFaces = reinterpret_cast<int *>(mxGetData(prhs[4]));
     mwSize numDownsampledFaces = mxGetM(prhs[4]);
-    std::cout << "Num Downsampled Faces    - " << numDownsampledFaces << std::endl;
     //## Downsampled Flags (output)
     float *downsampledFlags = reinterpret_cast<float *>(mxGetData(prhs[5]));
     //## Original Indices
@@ -43,7 +39,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //## Parameters
     //### Downsample Ratio (between 0.0 and 1.0)
     float downsampleRatio = static_cast<float>(mxGetScalar(prhs[7]));
-    std::cout << "downsampleRatio                    - " << downsampleRatio << std::endl;
     
     //# Execute c++ function
     meshmonk::downsample_mesh_mex(features, numElements,

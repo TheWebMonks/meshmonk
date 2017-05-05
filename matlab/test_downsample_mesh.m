@@ -15,25 +15,11 @@ floatingFeatures = single([floatingPoints, floatingNormals]);
 numFloatingElements = size(floatingFeatures,1);
 numFloatingFaces = size(floatingFaces,1);
 floatingFlags = single(ones(numFloatingElements,1));
-clear floatingPoints;
+clear floatingPoints floatingNormals;
 
 %% Parameters and help variables
 downsampleRatio = 0.7;
-numDownsampledElements = uint32(round((1.0-downsampleRatio) * numFloatingElements));
-numDownsampledFaces = numFloatingFaces; %can't really predict this number so we'll just use the upper limit estimation!
-
-floatingFeaturesSampled = single(zeros(numDownsampledElements,6));
-floatingFacesSampled = uint32(zeros(numDownsampledFaces,3));
-floatingFlagsSampled = single(zeros(numDownsampledElements,1));
-originalIndices = uint32(zeros(numDownsampledElements,1));
 
 %% Downsample
-downsample_mesh(floatingFeatures, floatingFaces, floatingFlags,...
-                floatingFeaturesSampled, floatingFacesSampled, floatingFlagsSampled,...
-                originalIndices, downsampleRatio);
-            
-%# Clean the output
-[floatingFeaturesSampled,numDownsampledElements] = clean_downsampled_features(floatingFeaturesSampled);
-floatingFacesSampled = clean_downsampled_faces(floatingFacesSampled);
-floatingFlagsSampled = floatingFlagsSampled(1:numDownsampledElements);
-originalIndices = originalIndices(1:numDownsampledElements);
+[ floatingFeaturesSampled,floatingFacesSampled, floatingFlagsSampled, originalIndices ]...
+    = downsample_mesh_clean( floatingFeatures, floatingFaces, floatingFlags, downsampleRatio );

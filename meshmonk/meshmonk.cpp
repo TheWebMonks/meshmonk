@@ -35,46 +35,7 @@ extern "C"
         const FacesMat targetFaces = Eigen::Map<const FacesMat>(targetFacesArray, numTargetFaces, 3);
         const VecDynFloat floatingFlags = Eigen::Map<const VecDynFloat>(floatingFlagsArray, numFloatingElements);
         const VecDynFloat targetFlags = Eigen::Map<const VecDynFloat>(targetFlagsArray, numTargetElements);
-//        //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
-//        FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
-//        const FeatureMat targetFeatures = Eigen::Map<const FeatureMat>(targetFeaturesArray, numTargetElements, registration::NUM_FEATURES);
-//        const FacesMat floatingFacesMatlab = Eigen::Map<const FacesMat>(floatingFacesArray, numFloatingFaces, 3);
-//        const FacesMat targetFacesMatlab = Eigen::Map<const FacesMat>(targetFacesArray, numTargetFaces, 3);
-//        const VecDynFloat floatingFlags = Eigen::Map<const VecDynFloat>(floatingFlagsArray, numFloatingElements);
-//        const VecDynFloat targetFlags = Eigen::Map<const VecDynFloat>(targetFlagsArray, numTargetElements);
-//        //## Convert the face indices from Matlab to c++ convention
-//        const FacesMat floatingFaces = floatingFacesMatlab - FacesMat::Ones(numFloatingFaces, 3);
-//        const FacesMat targetFaces = targetFacesMatlab - FacesMat::Ones(numFloatingFaces, 3);
-        //DEBUG
-        std::cout << " -- Floating Features --\n" << floatingFeatures.topRows(10) << std::endl;
-        std::cout << " -- Target Features --\n" << targetFeatures.topRows(10) << std::endl;
-        std::cout << " -- Floating Faces --\n" << floatingFaces.topRows(10) << std::endl;
-        std::cout << " -- Target Faces --\n" << targetFaces.topRows(10) << std::endl;
-        std::cout << " -- Floating Flags --\n" << floatingFlags.topRows(10) << std::endl;
-        std::cout << " -- Target Flags --\n" << targetFlags.topRows(10) << std::endl;
-        //END DEBUG
 
-        //# Call pyramid_registration()
-        //DEBUG
-        std::cout << "Num Floating Elements              - " << numFloatingElements << std::endl;
-        std::cout << "Num Target Elements                - " << numTargetElements << std::endl;
-        std::cout << "Num Floating Faces                 - " << numFloatingFaces << std::endl;
-        std::cout << "Num Target Faces                   - " << numTargetFaces << std::endl;
-        std::cout << "Num Iterations                     - " << numIterations << std::endl;
-        std::cout << "Num Pyramid Layers                 - " << numPyramidLayers << std::endl;
-        std::cout << "Downsample Float Start             - " << downsampleFloatStart << std::endl;
-        std::cout << "Downsample Target Start            - " << downsampleTargetStart << std::endl;
-        std::cout << "Downsample Float End               - " << downsampleFloatEnd << std::endl;
-        std::cout << "Downsample Target End              - " << downsampleTargetEnd << std::endl;
-        std::cout << "Symmetric Correspondences          - " << correspondencesSymmetric << std::endl;
-        std::cout << "Num Neighbours                     - " << correspondencesNumNeighbours << std::endl;
-        std::cout << "Inlier Kappa                       - " << inlierKappa << std::endl;
-        std::cout << "Transform Sigma                    - " << transformSigma << std::endl;
-        std::cout << "transformNumViscousIterationsStart - " << transformNumViscousIterationsStart << std::endl;
-        std::cout << "transformNumViscousIterationsEnd   - " << transformNumViscousIterationsEnd << std::endl;
-        std::cout << "transformNumElasticIterationsStart - " << transformNumElasticIterationsStart << std::endl;
-        std::cout << "transformNumElasticIterationsEnd   - " << transformNumElasticIterationsEnd << std::endl;
-        //END DEBUG
         pyramid_registration(floatingFeatures, targetFeatures,
                                 floatingFaces, targetFaces,
                                 floatingFlags, targetFlags,
@@ -270,32 +231,14 @@ extern "C"
                             float sampledFlagsArray[],
                             int originalIndicesArray[],
                             const float downsampleRatio/* = 0.8f*/){
-        std::cout << "Enter fine" << std::endl;
         //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
         const FeatureMat features = Eigen::Map<const FeatureMat>(featuresArray, numElements, registration::NUM_FEATURES);
-        std::cout << "features fine" << std::endl;
         const FacesMat faces = Eigen::Map<const FacesMat>(facesArray, numFaces, 3);
-        std::cout << "faces fine" << std::endl;
         const VecDynFloat flags = Eigen::Map<const VecDynFloat>(flagsArray, numElements);
-        std::cout << "flags fine" << std::endl;
         FeatureMat sampledFeatures = Eigen::Map<FeatureMat>(sampledFeaturesArray, numSampledElements, registration::NUM_FEATURES);
-        std::cout << "sampledFeatures fine" << std::endl;
         FacesMat sampledFaces = Eigen::Map<FacesMat>(sampledFacesArray, numSampledFaces, 3);
-        std::cout << "sampledFaces fine" << std::endl;
         VecDynFloat sampledFlags = Eigen::Map<VecDynFloat>(sampledFlagsArray, numSampledElements);
-        std::cout << "sampledFlags fine" << std::endl;
         VecDynInt originalIndices = Eigen::Map<VecDynInt>(originalIndicesArray, numSampledElements);
-        std::cout << "originalIndices fine" << std::endl;
-
-        //DEBUG
-        std::cout << "downsample_mex - Features: \n" << features.topRows(3) << std::endl;
-        std::cout << "downsample_mex - Faces: \n" << faces.topRows(3) << std::endl;
-        std::cout << "downsample_mex - Flags: \n" << flags.head(3) << std::endl;
-        std::cout << "downsample_mex - Features Sampled: \n" << sampledFeatures.topRows(3) << std::endl;
-        std::cout << "downsample_mex - Faces Sampled: \n" << sampledFaces.topRows(3) << std::endl;
-        std::cout << "downsample_mex - Flags Sampled: \n" << sampledFlags.head(3) << std::endl;
-        std::cout << "downsample_mex - Original Indices: \n" << originalIndices.head(3) << std::endl;
-        //END DEBUG
 
         //# Downsample
         downsample_mesh(features, faces, flags,
@@ -508,17 +451,6 @@ extern "C"
                         FeatureMat& downsampledFeatures, FacesMat& downsampledFaces,
                         VecDynFloat& downsampledFlags, VecDynInt& originalIndices,
                         const float downsampleRatio/* = 0.8f*/){
-
-
-        //DEBUG
-        std::cout << "downsample - Features: \n" << features.topRows(3) << std::endl;
-        std::cout << "downsample - Faces: \n" << faces.topRows(3) << std::endl;
-        std::cout << "downsample - Flags: \n" << flags.head(3) << std::endl;
-        std::cout << "downsample - Features Sampled: \n" << downsampledFeatures.topRows(3) << std::endl;
-        std::cout << "downsample - Faces Sampled: \n" << downsampledFaces.topRows(3) << std::endl;
-        std::cout << "downsample - Flags Sampled: \n" << downsampledFlags.head(3) << std::endl;
-        std::cout << "downsample - Original Indices: \n" << originalIndices.head(3) << std::endl;
-        //END DEBUG
 
         registration::Downsampler downsampler;
         downsampler.set_input(&features, &faces, &flags);
