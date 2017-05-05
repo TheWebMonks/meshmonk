@@ -270,14 +270,32 @@ extern "C"
                             float sampledFlagsArray[],
                             int originalIndicesArray[],
                             const float downsampleRatio/* = 0.8f*/){
+        std::cout << "Enter fine" << std::endl;
         //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
         const FeatureMat features = Eigen::Map<const FeatureMat>(featuresArray, numElements, registration::NUM_FEATURES);
+        std::cout << "features fine" << std::endl;
         const FacesMat faces = Eigen::Map<const FacesMat>(facesArray, numFaces, 3);
-        const VecDynFloat flags = Eigen::Map<const VecDynFloat>(flagsArray, numElements, 3);
+        std::cout << "faces fine" << std::endl;
+        const VecDynFloat flags = Eigen::Map<const VecDynFloat>(flagsArray, numElements);
+        std::cout << "flags fine" << std::endl;
         FeatureMat sampledFeatures = Eigen::Map<FeatureMat>(sampledFeaturesArray, numSampledElements, registration::NUM_FEATURES);
+        std::cout << "sampledFeatures fine" << std::endl;
         FacesMat sampledFaces = Eigen::Map<FacesMat>(sampledFacesArray, numSampledFaces, 3);
+        std::cout << "sampledFaces fine" << std::endl;
         VecDynFloat sampledFlags = Eigen::Map<VecDynFloat>(sampledFlagsArray, numSampledElements);
+        std::cout << "sampledFlags fine" << std::endl;
         VecDynInt originalIndices = Eigen::Map<VecDynInt>(originalIndicesArray, numSampledElements);
+        std::cout << "originalIndices fine" << std::endl;
+
+        //DEBUG
+        std::cout << "downsample_mex - Features: \n" << features.topRows(3) << std::endl;
+        std::cout << "downsample_mex - Faces: \n" << faces.topRows(3) << std::endl;
+        std::cout << "downsample_mex - Flags: \n" << flags.head(3) << std::endl;
+        std::cout << "downsample_mex - Features Sampled: \n" << sampledFeatures.topRows(3) << std::endl;
+        std::cout << "downsample_mex - Faces Sampled: \n" << sampledFaces.topRows(3) << std::endl;
+        std::cout << "downsample_mex - Flags Sampled: \n" << sampledFlags.head(3) << std::endl;
+        std::cout << "downsample_mex - Original Indices: \n" << originalIndices.head(3) << std::endl;
+        //END DEBUG
 
         //# Downsample
         downsample_mesh(features, faces, flags,
@@ -490,6 +508,18 @@ extern "C"
                         FeatureMat& downsampledFeatures, FacesMat& downsampledFaces,
                         VecDynFloat& downsampledFlags, VecDynInt& originalIndices,
                         const float downsampleRatio/* = 0.8f*/){
+
+
+        //DEBUG
+        std::cout << "downsample - Features: \n" << features.topRows(3) << std::endl;
+        std::cout << "downsample - Faces: \n" << faces.topRows(3) << std::endl;
+        std::cout << "downsample - Flags: \n" << flags.head(3) << std::endl;
+        std::cout << "downsample - Features Sampled: \n" << downsampledFeatures.topRows(3) << std::endl;
+        std::cout << "downsample - Faces Sampled: \n" << downsampledFaces.topRows(3) << std::endl;
+        std::cout << "downsample - Flags Sampled: \n" << downsampledFlags.head(3) << std::endl;
+        std::cout << "downsample - Original Indices: \n" << originalIndices.head(3) << std::endl;
+        //END DEBUG
+
         registration::Downsampler downsampler;
         downsampler.set_input(&features, &faces, &flags);
         downsampler.set_output(downsampledFeatures, downsampledFaces,
