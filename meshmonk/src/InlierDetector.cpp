@@ -82,6 +82,7 @@ void InlierDetector::update() {
 
     //#Gradient Based inlier/outlier classification
     if (_useOrientation){
+        float averageOrientationInlierWeight = 0.0f; //simply to warn the user when this is too low, they probably have the normals flipped.
         for (size_t i = 0 ; i < _numElements ; i++) {
             const Vec3Float normal = _inFeatures->row(i).tail(3);
             const Vec3Float correspondingNormal = _inCorrespondingFeatures->row(i).tail(3);
@@ -91,6 +92,12 @@ void InlierDetector::update() {
             //## Rescale this result so that it's continuous between 0.0 and +1.0
             float probability = dotProduct / 2.0 + 0.5;
             (*_ioProbability)[i] *= probability;
+            averageOrientationInlierWeight += probability;
+        }
+
+        averageOrientationInlierWeight /= _numElements;
+        if (averageOrientationInlierWeight < 0.5f) {
+            std::cout << "Warning: very low inlier weights due to surface normals. Are you sure one of the surfaces doesn't have its vertex normals flipped?" <<std::endl;
         }
     }
 
