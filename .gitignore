@@ -12,6 +12,11 @@ venv/
 MeshMonkExtreme/bin/*
 MeshMonkExtreme/obj/*
 meshmonk/bin/*
+meshmonk/build/
+meshmonk/floating.obj
+meshmonk/target.obj
+meshmonk/libmeshmonk.dylib
+meshmonk/example
 meshmonk/meshmonkexe/
 meshmonk/registrationexample/
 *.cbp
@@ -24,3 +29,4 @@ meshmonk/registrationexample/
 
  examples/data/
  conda/outputdir/
+.DS_Store

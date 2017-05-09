@@ -37,8 +37,8 @@ void ScaleShifter::set_output(FeatureMat &outHighFeatures){
 void ScaleShifter::_find_matching_and_new_indices(){
     //# Put index pairs of original and current indices into arrays
     //## Initialize the lists
-    std::vector<std::pair<int,int>> lowIndexPairs;
-    std::vector<std::pair<int,int>> highIndexPairs;
+    std::vector<std::pair<int,int> > lowIndexPairs;
+    std::vector<std::pair<int,int> > highIndexPairs;
     //## Loop over the low sampled indices
     for (size_t i = 0 ; i < _numLowNodes ; i++){
         //## Get the original index
