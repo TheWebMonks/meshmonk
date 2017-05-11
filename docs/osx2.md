@@ -53,6 +53,7 @@ cp nanoflann.hpp /usr/local/include
 ### 3. Install OpenMesh
 
 ```bash
+cd /Users/user/Downloads/
 wget http://www.openmesh.org/media/Releases/6.3/OpenMesh-6.3.zip
 unzip OpenMesh-6.3.zip
 cd OpenMesh-6.3
@@ -62,12 +63,35 @@ cmake ..
 make
 ```
 
-Copy/past the *.dylib* files:
+Copy/paste the *.dylib* files:
 ```bash
 sudo sudo cp Build/lib/*.* /usr/local/lib/
 ```
 
-## Build!
+Copy/paste the header files
+```bash
+cp /Users/user/Downloads/OpenMesh-6.3/src/OpenMesh/ /usr/local/include/
+```
+
+## MeshMonk
+
+### Compile
+Make a 'projects' folder in your home directory and go into it(or go into a directory you are already using for GitHub projects):
+```bash
+cd
+mkdir projects
+cd projects
+```
+Clone the online MeshMonk repository
+```
+git clone https://github.com/TheWebMonks/meshmonk.git
+```
+Enter the subfolder with the c++ sourcecode and use `make` to compile it
+```bash
+cd meshmonk/meshmonk
+make
+```
+
 
 ```bash
 make 
