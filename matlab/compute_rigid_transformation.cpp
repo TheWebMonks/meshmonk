@@ -11,9 +11,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                       "Zero LHS output required.");
     }
     //## Number of output arguments
-    if(nrhs != 15) {
+    if(nrhs != 4) {
     mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nrhs",
-                      "20 inputs required.");
+                      "4 inputs required.");
     }
     
     //# Get Inputs
