@@ -98,7 +98,6 @@ cp libmeshmonk.dylib /usr/local/lib
 
 Copy the header files to /usr/local/include/
 ```bash
-cd /Users/user/projects/meshmonk
-cp meshmonk /usr/local/include
+(cd /Users/user/projects/meshmonk/ && find . -name '*.hpp' -print | tar --create --files-from -) | (cd /usr/local/include/ && sudo tar xvfp -)
 ```
 
