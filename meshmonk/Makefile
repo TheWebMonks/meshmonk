@@ -17,11 +17,11 @@ build/SymmetricCorrespondenceFilter.o \
 build/ViscoElasticTransformer.o
 
 # Compile flags
-M_FLAGS = --verbose -Wall -fexceptions -O2 -Wall -std=c++14 -g -Wl,-V -fPIC -I /usr/local/Cellar/eigen/3.3.3/include/eigen3 -c
-M_FLAGS2 = --verbose -Wall -fexceptions -O2 -Wall -std=c++14 -g -fPIC -I /usr/local/Cellar/eigen/3.3.3/include/eigen3
+M_FLAGS = --verbose -Wall -fexceptions -O2 -Wall -std=c++14 -g -Wl,-V -fPIC -I /usr/local/include/ -c
+M_FLAGS2 = --verbose -Wall -fexceptions -O2 -Wall -std=c++14 -g -fPIC -I /usr/local/include/
 
 meshmonk: $(TARGETS)
-	g++ -shared $(TARGETS) -dynamiclib -o libmeshmonk.dylib -lOpenMeshCore -lOpenMeshTools
+	g++ -shared $(TARGETS) -dynamiclib -o libmeshmonk.dylib -lOpenMeshCore -lOpenMeshTools -L/usr/local/lib
 
 compile:
 	mkdir -p build
