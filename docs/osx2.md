@@ -91,8 +91,14 @@ Enter the subfolder with the c++ sourcecode and use `make` to compile it
 cd meshmonk/meshmonk
 make
 ```
-
-
+From the meshmonk folder, copy the shared library object libmeshmonk.dylib to /usr/local/lib
 ```bash
-make 
+cp libmeshmonk.dylib /usr/local/lib
 ```
+
+Copy the header files to /usr/local/include/
+```bash
+cd /Users/user/projects/meshmonk
+cp meshmonk /usr/local/include
+```
+
