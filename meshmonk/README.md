@@ -3,7 +3,7 @@ MeshMonk can be built and installed on [Ubuntu 16.04](https://github.com/TheWebM
 
 # Using meshmonk
 
-## In Matlab
+## From Matlab
 
 ### Setting Environment Variables
 #### Ubuntu
@@ -21,6 +21,6 @@ setenv('LD_LIBRARY_PATH', p);
 ### Mexing meshmonk functions
 In matlab, just run the mex_all.m script to mex all the meshmonk functions you need.
 
-## In other software
+## From other software
 If you're creating your own c++ project and want to use meshmonk, simply add '-lmeshmonk -lOpenMeshCore -lOpenMeshTools' as an option to your compiler when compiling your software that uses the meshmonk library.
 -include the meshmonk.hpp header
