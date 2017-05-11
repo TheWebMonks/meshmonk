@@ -1,4 +1,4 @@
-# Installing meshmonk (Ubuntu 16.04)
+# Build on Ubuntu 16.04
 The following is a dummy-proof guide to install meshmonk on your ubuntu 16.04 machine.
 
 ## Install git
