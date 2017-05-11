@@ -95,7 +95,9 @@ void ViscoElasticTransformer::_update_smoothing_weights(){
             sumWeight += combinedWeight;
         }
         //## normalize each row of weights
-        _smoothingWeights.row(i) /= sumWeight;
+        if (sumWeight > 0.000001f){
+            _smoothingWeights.row(i) /= sumWeight;
+        }
     }
 }//end _update_smoothing_weights()
 
