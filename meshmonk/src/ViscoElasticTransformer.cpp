@@ -89,6 +89,11 @@ void ViscoElasticTransformer::_update_smoothing_weights(){
             float gaussianWeight = std::exp(-0.5f * distanceSquared / std::pow(_sigma, 2.0f));
             //## Combine the gaussian weight with the user defined weight
             float combinedWeight = (*_inFlags)[i] * gaussianWeight;
+            // rescale the combined weight between [eps,1.0] instead of [0.0,1.0]. If we wouldn't do this,
+            // all the nodes with inlierWeight equal to 0.0 would end up with a deformation vector
+            // of length 0.0.
+            const float minWeight = 0.00001f;
+            combinedWeight = (1.0f - minWeight) * combinedWeight + minWeight;
 
             //## insert the combined weight into _smoothingWeights
             _smoothingWeights(i,j) = combinedWeight;

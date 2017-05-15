@@ -13,7 +13,7 @@ floatingFeatures = single([floatingPoints, floatingNormals]);
 numFloatingElements = size(floatingFeatures,1);
 floatingFlags = single(ones(numFloatingElements,1));
 %DEBUG
-floatingFlags(1) = 0.01;
+floatingFlags(1:1000) = 0.0;
 %END DEBUG
 clear floatingPoints;
 
@@ -35,16 +35,16 @@ clear targetPoints;
 %mex pyramid_registration.cpp -lmeshmonk
 
 %# Set Parameters
-numIterations = 1;
-correspondencesSymmetric = false;
+numIterations = 20;
+correspondencesSymmetric = true;
 correspondencesNumNeighbours = 5;
 inlierKappa = 4.0;
 inlierUseOrientation = true;
 transformSigma = 3.0;
-transformNumViscousIterationsStart = 0;
-transformNumViscousIterationsEnd = 0;
-transformNumElasticIterationsStart = 0;
-transformNumElasticIterationsEnd = 0;
+transformNumViscousIterationsStart = 50;
+transformNumViscousIterationsEnd = 1;
+transformNumElasticIterationsStart = 50;
+transformNumElasticIterationsEnd = 1;
 
 %# Derived parameters
 %## Annealing
