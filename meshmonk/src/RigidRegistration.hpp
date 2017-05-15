@@ -43,7 +43,8 @@ class RigidRegistration
                        const FeatureMat * const inTargetFeatures,
                        const VecDynFloat * const inFloatingFlags,
                        const VecDynFloat * const inTargetFlags);
-        void set_parameters(bool symmetric, size_t numNeighbours, float kappaa,
+        void set_parameters(bool symmetric, size_t numNeighbours,
+                            float flagThreshold, float kappaa,
                             bool inlierUseOrientation, size_t numIterations);
 
         void update();
@@ -61,6 +62,7 @@ class RigidRegistration
         //## Correspondences
         bool _symmetric = true;
         size_t _numNeighbours = 3;
+        float _flagThreshold = 0.9f;
         //## Inliers
         float _kappaa = 3.0;
         bool _inlierUseOrientation = true;

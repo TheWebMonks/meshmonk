@@ -37,6 +37,9 @@ class CorrespondenceFilter : public BaseCorrespondenceFilter
     # PARAMETERS
     -numNeighbours(=3):
     number of nearest neighbours
+    -flagThreshold:
+    threshold that the weighted corresponding flag needs to make in order to be flagged as 1.0.
+    Otherwise, it receives flag 0.0f.
 
     # OUTPUT
     -outCorrespondingFeatures
@@ -52,7 +55,8 @@ class CorrespondenceFilter : public BaseCorrespondenceFilter
         void set_target_input(const FeatureMat * const inTargetFeatures,
                             const VecDynFloat * const inTargetFlags);
         SparseMat get_affinity() const {return _affinity;}
-        void set_parameters(const size_t numNeighbours);
+        void set_parameters(const size_t numNeighbours,
+                            const float flagThreshold);
         void update();
 
     protected:

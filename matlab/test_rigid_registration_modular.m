@@ -43,15 +43,37 @@ inlierKappa = 4.0;
 inlierUseOrientation = true;
 allowScaling = false;
 
-rigid_registration(floatingFeatures, targetFeatures,...
-                   floatingFaces, targetFaces,...
-                   floatingFlags, targetFlags,...
-                   numIterations,...
-                   correspondencesSymmetric, correspondencesNumNeighbours,...
-                   correspondencesFlagThreshold,...
-                   inlierKappa, inlierUseOrientation);
-                            
+%# Initialize data structures
+correspondingFeatures = single(zeros(numFloatingElements,6));
+correspondingFlags = single(ones(numFloatingElements,1));
+inlierWeights = single(ones(numFloatingElements,1));
+
+%%
+
+%# Iterative Registration process
+for i=1:numIterations
+    %# Compute Correspondences
+    %[correspondingFeatures, correspondingFlags] = compute_correspondences(floatingFeatures, targetFeatures,...
+    compute_correspondences(floatingFeatures, targetFeatures,...
+                            floatingFlags, targetFlags,...
+                            correspondingFeatures, correspondingFlags,...
+                            correspondencesSymmetric, correspondencesNumNeighbours,...
+                            correspondencesFlagThreshold);
+    
+    %# Compute Inlier Weights
+    compute_inlier_weights(floatingFeatures, correspondingFeatures,...
+                           correspondingFlags, inlierWeights,...
+                           inlierKappa, inlierUseOrientation);
+    
+    %# Compute Transformation
+    compute_rigid_transformation(floatingFeatures, correspondingFeatures,...
+                                    inlierWeights, allowScaling);
+end
+
+
 %% Write Result
-vertface2obj(floatingFeatures(:,1:3),floatingFaces,'/home/jonatan/projects/meshmonk/examples/matlabResult.obj')
+resultPath = '/home/jonatan/projects/meshmonk/examples/matlabResult.obj';
+%resultPath = '/home/jonatan/projects/meshmonk/examples/data/bunnyResult.obj';
+vertface2obj(floatingFeatures(:,1:3),floatingFaces,resultPath)
                             
                           

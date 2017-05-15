@@ -56,6 +56,7 @@ class PyramidNonrigidRegistration
                             float downsampleTargetEnd = 0.0f,
                             bool correspondencesSymmetric = true,
                             size_t correspondencesNumNeighbours = 5,
+                            float _correspondencesFlagThreshold = 0.9f,
                             float inlierKappa = 4.0f,
                             bool inlierUseOrientation = true,
                             float transformSigma = 3.0f,
@@ -87,6 +88,7 @@ class PyramidNonrigidRegistration
         float _downsampleTargetEnd = 0.0f; //percentage
         bool _correspondencesSymmetric = true;
         size_t _correspondencesNumNeighbours = 5;
+        float _correspondencesFlagThreshold = 0.9f;
         float _inlierKappa = 4.0f;
         bool _inlierUseOrientation = true;
         float _transformSigma = 3.0f;

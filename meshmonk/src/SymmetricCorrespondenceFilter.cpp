@@ -33,11 +33,13 @@ void SymmetricCorrespondenceFilter::set_target_input(const FeatureMat * const in
     _pullFilter.set_floating_input(_inTargetFeatures, _inTargetFlags);
 }
 
-void SymmetricCorrespondenceFilter::set_parameters(const size_t numNeighbours)
+void SymmetricCorrespondenceFilter::set_parameters(const size_t numNeighbours,
+                                                   const float flagThreshold)
 {
     _numNeighbours = numNeighbours;
-    _pushFilter.set_parameters(_numNeighbours);
-    _pullFilter.set_parameters(_numNeighbours);
+    _flagThreshold = flagThreshold;
+    _pushFilter.set_parameters(_numNeighbours, _flagThreshold);
+    _pullFilter.set_parameters(_numNeighbours, _flagThreshold);
 }
 
 void SymmetricCorrespondenceFilter::_update_affinity() {

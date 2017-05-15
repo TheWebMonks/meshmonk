@@ -38,6 +38,7 @@ clear targetPoints;
 numIterations = 20;
 correspondencesSymmetric = true;
 correspondencesNumNeighbours = 5;
+correspondencesFlagThreshold = 0.9;
 inlierKappa = 4.0;
 inlierUseOrientation = true;
 transformSigma = 3.0;
@@ -67,7 +68,8 @@ for i=1:numIterations
     compute_correspondences(floatingFeatures, targetFeatures,...
                             floatingFlags, targetFlags,...
                             correspondingFeatures, correspondingFlags,...
-                            correspondencesSymmetric, correspondencesNumNeighbours);
+                            correspondencesSymmetric, correspondencesNumNeighbours,...
+                            correspondencesFlagThreshold);
     
     %# Compute Inlier Weights
     compute_inlier_weights(floatingFeatures, correspondingFeatures,...

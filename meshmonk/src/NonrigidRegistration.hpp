@@ -48,6 +48,7 @@ class NonrigidRegistration
                        const VecDynFloat * const inTargetFlags);
         void set_parameters(bool symmetric,
                             size_t numNeighbours,
+                            float flagThreshold,
                             float kappaa,
                             bool inlierUseOrientation,
                             size_t numIterations,
@@ -88,6 +89,7 @@ class NonrigidRegistration
         //## Correspondences
         bool _symmetric = true;
         size_t _numNeighbours = 3;
+        float _flagThreshold = 0.9f;
         //## Inliers
         float _kappaa = 3.0;
         bool _inlierUseOrientation = true;

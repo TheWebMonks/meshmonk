@@ -11,9 +11,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                       "Zero LHS output required.");
     }
     //## Number of output arguments
-    if(nrhs != 11) {
+    if(nrhs != 12) {
     mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nrhs",
-                      "11 inputs required.");
+                      "12 inputs required.");
     }
     
     //# Get Inputs
@@ -40,10 +40,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     bool correspondencesSymmetric = static_cast<bool>(mxGetScalar(prhs[7]));
     //### Number of neighbours to use to compute corresponding points
     mwSize correspondencesNumNeighbours = static_cast<mwSize>(mxGetScalar(prhs[8]));
+    //### Flag threshold to mark corresponding flag as 0.0 or 1.0
+    float correspondencesFlagThreshold = static_cast<float>(mxGetScalar(prhs[9]));
     //### Inlier kappa
-    float inlierKappa = static_cast<float>(mxGetScalar(prhs[9]));
+    float inlierKappa = static_cast<float>(mxGetScalar(prhs[10]));
     //### Inlier Orientation
-    float inlierUseOrientation = static_cast<float>(mxGetScalar(prhs[10]));
+    float inlierUseOrientation = static_cast<float>(mxGetScalar(prhs[11]));
     
     
     //# Execute c++ function
@@ -54,6 +56,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                                 floatingFlags, targetFlags,
                                 numIterations,
                                 correspondencesSymmetric, correspondencesNumNeighbours,
+                                correspondencesFlagThreshold,
                                 inlierKappa, inlierUseOrientation);
     
 //     //# Set Output

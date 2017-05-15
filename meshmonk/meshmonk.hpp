@@ -88,6 +88,7 @@ extern "C"
                                 const float downsampleFloatStart = 90, const float downsampleTargetStart = 90,
                                 const float downsampleFloatEnd = 0, const float downsampleTargetEnd = 0,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
+                                const float correspondencesFlagThreshold = 0.9f,
                                 const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
                                 const float transformSigma = 3.0f,
                                 const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
@@ -102,6 +103,7 @@ extern "C"
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 const size_t numIterations = 60,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
+                                const float correspondencesFlagThreshold = 0.9f,
                                 const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
                                 const float transformSigma = 3.0f,
                                 const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
@@ -115,6 +117,7 @@ extern "C"
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 const size_t numIterations = 20,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
+                                const float correspondencesFlagThreshold = 0.9f,
                                 const float inlierKappa = 4.0f, const bool inlierUseOrientation = true);
 
 
@@ -128,7 +131,8 @@ extern "C"
     void compute_correspondences(const FeatureMat& floatingFeatures, const FeatureMat& targetFeatures,
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 FeatureMat& correspondingFeatures, VecDynFloat& correspondingFlags,
-                                const bool symmetric = true, const size_t numNeighbours = 5);
+                                const bool symmetric = true, const size_t numNeighbours = 5,
+                                const float flagThreshold = 0.9f);
 
     //# Inliers
     void compute_inlier_weights(const FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
@@ -193,6 +197,7 @@ extern "C"
                                 const float downsampleFloatStart = 90, const float downsampleTargetStart = 90,
                                 const float downsampleFloatEnd = 0, const float downsampleTargetEnd = 0,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
+                                const float correspondencesFlagThreshold = 0.9f,
                                 const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
                                 const float transformSigma = 3.0f,
                                 const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
@@ -205,6 +210,7 @@ extern "C"
                                 const float floatingFlagsArray[], const float targetFlagsArray[],
                                 const size_t numIterations = 60,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
+                                const float correspondencesFlagThreshold = 0.9f,
                                 const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
                                 const float transformSigma = 3.0f,
                                 const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
@@ -217,13 +223,15 @@ extern "C"
                                 const float floatingFlagsArray[], const float targetFlagsArray[],
                                 const size_t numIterations = 60,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
+                                const float correspondencesFlagThreshold = 0.9f,
                                 const float inlierKappa = 4.0f, const bool inlierUseOrientation = true);
 
     void compute_correspondences_mex(const float floatingFeaturesArray[], const float targetFeaturesArray[],
                                     const size_t numFloatingElements, const size_t numTargetElements,
                                     const float floatingFlagsArray[], const float targetFlagsArray[],
                                     float correspondingFeaturesArray[], float correspondingFlagsArray[],
-                                    const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5);
+                                    const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
+                                    const float correspondencesFlagThreshold = 0.9f);
 
     void compute_inlier_weights_mex(const float floatingFeaturesArray[], const float correspondingFeaturesArray[],
                                     const size_t numFloatingElements,

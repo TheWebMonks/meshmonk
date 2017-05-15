@@ -37,7 +37,8 @@ class BaseCorrespondenceFilter
         void set_output(FeatureMat * const ioCorrespondingFeatures,
                         VecDynFloat * const ioCorrespondingFlags);
         SparseMat get_affinity() const {return _affinity;}
-        virtual void set_parameters(const size_t numNeighbours){}
+        virtual void set_parameters(const size_t numNeighbours,
+                                    const float flagThreshold){}
         virtual void update(){}
 
     protected:
@@ -54,6 +55,7 @@ class BaseCorrespondenceFilter
 
         //# User Parameters
         size_t _numNeighbours = 3;
+        float _flagThreshold = 0.9;
 
         //# Internal Data structures
         SparseMat _affinity;
@@ -61,7 +63,6 @@ class BaseCorrespondenceFilter
         //# Internal Parameters
         size_t _numFloatingElements = 0;
         size_t _numTargetElements = 0;
-        float _flagRoundingLimit = 0.9;
 
         //# Internal functions
         //## Function to update the sparse affinity matrix

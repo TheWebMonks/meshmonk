@@ -13,10 +13,11 @@ void RigidRegistration::set_input(FeatureMat * const ioFloatingFeatures,
 }//end set_input()
 
 void RigidRegistration::set_parameters(bool symmetric, size_t numNeighbours,
-                                       float kappaa, bool inlierUseOrientation,
-                                       size_t numIterations){
+                                       float flagThreshold, float kappaa,
+                                       bool inlierUseOrientation, size_t numIterations){
     _symmetric = symmetric;
     _numNeighbours = numNeighbours;
+    _flagThreshold = flagThreshold;
     _kappaa = kappaa;
     _inlierUseOrientation = inlierUseOrientation;
     _numIterations = numIterations;
@@ -45,7 +46,7 @@ void RigidRegistration::update(){
     correspondenceFilter->set_floating_input(_ioFloatingFeatures, _inFloatingFlags);
     correspondenceFilter->set_target_input(_inTargetFeatures, _inTargetFlags);
     correspondenceFilter->set_output(&correspondingFeatures, &correspondingFlags);
-    correspondenceFilter->set_parameters(_numNeighbours);
+    correspondenceFilter->set_parameters(_numNeighbours, _flagThreshold);
 
     //## Inlier Filter
     VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);

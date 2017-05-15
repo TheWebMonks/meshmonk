@@ -42,6 +42,9 @@ class SymmetricCorrespondenceFilter: public BaseCorrespondenceFilter
     # PARAMETERS
     -numNeighbours(=3):
     number of nearest neighbours
+    -flagThreshold(=0.9):
+    threshold that the weighted corresponding flag needs to make in order to be flagged as 1.0.
+    Otherwise, it receives flag 0.0f.
 
     # OUTPUT
     -outCorrespondingFeatures
@@ -56,7 +59,8 @@ class SymmetricCorrespondenceFilter: public BaseCorrespondenceFilter
                                 const VecDynFloat * const inFloatingFlags);
         void set_target_input(const FeatureMat * const inTargetFeatures,
                             const VecDynFloat * const inTargetFlags);
-        void set_parameters(const size_t numNeighbours);
+        void set_parameters(const size_t numNeighbours,
+                            const float flagThreshold);
         void update();
 
     protected:

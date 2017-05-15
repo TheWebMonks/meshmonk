@@ -24,6 +24,7 @@ extern "C"
                                 const float downsampleFloatStart/*= 90*/, const float downsampleTargetStart/*= 90*/,
                                 const float downsampleFloatEnd/*= 0*/, const float downsampleTargetEnd/*= 0*/,
                                 const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
+                                const float correspondencesFlagThreshold/* = 0.9f*/,
                                 const float inlierKappa/*= 4.0f*/, const bool inlierUseOrientation/*=true*/,
                                 const float transformSigma/*= 3.0f*/,
                                 const size_t transformNumViscousIterationsStart/*= 50*/, const size_t transformNumViscousIterationsEnd/*= 1*/,
@@ -43,6 +44,7 @@ extern "C"
                                 downsampleFloatStart, downsampleTargetStart,
                                 downsampleFloatEnd, downsampleTargetEnd,
                                 correspondencesSymmetric, correspondencesNumNeighbours,
+                                correspondencesFlagThreshold,
                                 inlierKappa, inlierUseOrientation,
                                 transformSigma,
                                 transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
@@ -61,6 +63,7 @@ extern "C"
                                 const float floatingFlagsArray[], const float targetFlagsArray[],
                                 const size_t numIterations/*= 60*/,
                                 const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
+                                const float correspondencesFlagThreshold/* = 0.9f*/,
                                 const float inlierKappa/*= 4.0f*/, const bool inlierUseOrientation/*=true*/,
                                 const float transformSigma/*= 3.0f*/,
                                 const size_t transformNumViscousIterationsStart/*= 50*/, const size_t transformNumViscousIterationsEnd/*= 1*/,
@@ -97,6 +100,7 @@ extern "C"
                                 floatingFlags, targetFlags,
                                 numIterations,
                                 correspondencesSymmetric, correspondencesNumNeighbours,
+                                correspondencesFlagThreshold,
                                 inlierKappa, inlierUseOrientation,
                                 transformSigma,
                                 transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
@@ -114,6 +118,7 @@ extern "C"
                                 const float floatingFlagsArray[], const float targetFlagsArray[],
                                 const size_t numIterations/*= 60*/,
                                 const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
+                                const float correspondencesFlagThreshold/* = 0.9f*/,
                                 const float inlierKappa/*= 4.0f*/, const bool inlierUseOrientation/*=true*/){
         //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
         FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
@@ -129,6 +134,7 @@ extern "C"
                             floatingFlags, targetFlags,
                             numIterations,
                             correspondencesSymmetric, correspondencesNumNeighbours,
+                            correspondencesFlagThreshold,
                             inlierKappa);
 
         //# Convert back to raw data
@@ -140,7 +146,8 @@ extern "C"
                                     const size_t numFloatingElements, const size_t numTargetElements,
                                     const float floatingFlagsArray[], const float targetFlagsArray[],
                                     float correspondingFeaturesArray[], float correspondingFlagsArray[],
-                                    const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/){
+                                    const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
+                                    const float correspondencesFlagThreshold /*= 0.9f*/){
         //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
         const FeatureMat floatingFeatures = Eigen::Map<const FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
         const FeatureMat targetFeatures = Eigen::Map<const FeatureMat>(targetFeaturesArray, numTargetElements, registration::NUM_FEATURES);
@@ -153,7 +160,8 @@ extern "C"
         compute_correspondences(floatingFeatures, targetFeatures,
                                 floatingFlags, targetFlags,
                                 correspondingFeatures, correspondingFlags,
-                                correspondencesSymmetric, correspondencesNumNeighbours);
+                                correspondencesSymmetric, correspondencesNumNeighbours,
+                                correspondencesFlagThreshold);
 
         //# Convert back to raw data
         Eigen::Map<FeatureMat>(correspondingFeaturesArray, correspondingFeatures.rows(), correspondingFeatures.cols()) = correspondingFeatures;
@@ -302,6 +310,7 @@ extern "C"
                                 const float downsampleFloatStart/* = 90*/, const float downsampleTargetStart/* = 90*/,
                                 const float downsampleFloatEnd/* = 0*/, const float downsampleTargetEnd/* = 0*/,
                                 const bool correspondencesSymmetric/* = true*/, const size_t correspondencesNumNeighbours/* = 5*/,
+                                const float correspondencesFlagThreshold/* = 0.9f*/,
                                 const float inlierKappa/* = 4.0f*/, const bool inlierUseOrientation/* = true*/,
                                 const float transformSigma/* = 3.0f*/,
                                 const size_t transformNumViscousIterationsStart/* = 50*/, const size_t transformNumViscousIterationsEnd/* = 1*/,
@@ -315,6 +324,7 @@ extern "C"
                                     downsampleFloatStart, downsampleTargetStart,
                                     downsampleFloatEnd, downsampleTargetEnd,
                                     correspondencesSymmetric, correspondencesNumNeighbours,
+                                    correspondencesFlagThreshold,
                                     inlierKappa, inlierUseOrientation,
                                     transformSigma,
                                     transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
@@ -331,6 +341,7 @@ extern "C"
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 const size_t numIterations/* = 60*/,
                                 const bool correspondencesSymmetric/* = true*/, const size_t correspondencesNumNeighbours/* = 5*/,
+                                const float correspondencesFlagThreshold/* = 0.9f*/,
                                 const float inlierKappa/* = 4.0f*/, const bool inlierUseOrientation/* = true*/,
                                 const float transformSigma/* = 3.0f*/,
                                 const size_t transformNumViscousIterationsStart/* = 50*/, const size_t transformNumViscousIterationsEnd/* = 1*/,
@@ -355,6 +366,7 @@ extern "C"
                                 &floatingFaces,
                                 &floatingFlags, &targetFlags);
         registrator.set_parameters(correspondencesSymmetric, correspondencesNumNeighbours,
+                                    correspondencesFlagThreshold,
                                     inlierKappa, inlierUseOrientation,
                                     numIterations,
                                     transformSigma,
@@ -371,13 +383,15 @@ extern "C"
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 const size_t numIterations/* = 20*/,
                                 const bool correspondencesSymmetric/* = true*/, const size_t correspondencesNumNeighbours/* = 5*/,
+                                const float correspondencesFlagThreshold/* = 0.9f*/,
                                 const float inlierKappa/* = 4.0f*/, const bool inlierUseOrientation/*=true*/)
     {
         registration::RigidRegistration registrator;
         registrator.set_input(&floatingFeatures, &targetFeatures,
                                 &floatingFlags, &targetFlags);
         registrator.set_parameters(correspondencesSymmetric, correspondencesNumNeighbours,
-                                    inlierKappa, inlierUseOrientation, numIterations);
+                                    correspondencesFlagThreshold, inlierKappa,
+                                    inlierUseOrientation, numIterations);
         registrator.update();
     }
 
@@ -392,7 +406,8 @@ extern "C"
     void compute_correspondences(const FeatureMat& floatingFeatures, const FeatureMat& targetFeatures,
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 FeatureMat& correspondingFeatures, VecDynFloat& correspondingFlags,
-                                const bool symmetric/* = true*/, const size_t numNeighbours/* = 5*/){
+                                const bool symmetric/* = true*/, const size_t numNeighbours/* = 5*/,
+                                const float correspondencesFlagThreshold/* = 0.9f*/){
         registration::BaseCorrespondenceFilter* correspondenceFilter = NULL;
         if (symmetric) {
             correspondenceFilter = new registration::SymmetricCorrespondenceFilter();
@@ -403,7 +418,7 @@ extern "C"
         correspondenceFilter->set_floating_input(&floatingFeatures, &floatingFlags);
         correspondenceFilter->set_target_input(&targetFeatures, &targetFlags);
         correspondenceFilter->set_output(&correspondingFeatures, &correspondingFlags);
-        correspondenceFilter->set_parameters(numNeighbours);
+        correspondenceFilter->set_parameters(numNeighbours, correspondencesFlagThreshold);
         correspondenceFilter->update();
 
         delete correspondenceFilter;

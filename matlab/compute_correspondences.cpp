@@ -11,9 +11,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                       "Zero left-hand-side outputs required.");
     }
     //## Number of output arguments
-    if(nrhs != 8) {
+    if(nrhs != 9) {
     mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nrhs",
-                      "8 right-hand-side inputs required.");
+                      "9 right-hand-side inputs required.");
     }
     
     //# Get Inputs
@@ -36,13 +36,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     bool correspondencesSymmetric = static_cast<bool>(mxGetScalar(prhs[6]));
     //### Number of neighbours to use to compute corresponding points
     mwSize correspondencesNumNeighbours = static_cast<mwSize>(mxGetScalar(prhs[7]));
+    //### Flag threshold to mark corresponding flag as 0.0 or 1.0
+    float correspondencesFlagThreshold = static_cast<float>(mxGetScalar(prhs[8]));
     
     //# Execute c++ function
     meshmonk::compute_correspondences_mex(floatingFeatures, targetFeatures,
                                         numFloatingElements, numTargetElements,
                                         floatingFlags, targetFlags,
                                         correspondingFeatures, correspondingFlags,
-                                        correspondencesSymmetric, correspondencesNumNeighbours);
+                                        correspondencesSymmetric, correspondencesNumNeighbours,
+                                        correspondencesFlagThreshold);
     
 //     //# Set Output
 //     //## Corresponding Features

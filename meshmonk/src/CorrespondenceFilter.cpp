@@ -35,9 +35,11 @@ void CorrespondenceFilter::set_target_input(const FeatureMat * const inTargetFea
 }
 
 
-void CorrespondenceFilter::set_parameters(const size_t numNeighbours)
+void CorrespondenceFilter::set_parameters(const size_t numNeighbours,
+                                          const float flagThreshold)
 {
     _numNeighbours = numNeighbours;
+    _flagThreshold = flagThreshold;
     _numAffinityElements = _numFloatingElements * _numNeighbours;
     _neighbourFinder.set_parameters(_numNeighbours);
 }

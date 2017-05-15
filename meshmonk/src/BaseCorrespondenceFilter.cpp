@@ -47,7 +47,7 @@ void BaseCorrespondenceFilter::_affinity_to_correspondences(){
     //## Flags are binary. We will round them down if lower than the flag
     //## rounding limit (see explanation in parameter description).
     for (size_t i = 0 ; i < _numFloatingElements ; i++) {
-        if ((*_ioCorrespondingFlags)[i] > _flagRoundingLimit){
+        if ((*_ioCorrespondingFlags)[i] > _flagThreshold){
             (*_ioCorrespondingFlags)[i] = 1.0;
         }
         else {
