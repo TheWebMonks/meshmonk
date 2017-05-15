@@ -38,6 +38,7 @@ void CorrespondenceFilter::set_target_input(const FeatureMat * const inTargetFea
 void CorrespondenceFilter::set_parameters(const size_t numNeighbours)
 {
     _numNeighbours = numNeighbours;
+    _numAffinityElements = _numFloatingElements * _numNeighbours;
     _neighbourFinder.set_parameters(_numNeighbours);
 }
 
@@ -101,7 +102,6 @@ void CorrespondenceFilter::_update_affinity() {
             counter++;
         }
     }
-
     //## Construct the sparse matrix with the computed element list
     _affinity.setFromTriplets(affinityElements.begin(),
                                 affinityElements.end());

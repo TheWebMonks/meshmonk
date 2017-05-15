@@ -18,6 +18,7 @@ void BaseCorrespondenceFilter::set_output(FeatureMat * const ioCorrespondingFeat
 {
     _ioCorrespondingFeatures = ioCorrespondingFeatures;
     _ioCorrespondingFlags = ioCorrespondingFlags;
+
 }//end set_output
 
 void BaseCorrespondenceFilter::_affinity_to_correspondences(){
