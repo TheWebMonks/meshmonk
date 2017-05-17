@@ -92,8 +92,7 @@ void ViscoElasticTransformer::_update_smoothing_weights(){
             // rescale the combined weight between [eps,1.0] instead of [0.0,1.0]. If we wouldn't do this,
             // all the nodes with inlierWeight equal to 0.0 would end up with a deformation vector
             // of length 0.0.
-            const float minWeight = 0.00001f;
-            combinedWeight = (1.0f - minWeight) * combinedWeight + minWeight;
+            combinedWeight = (1.0f - _minWeight) * combinedWeight + _minWeight;
 
             //## insert the combined weight into _smoothingWeights
             _smoothingWeights(i,j) = combinedWeight;
@@ -154,6 +153,10 @@ void ViscoElasticTransformer::_update_viscously(){
                 // get neighbour weight and vector
                 float weight = (*_inWeights)[neighbourIndex] * _smoothingWeights(i,j);
                 neighbourVector = forceField.row(neighbourIndex);
+                // rescale the weight between [eps,1.0] instead of [0.0,1.0]. If we wouldn't do this,
+                // all the nodes with inlierWeight equal to 0.0 would end up with a deformation vector
+                // of length 0.0.
+                weight = (1.0f - _minWeight) * weight + _minWeight;
 
                 // increment the weighted average with current weighted neighbour vector
                 vectorAverage += weight * neighbourVector;
@@ -197,6 +200,10 @@ void ViscoElasticTransformer::_update_elastically(){
                 // get neighbour weight and vector
                 float weight = (*_inWeights)[neighbourIndex] * _smoothingWeights(i,j);
                 neighbourVector = unregulatedDisplacementField.row(neighbourIndex);
+                // rescale the weight between [eps,1.0] instead of [0.0,1.0]. If we wouldn't do this,
+                // all the nodes with inlierWeight equal to 0.0 would end up with a deformation vector
+                // of length 0.0.
+                weight = (1.0f - _minWeight) * weight + _minWeight;
 
                 // increment the weighted average with current weighted neighbour vector
                 vectorAverage += weight * neighbourVector;
