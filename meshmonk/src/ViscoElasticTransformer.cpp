@@ -147,6 +147,7 @@ void ViscoElasticTransformer::_update_viscously(){
             //## vectors.
             Vec3Float vectorAverage = Vec3Float::Zero();
             Vec3Float neighbourVector;
+            float sumWeights = 0.0f;
             for (size_t j = 0 ; j < _numNeighbours ; j++) {
                 // get neighbour index
                 size_t neighbourIndex = neighbourIndices(i,j);
@@ -157,12 +158,13 @@ void ViscoElasticTransformer::_update_viscously(){
                 // all the nodes with inlierWeight equal to 0.0 would end up with a deformation vector
                 // of length 0.0.
                 weight = (1.0f - _minWeight) * weight + _minWeight;
+                sumWeights += weight;
 
                 // increment the weighted average with current weighted neighbour vector
                 vectorAverage += weight * neighbourVector;
             }
 
-            regularizedForceField.row(i) = vectorAverage;
+            regularizedForceField.row(i) = vectorAverage / sumWeights;
         }
         forceField = regularizedForceField;
     }
@@ -189,6 +191,7 @@ void ViscoElasticTransformer::_update_elastically(){
         unregulatedDisplacementField = _displacementField;
 
         //## Loop over each unregularized displacement vector and smooth it.
+        float sumWeights = 0.0f;
         for (size_t i = 0 ; i < _numElements ; i++) {
             //## For the current displacement, compute the weighted average of the neighbouring
             //## vectors.
@@ -204,12 +207,13 @@ void ViscoElasticTransformer::_update_elastically(){
                 // all the nodes with inlierWeight equal to 0.0 would end up with a deformation vector
                 // of length 0.0.
                 weight = (1.0f - _minWeight) * weight + _minWeight;
+                sumWeights += weight;
 
                 // increment the weighted average with current weighted neighbour vector
                 vectorAverage += weight * neighbourVector;
             }
 
-            _displacementField.row(i) = vectorAverage;
+            _displacementField.row(i) = vectorAverage / sumWeights;
         }
     }
 }
