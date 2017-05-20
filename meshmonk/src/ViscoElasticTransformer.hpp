@@ -64,7 +64,7 @@ class ViscoElasticTransformer
         size_t _numElements = 0;
         bool _neighboursOutdated = true;
         bool _flagsOutdated = true;
-        const float _minWeight = 0.0001f;
+        const float _minWeight = 0.00001f;
 
         //# Internal functions
         //## Update the neighbour finder

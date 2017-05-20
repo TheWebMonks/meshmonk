@@ -41,11 +41,14 @@ void BaseCorrespondenceFilter::_affinity_to_correspondences(){
 
     //# Simple computation of corresponding features and flags
     *_ioCorrespondingFeatures = _affinity * (*_inTargetFeatures);
+    std::cout << "corresponding flags before: " << _ioCorrespondingFlags->topRows(5);
     *_ioCorrespondingFlags = _affinity * (*_inTargetFlags);
+    std::cout << "corresponding flags after: " << _ioCorrespondingFlags->topRows(5);
 
     //# Flag correction.
     //## Flags are binary. We will round them down if lower than the flag
     //## rounding limit (see explanation in parameter description).
+    if (_flagThreshold >= 1.0f) {std::cerr << "corresponding flag threshold equals " << _flagThreshold << " but has to be between 0.0 and 1.0!" <<std::endl;}
     for (size_t i = 0 ; i < _numFloatingElements ; i++) {
         if ((*_ioCorrespondingFlags)[i] > _flagThreshold){
             (*_ioCorrespondingFlags)[i] = 1.0;

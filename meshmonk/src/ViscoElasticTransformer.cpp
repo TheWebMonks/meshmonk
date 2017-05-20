@@ -70,25 +70,39 @@ void ViscoElasticTransformer::_update_smoothing_weights(){
 
     Therefor, we initialize the smoothing weights as the squared distances to each neighbour.
     Next, we convert that distance to the gaussian weight.
-    Then, we multiply that weight with the user inputted weights.
+    Then, we multiply that weight with the user inputted flags.
     And lastly, we normalize each row so that the sum of weights for each
     node's neighbours equals 1.0.
     */
 
     //# Initialize the smoothing weights as the squared distances to the neighbouring nodes.
     _smoothingWeights = _neighbourFinder.get_distances();
+    MatDynInt neighbourIndices = _neighbourFinder.get_indices();
 
     //# Loop over each neighbour and compute its smoothing weight
     //## 1) compute gaussian weights based on the distance to each neighbour
     for (size_t i = 0 ; i < _numElements ; i++){
         float sumWeight = 0.0f;
+        //DEBUG
+        if (i == 0){
+            std::cout << "============================" << std::endl;
+        }
+        //END DEBUG
         for (size_t j = 0 ; j < _numNeighbours ; j++){
+            //DEBUG
+            if (i == 0){
+                std::cout << "-------------------------" << std::endl;
+                std::cout << "_update_smoothing_weights: " << j << std::endl;
+            }
+            //END DEBUG
             //## Get the distance to the neighbour
-            float distanceSquared = _smoothingWeights(i,j); //smoothing weight still equals the squared distance here
+            const float distanceSquared = _smoothingWeights(i,j); //smoothing weight still equals the squared distance here
             //## Compute the gaussian weight
-            float gaussianWeight = std::exp(-0.5f * distanceSquared / std::pow(_sigma, 2.0f));
-            //## Combine the gaussian weight with the user defined weight
-            float combinedWeight = (*_inFlags)[i] * gaussianWeight;
+            const float gaussianWeight = std::exp(-0.5f * distanceSquared / std::pow(_sigma, 2.0f));
+            //## Combine the gaussian weight with the user defined flag
+            const size_t neighbourIndex = neighbourIndices(i,j);
+            const float neighbourFlag = (*_inFlags)[neighbourIndex];
+            float combinedWeight = neighbourFlag * gaussianWeight;
             // rescale the combined weight between [eps,1.0] instead of [0.0,1.0]. If we wouldn't do this,
             // all the nodes with inlierWeight equal to 0.0 would end up with a deformation vector
             // of length 0.0.
@@ -97,6 +111,15 @@ void ViscoElasticTransformer::_update_smoothing_weights(){
             //## insert the combined weight into _smoothingWeights
             _smoothingWeights(i,j) = combinedWeight;
             sumWeight += combinedWeight;
+
+            //DEBUG
+            if (i == 0){
+                std::cout << "gaussian weight   : " << gaussianWeight << std::endl;
+                std::cout << "combined weight 1 : " << neighbourFlag * gaussianWeight << std::endl;
+                std::cout << "combined weight 2 : " << combinedWeight << std::endl;
+                std::cout << "sum weights       : " << sumWeight << std::endl;
+            }
+            //END DEBUG
         }
         //## normalize each row of weights
         if (sumWeight > 0.000001f){
@@ -148,7 +171,19 @@ void ViscoElasticTransformer::_update_viscously(){
             Vec3Float vectorAverage = Vec3Float::Zero();
             Vec3Float neighbourVector;
             float sumWeights = 0.0f;
+            //DEBUG
+            if (i == 0){
+                std::cout << "============================" << std::endl;
+            }
+            //END DEBUG
             for (size_t j = 0 ; j < _numNeighbours ; j++) {
+                //DEBUG
+                if (i == 0){
+                    std::cout << "------------------" << std::endl;
+                    std::cout << "_update_viscously: "<< j << std::endl;
+                }
+                //END DEBUG
+
                 // get neighbour index
                 size_t neighbourIndex = neighbourIndices(i,j);
                 // get neighbour weight and vector
@@ -162,9 +197,26 @@ void ViscoElasticTransformer::_update_viscously(){
 
                 // increment the weighted average with current weighted neighbour vector
                 vectorAverage += weight * neighbourVector;
+
+                //DEBUG
+                if (i == 0){
+                    std::cout << "smoothing weight       : " << _smoothingWeights(i,j) << std::endl;
+                    std::cout << "neighbour inlier weight: " << (*_inWeights)[neighbourIndex] << std::endl;
+                    std::cout << "weight 1               : " << (*_inWeights)[neighbourIndex] * _smoothingWeights(i,j) << std::endl;
+                    std::cout << "weight 2               : " << weight << std::endl;
+                    std::cout << "sum weights            : " << sumWeights << std::endl;
+                    std::cout << "neighbour vector       : " << neighbourVector << std::endl;
+                    std::cout << "vector average 1       : " << vectorAverage << std::endl;
+                }
+                //END DEBUG
             }
 
             regularizedForceField.row(i) = vectorAverage / sumWeights;
+            //DEBUG
+            if (i == 0){
+                std::cout << "regularized vec  : " << regularizedForceField.row(i) << std::endl;
+            }
+            //END DEBUG
         }
         forceField = regularizedForceField;
     }
@@ -197,7 +249,18 @@ void ViscoElasticTransformer::_update_elastically(){
             //## vectors.
             Vec3Float vectorAverage = Vec3Float::Zero();
             Vec3Float neighbourVector;
+            //DEBUG
+            if (i == 0){
+                std::cout << "============================" << std::endl;
+            }
+            //END DEBUG
             for (size_t j = 0 ; j < _numNeighbours ; j++) {
+                //DEBUG
+                if (i == 0){
+                    std::cout << "---------------------" << std::endl;
+                    std::cout << "_update_elastically: " << j << std::endl;
+                }
+                //END DEBUG
                 // get neighbour index
                 size_t neighbourIndex = neighbourIndices(i,j);
                 // get neighbour weight and vector
@@ -211,9 +274,26 @@ void ViscoElasticTransformer::_update_elastically(){
 
                 // increment the weighted average with current weighted neighbour vector
                 vectorAverage += weight * neighbourVector;
+
+                //DEBUG
+                if (i == 0){
+                    std::cout << "smoothing weight       : " << _smoothingWeights(i,j) << std::endl;
+                    std::cout << "neighbour inlier weight: " << (*_inWeights)[neighbourIndex] << std::endl;
+                    std::cout << "weight 1               : " << (*_inWeights)[neighbourIndex] * _smoothingWeights(i,j) << std::endl;
+                    std::cout << "weight 2               : " << weight << std::endl;
+                    std::cout << "sum weights            : " << sumWeights << std::endl;
+                    std::cout << "neighbour vector       : " << neighbourVector << std::endl;
+                    std::cout << "vector average 1       : " << vectorAverage << std::endl;
+                }
+                //END DEBUG
             }
 
             _displacementField.row(i) = vectorAverage / sumWeights;
+            //DEBUG
+            if (i == 0){
+                std::cout << "regularized vec  : " << _displacementField.row(i) << std::endl;
+            }
+            //END DEBUG
         }
     }
 }
@@ -252,7 +332,13 @@ void ViscoElasticTransformer::update(){
     //# update the transformation
     _update_transformation();
     //# apply the transformation
+    //DEBUG
+    std::cout << "Floating before: " << _ioFloatingFeatures->row(0) << std::endl;
+    //END DEBUG
     _apply_transformation();
+    //DEBUG
+    std::cout << "Floating after : " << _ioFloatingFeatures->row(0) << std::endl;
+    //END DEBUG
 }
 
 
