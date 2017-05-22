@@ -56,10 +56,6 @@ void InlierDetector::update() {
     float lambdaa = 0.0;
     float sigmaNumerator = 0.0;
     float sigmaDenominator = 0.0;
-    //DEBUG
-    std::cout << "===========================" << std::endl;
-    std::cout << "Computing SIGMA." << std::endl;
-    //END DEBUG
     for (size_t i = 0 ; i < _numElements ; i++) {
         //### Compute distance (squared)
         FeatureVec difVector = _inCorrespondingFeatures->row(i) - _inFeatures->row(i);
