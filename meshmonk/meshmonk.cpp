@@ -76,24 +76,6 @@ extern "C"
         const VecDynFloat floatingFlags = Eigen::Map<const VecDynFloat>(floatingFlagsArray, numFloatingElements);
         const VecDynFloat targetFlags = Eigen::Map<const VecDynFloat>(targetFlagsArray, numTargetElements);
 
-//        //DEBUG
-//        std::cout << "nonrigid_registration_mex parameters: \n"
-//        << "  numFloatingElements: " << numFloatingElements << "\n"
-//        << "  numTargetElements: " << numTargetElements << "\n"
-//        << "  numFloatingFaces: " << numFloatingFaces << "\n"
-//        << "  numTargetFaces: " << numTargetFaces << "\n"
-//        << "  numIterations: " << numIterations << "\n"
-//        << "  correspondencesSymmetric: " << correspondencesSymmetric << "\n"
-//        << "  correspondencesNumNeighbours: " << correspondencesNumNeighbours << "\n"
-//        << "  inlierKappa: " << inlierKappa << "\n"
-//        << "  inlierUseOrientation: " << inlierUseOrientation << "\n"
-//        << "  inlierUseOrientation: " << inlierUseOrientation << "\n"
-//        << "  transformNumViscousIterationsStart: " << transformNumViscousIterationsStart << "\n"
-//        << "  transformNumViscousIterationsEnd: " << transformNumViscousIterationsEnd << "\n"
-//        << "  transformNumElasticIterationsStart: " << transformNumElasticIterationsStart << "\n"
-//        << "  transformNumElasticIterationsEnd: " << transformNumElasticIterationsEnd << std::endl;
-//        //END DEBUG
-
         //# Run nonrigid registration
         nonrigid_registration(floatingFeatures, targetFeatures,
                                 floatingFaces, targetFaces,
@@ -347,19 +329,6 @@ extern "C"
                                 const size_t transformNumViscousIterationsStart/* = 50*/, const size_t transformNumViscousIterationsEnd/* = 1*/,
                                 const size_t transformNumElasticIterationsStart/* = 50*/, const size_t transformNumElasticIterationsEnd/* = 1*/)
     {
-//        //DEBUG
-//        std::cout << "nonrigid_registration_mex parameters: \n"
-//        << "  numIterations: " << numIterations << "\n"
-//        << "  correspondencesSymmetric: " << correspondencesSymmetric << "\n"
-//        << "  correspondencesNumNeighbours: " << correspondencesNumNeighbours << "\n"
-//        << "  inlierKappa: " << inlierKappa << "\n"
-//        << "  inlierUseOrientation: " << inlierUseOrientation << "\n"
-//        << "  inlierUseOrientation: " << inlierUseOrientation << "\n"
-//        << "  transformNumViscousIterationsStart: " << transformNumViscousIterationsStart << "\n"
-//        << "  transformNumViscousIterationsEnd: " << transformNumViscousIterationsEnd << "\n"
-//        << "  transformNumElasticIterationsStart: " << transformNumElasticIterationsStart << "\n"
-//        << "  transformNumElasticIterationsEnd: " << transformNumElasticIterationsEnd << std::endl;
-//        //END DEBUG
 
         registration::NonrigidRegistration registrator;
         registrator.set_input(&floatingFeatures, &targetFeatures,

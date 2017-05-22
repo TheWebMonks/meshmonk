@@ -40,12 +40,12 @@ void NonrigidRegistration::set_parameters(bool symmetric,
     _numElasticIterations = _numElasticIterationsStart;
 
     //DEBUG
-        std::cout << "NonrigidRegistration::set_parameters parameters: \n"
-        << " numViscousIterationsStart: " << numViscousIterationsStart << "\n"
-        << " numViscousIterationsEnd: " << numViscousIterationsEnd << "\n"
-        << " numElasticIterationsStart: " << numElasticIterationsStart << "\n"
-        << " numElasticIterationsEnd: " << numElasticIterationsEnd << std::endl;
-        //END DEBUG
+    std::cout << "NonrigidRegistration::set_parameters parameters: \n"
+    << " numViscousIterationsStart: " << numViscousIterationsStart << "\n"
+    << " numViscousIterationsEnd: " << numViscousIterationsEnd << "\n"
+    << " numElasticIterationsStart: " << numElasticIterationsStart << "\n"
+    << " numElasticIterationsEnd: " << numElasticIterationsEnd << std::endl;
+    //END DEBUG
 
     _viscousAnnealingRate = exp(log(float(_numViscousIterationsEnd)/float(_numViscousIterationsStart))/(_numIterations-1));
     _elasticAnnealingRate = exp(log(float(_numElasticIterationsEnd)/float(_numElasticIterationsStart))/(_numIterations-1));
