@@ -84,15 +84,17 @@ void ViscoElasticTransformer::_update_smoothing_weights(){
     for (size_t i = 0 ; i < _numElements ; i++){
         float sumWeight = 0.0f;
         //DEBUG
-        if (i == 0){
+        if (i < 2){
+            std::cout << "============================" << std::endl;
+            std::cout << "_update_smoothing_weights: " << i << std::endl;
             std::cout << "============================" << std::endl;
         }
         //END DEBUG
         for (size_t j = 0 ; j < _numNeighbours ; j++){
             //DEBUG
-            if (i == 0){
+            if (i < 2){
                 std::cout << "-------------------------" << std::endl;
-                std::cout << "_update_smoothing_weights: " << j << std::endl;
+                std::cout << "------- neighbour " << j << "------" << std::endl;
             }
             //END DEBUG
             //## Get the distance to the neighbour
@@ -113,8 +115,10 @@ void ViscoElasticTransformer::_update_smoothing_weights(){
             sumWeight += combinedWeight;
 
             //DEBUG
-            if (i == 0){
+            if (i < 2){
                 std::cout << "gaussian weight   : " << gaussianWeight << std::endl;
+                std::cout << "neighbour index   : " << neighbourIndex << std::endl;
+                std::cout << "neighbour flag    : " << neighbourFlag << std::endl;
                 std::cout << "combined weight 1 : " << neighbourFlag * gaussianWeight << std::endl;
                 std::cout << "combined weight 2 : " << combinedWeight << std::endl;
                 std::cout << "sum weights       : " << sumWeight << std::endl;
@@ -172,15 +176,17 @@ void ViscoElasticTransformer::_update_viscously(){
             Vec3Float neighbourVector;
             float sumWeights = 0.0f;
             //DEBUG
-            if (i == 0){
+            if (i < 2){
+                std::cout << "============================" << std::endl;
+                std::cout << "_update_viscously: " << i << std::endl;
                 std::cout << "============================" << std::endl;
             }
             //END DEBUG
             for (size_t j = 0 ; j < _numNeighbours ; j++) {
                 //DEBUG
-                if (i == 0){
-                    std::cout << "------------------" << std::endl;
-                    std::cout << "_update_viscously: "<< j << std::endl;
+                if (i < 2){
+                    std::cout << "-------------------------" << std::endl;
+                    std::cout << "------- neighbour " << j << "------" << std::endl;
                 }
                 //END DEBUG
 
@@ -199,7 +205,7 @@ void ViscoElasticTransformer::_update_viscously(){
                 vectorAverage += weight * neighbourVector;
 
                 //DEBUG
-                if (i == 0){
+                if (i < 2){
                     std::cout << "smoothing weight       : " << _smoothingWeights(i,j) << std::endl;
                     std::cout << "neighbour inlier weight: " << (*_inWeights)[neighbourIndex] << std::endl;
                     std::cout << "weight 1               : " << (*_inWeights)[neighbourIndex] * _smoothingWeights(i,j) << std::endl;
@@ -213,7 +219,7 @@ void ViscoElasticTransformer::_update_viscously(){
 
             regularizedForceField.row(i) = vectorAverage / sumWeights;
             //DEBUG
-            if (i == 0){
+            if (i < 2){
                 std::cout << "regularized vec  : " << regularizedForceField.row(i) << std::endl;
             }
             //END DEBUG
@@ -243,22 +249,24 @@ void ViscoElasticTransformer::_update_elastically(){
         unregulatedDisplacementField = _displacementField;
 
         //## Loop over each unregularized displacement vector and smooth it.
-        float sumWeights = 0.0f;
         for (size_t i = 0 ; i < _numElements ; i++) {
             //## For the current displacement, compute the weighted average of the neighbouring
             //## vectors.
             Vec3Float vectorAverage = Vec3Float::Zero();
             Vec3Float neighbourVector;
+            float sumWeights = 0.0f;
             //DEBUG
-            if (i == 0){
+            if (i < 2){
+                std::cout << "============================" << std::endl;
+                std::cout << "_update_elastically: " << i << std::endl;
                 std::cout << "============================" << std::endl;
             }
             //END DEBUG
             for (size_t j = 0 ; j < _numNeighbours ; j++) {
                 //DEBUG
-                if (i == 0){
-                    std::cout << "---------------------" << std::endl;
-                    std::cout << "_update_elastically: " << j << std::endl;
+                if (i < 2){
+                    std::cout << "-------------------------" << std::endl;
+                    std::cout << "------- neighbour " << j << "------" << std::endl;
                 }
                 //END DEBUG
                 // get neighbour index
@@ -276,7 +284,7 @@ void ViscoElasticTransformer::_update_elastically(){
                 vectorAverage += weight * neighbourVector;
 
                 //DEBUG
-                if (i == 0){
+                if (i < 2){
                     std::cout << "smoothing weight       : " << _smoothingWeights(i,j) << std::endl;
                     std::cout << "neighbour inlier weight: " << (*_inWeights)[neighbourIndex] << std::endl;
                     std::cout << "weight 1               : " << (*_inWeights)[neighbourIndex] * _smoothingWeights(i,j) << std::endl;
@@ -290,7 +298,7 @@ void ViscoElasticTransformer::_update_elastically(){
 
             _displacementField.row(i) = vectorAverage / sumWeights;
             //DEBUG
-            if (i == 0){
+            if (i < 2){
                 std::cout << "regularized vec  : " << _displacementField.row(i) << std::endl;
             }
             //END DEBUG
