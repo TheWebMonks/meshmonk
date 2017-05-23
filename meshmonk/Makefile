@@ -17,12 +17,18 @@ build/SymmetricCorrespondenceFilter.o \
 build/ViscoElasticTransformer.o
 
 # Compile flags
-M_FLAGS = --verbose -Wall -fexceptions -O2 -Wall -std=c++14 -g -Wl,-V -fPIC -I /usr/local/include/ -c
-M_FLAGS2 = --verbose -Wall -fexceptions -O2 -Wall -std=c++14 -g -fPIC -I /usr/local/include/
+## Flags to compile
+M_FLAGS = --verbose -Wall -fexceptions -O2 -Wall -std=c++14 -g -Wl,-V -fPIC -I /usr/local/include/ -I vendor -c
 
+## Flags to build the example
+M_FLAGS2 = --verbose -Wall -fexceptions -O2 -Wall -std=c++14 -g -fPIC -I /usr/local/include/ -I vendor
+
+# Build the meshmonk library for OSX. The output will be a .dynlib file
+# Copy/paste the lib: cp libmeshmonk.dylib /usr/local/libe
 meshmonk: $(TARGETS)
 	g++ -shared $(TARGETS) -dynamiclib -o libmeshmonk.dylib -lOpenMeshCore -lOpenMeshTools -L/usr/local/lib
 
+# Compile all the files explicitly
 compile:
 	mkdir -p build
 	g++ $(M_FLAGS) meshmonk.cpp -o build/meshmonk.o
@@ -40,8 +46,11 @@ compile:
 	g++ $(M_FLAGS) src/SymmetricCorrespondenceFilter.cpp -o build/SymmetricCorrespondenceFilter.o
 	g++ $(M_FLAGS) src/ViscoElasticTransformer.cpp -o build/ViscoElasticTransformer.o
 
+# Build the example
+# Run: ./example
 example:
 	g++ $(M_FLAGS2) -lOpenMeshCore -lOpenMeshTools -lmeshmonk example.cpp -o example
 
+# Clean all the .o and .dynlib files
 clean:
 	rm -f build/*.o libmeshmonk.dylib

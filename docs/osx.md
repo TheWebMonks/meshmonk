@@ -42,7 +42,7 @@ brew install eigen
 ln -s /usr/local/Cellar/eigen/3.3.3/include/eigen3/Eigen /usr/local/include/Eigen
 ```
 
-### 2. 'Install' nanoflann
+### 2. _(optional)_ 'Install' nanoflann
 In your terminal, go to your Downloads folder. Download the nanoflann header (which is the only file you need from the nanoflann library) and copy it to /usr/local/include/.
 ```bash
 cd /Users/user/Downloads/
