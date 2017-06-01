@@ -5,7 +5,8 @@ The following is a dummy-proof guide to install meshmonk on your ubuntu 16.04 ma
 `sudo apt install git`
 
 ## Install gcc/g++ 4.9
-Because matlab only supports gcc's and g++'s earlier version (not the 5.x versions), we'll have to downgrade.
+Because matlab only supports gcc's and g++'s earlier version (not the 5.x versions), we'll have to downgrade. Below we'll give an easy (but permanent) way to do that. If you want to be able to switch versions on the fly, however, follow [this post](https://askubuntu.com/a/26518/664811).
+
 First, we'll remove the symbolic links of gcc and g++ to the 5.x versions, we'll install the older versions, and relink gcc and g++ symbols to those older versions:
 1. Check which versions you have. If they are 4.9, you can skip the other steps:
 `gcc -v`
