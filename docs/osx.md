@@ -46,7 +46,7 @@ ln -s /usr/local/Cellar/eigen/3.3.3/include/eigen3/Eigen /usr/local/include/Eige
 In your terminal, go to your Downloads folder. Download the nanoflann header (which is the only file you need from the nanoflann library) and copy it to /usr/local/include/.
 ```bash
 cd /Users/user/Downloads/
-wget https://github.com/jlblancoc/nanoflann/blob/master/include/nanoflann.hpp
+wget https://raw.githubusercontent.com/jlblancoc/nanoflann/master/include/nanoflann.hpp
 cp nanoflann.hpp /usr/local/include
 ```
 
