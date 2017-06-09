@@ -70,7 +70,7 @@ sudo sudo cp Build/lib/*.* /usr/local/lib/
 
 Copy/paste the header files
 ```bash
-cp /Users/user/Downloads/OpenMesh-6.3/src/OpenMesh/ /usr/local/include/
+cp -R /Users/user/Downloads/OpenMesh-6.3/src/OpenMesh /usr/local/include/
 ```
 
 ## MeshMonk
