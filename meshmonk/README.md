@@ -19,7 +19,7 @@ setenv('LD_LIBRARY_PATH', p);
 ```
 
 ### Mexing meshmonk functions
-In matlab, just run the mex_all.m script to mex all the meshmonk functions you need.
+In matlab, just run the mex_all.m script to mex all the meshmonk functions you need. This file can be found in the meshmonk repository (should be in your projects/meshmonk/matlab/ folder).
 
 ## From other software
 If you're creating your own c++ project and want to use meshmonk, simply add '-lmeshmonk -lOpenMeshCore -lOpenMeshTools' as an option to your compiler when compiling your software that uses the meshmonk library.
