@@ -15,7 +15,7 @@ brew install wget --with-libressl
 ```
 
 ### CMake
-We need cmake to configure and build OpenMesh and MeshMonk. We're copying here the installation instructions from (this page)[http://tudat.tudelft.nl/projects/tudat/wiki/Install_on_Mac_OS_X#Install-CMake-on-Mac-OS-X]:
+We need cmake to configure and build OpenMesh and MeshMonk. We're copying here the installation instructions from [this page](http://tudat.tudelft.nl/projects/tudat/wiki/Install_on_Mac_OS_X#Install-CMake-on-Mac-OS-X):
 1. Download the latest binary distribution for Mac OSX from the [Downloads page](https://cmake.org/download/)
 2. Open the resulting .dmg-file you just downloaded
 3. Drag and drop the CMake icon to the Applications folder icon.
