@@ -128,6 +128,9 @@ void ViscoElasticTransformer::_update_viscously(){
     //# 1) Determine the force field (difference between current floating and corresponding
     //# Features).
     Vec3Mat forceField = _inCorrespondingFeatures->leftCols(3) - _ioFloatingFeatures->leftCols(3);
+    //## Each differential vector is multiplied with the corresponding inlier weight.
+    //## That ensures that patches of outliers don't move unless pulled along by surrounding inliers.
+    forceField = forceField.array().colwise() * (*_inWeights).array(); //this multiplies each row by the corresponding inlier weight
 
     //# 2) Regularize the force field through iterative weighted averaging.
     /*

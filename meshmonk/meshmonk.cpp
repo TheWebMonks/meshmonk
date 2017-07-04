@@ -101,7 +101,8 @@ extern "C"
                                 const size_t numIterations/*= 60*/,
                                 const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
                                 const float correspondencesFlagThreshold/* = 0.9f*/,
-                                const float inlierKappa/*= 4.0f*/, const bool inlierUseOrientation/*=true*/){
+                                const float inlierKappa/*= 4.0f*/, const bool inlierUseOrientation/*=true*/,
+                                const bool useScaling/*= false*/){
         //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
         FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
         const FeatureMat targetFeatures = Eigen::Map<const FeatureMat>(targetFeaturesArray, numTargetElements, registration::NUM_FEATURES);
@@ -117,7 +118,8 @@ extern "C"
                             numIterations,
                             correspondencesSymmetric, correspondencesNumNeighbours,
                             correspondencesFlagThreshold,
-                            inlierKappa);
+                            inlierKappa,
+                            useScaling);
 
         //# Convert back to raw data
         Eigen::Map<FeatureMat>(floatingFeaturesArray, floatingFeatures.rows(), floatingFeatures.cols()) = floatingFeatures;
@@ -173,7 +175,7 @@ extern "C"
 
     void compute_rigid_transformation_mex(float floatingFeaturesArray[], const size_t numFloatingElements,
                                         const float correspondingFeaturesArray[], const float inlierWeightsArray[],
-                                        const bool allowScaling /*= fakse*/){
+                                        const bool useScaling /*= false*/){
         //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
         FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
         const FeatureMat correspondingFeatures = Eigen::Map<const FeatureMat>(correspondingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
@@ -181,7 +183,7 @@ extern "C"
 
         //# Run nonrigid registration
         compute_rigid_transformation(floatingFeatures, correspondingFeatures,
-                                    inlierWeights, allowScaling);
+                                    inlierWeights, useScaling);
 
         //# Convert back to raw data
         Eigen::Map<FeatureMat>(floatingFeaturesArray, floatingFeatures.rows(), floatingFeatures.cols()) = floatingFeatures;
@@ -353,14 +355,16 @@ extern "C"
                                 const size_t numIterations/* = 20*/,
                                 const bool correspondencesSymmetric/* = true*/, const size_t correspondencesNumNeighbours/* = 5*/,
                                 const float correspondencesFlagThreshold/* = 0.9f*/,
-                                const float inlierKappa/* = 4.0f*/, const bool inlierUseOrientation/*=true*/)
+                                const float inlierKappa/* = 4.0f*/, const bool inlierUseOrientation/*=true*/,
+                                const bool useScaling/* = false*/)
     {
         registration::RigidRegistration registrator;
         registrator.set_input(&floatingFeatures, &targetFeatures,
                                 &floatingFlags, &targetFlags);
         registrator.set_parameters(correspondencesSymmetric, correspondencesNumNeighbours,
                                     correspondencesFlagThreshold, inlierKappa,
-                                    inlierUseOrientation, numIterations);
+                                    inlierUseOrientation, numIterations,
+                                    useScaling);
         registrator.update();
     }
 
@@ -407,11 +411,11 @@ extern "C"
 
     //# Rigid Transformation
     void compute_rigid_transformation(FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
-                                    const VecDynFloat& inlierWeights, const bool allowScaling/* = false*/){
+                                    const VecDynFloat& inlierWeights, const bool useScaling/* = false*/){
         registration::RigidTransformer rigidTransformer;
         rigidTransformer.set_input(&correspondingFeatures, &inlierWeights);
         rigidTransformer.set_output(&floatingFeatures);
-        rigidTransformer.set_parameters(allowScaling);
+        rigidTransformer.set_parameters(useScaling);
         rigidTransformer.update();
     }
 

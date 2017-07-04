@@ -41,7 +41,7 @@ correspondencesNumNeighbours = 5;
 correspondencesFlagThreshold = 0.9;
 inlierKappa = 4.0;
 inlierUseOrientation = true;
-allowScaling = false;
+useScaling = false;
 
 %# Initialize data structures
 correspondingFeatures = single(zeros(numFloatingElements,6));
@@ -67,7 +67,7 @@ for i=1:numIterations
     
     %# Compute Transformation
     compute_rigid_transformation(floatingFeatures, correspondingFeatures,...
-                                    inlierWeights, allowScaling);
+                                    inlierWeights, useScaling);
 end
 
 

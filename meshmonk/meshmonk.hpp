@@ -118,7 +118,8 @@ extern "C"
                                 const size_t numIterations = 20,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
                                 const float correspondencesFlagThreshold = 0.9f,
-                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true);
+                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
+                                const bool useScaling = false);
 
 
 
@@ -141,7 +142,7 @@ extern "C"
 
     //# Rigid Transformation
     void compute_rigid_transformation(FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
-                                    const VecDynFloat& inlierWeights, const bool allowScaling = false);
+                                    const VecDynFloat& inlierWeights, const bool useScaling = false);
 
     //# Nonrigid Transformation
     void compute_nonrigid_transformation(FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
@@ -224,7 +225,8 @@ extern "C"
                                 const size_t numIterations = 60,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
                                 const float correspondencesFlagThreshold = 0.9f,
-                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true);
+                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
+                                const bool useScaling = false);
 
     void compute_correspondences_mex(const float floatingFeaturesArray[], const float targetFeaturesArray[],
                                     const size_t numFloatingElements, const size_t numTargetElements,
@@ -240,7 +242,7 @@ extern "C"
 
     void compute_rigid_transformation_mex(float floatingFeaturesArray[], const size_t numFloatingElements,
                                         const float correspondingFeaturesArray[], const float inlierWeightsArray[],
-                                        const bool allowScaling /*= fakse*/);
+                                        const bool useScaling /*= false*/);
 
     void compute_nonrigid_transformation_mex(float floatingFeaturesArray[], const float correspondingFeaturesArray[],
                                             const size_t numFloatingElements,

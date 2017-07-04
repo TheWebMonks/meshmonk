@@ -14,13 +14,15 @@ void RigidRegistration::set_input(FeatureMat * const ioFloatingFeatures,
 
 void RigidRegistration::set_parameters(bool symmetric, size_t numNeighbours,
                                        float flagThreshold, float kappaa,
-                                       bool inlierUseOrientation, size_t numIterations){
+                                       bool inlierUseOrientation, size_t numIterations,
+                                       bool useScaling){
     _symmetric = symmetric;
     _numNeighbours = numNeighbours;
     _flagThreshold = flagThreshold;
     _kappaa = kappaa;
     _inlierUseOrientation = inlierUseOrientation;
     _numIterations = numIterations;
+    _useScaling = useScaling;
 }//end set_parameters()
 
 

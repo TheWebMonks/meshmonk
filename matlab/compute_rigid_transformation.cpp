@@ -26,12 +26,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     float *inlierWeights = reinterpret_cast<float *>(mxGetData(prhs[2]));
     //## Parameters
     //### Allow Scaling
-    bool allowScaling = static_cast<bool>(mxGetScalar(prhs[3]));
+    bool useScaling = static_cast<bool>(mxGetScalar(prhs[3]));
     
     //# Execute c++ function                                        
     meshmonk::compute_rigid_transformation_mex(floatingFeatures, numFloatingElements,
                                                 correspondingFeatures, inlierWeights,
-                                                allowScaling);
+                                                useScaling);
     
     //# Set Output
 //     plhs[0] = mxCreateNumericMatrix(numFloatingElements, 6, mxSINGLE_CLASS, mxREAL); // output: double matrix

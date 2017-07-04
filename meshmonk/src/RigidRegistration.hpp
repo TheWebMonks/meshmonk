@@ -45,7 +45,8 @@ class RigidRegistration
                        const VecDynFloat * const inTargetFlags);
         void set_parameters(bool symmetric, size_t numNeighbours,
                             float flagThreshold, float kappaa,
-                            bool inlierUseOrientation, size_t numIterations);
+                            bool inlierUseOrientation, size_t numIterations,
+                            bool useScaling);
 
         void update();
 
@@ -68,6 +69,7 @@ class RigidRegistration
         bool _inlierUseOrientation = true;
         //## Transformation
         size_t _numIterations = 10;
+        bool _useScaling = false;
 
         //# Internal Data structures
 

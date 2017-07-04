@@ -11,9 +11,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                       "Zero LHS output required.");
     }
     //## Number of output arguments
-    if(nrhs != 12) {
+    if(nrhs != 13) {
     mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nrhs",
-                      "12 inputs required.");
+                      "13 inputs required.");
     }
     
     //# Get Inputs
@@ -46,6 +46,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     float inlierKappa = static_cast<float>(mxGetScalar(prhs[10]));
     //### Inlier Orientation
     float inlierUseOrientation = static_cast<float>(mxGetScalar(prhs[11]));
+    //### Allow Scaling
+    bool useScaling = static_cast<bool>(mxGetScalar(prhs[12]));
     
     
     //# Execute c++ function
@@ -57,7 +59,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                                 numIterations,
                                 correspondencesSymmetric, correspondencesNumNeighbours,
                                 correspondencesFlagThreshold,
-                                inlierKappa, inlierUseOrientation);
+                                inlierKappa, inlierUseOrientation,
+                                useScaling);
     
 //     //# Set Output
 //     int numCols = 6;
