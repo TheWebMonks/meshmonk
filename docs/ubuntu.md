@@ -102,6 +102,8 @@ Now, compile the code by clicking the small yellow cog in the top toolbar ('Buil
 
 Code::Blocks will print a lot of output, including warnings (in blue). Don't worry about those.
 
+If you started building without changing the 'other compiler options' first, you'll have to 'Rebuild' the meshmonk library after changing the compiler options instead of 'Build'.
+
 ### Installing meshmonk
 Now that you've compiled everything, we're going to put the library files in the right places so that other applications can access them:
 1) Copy the shared library 'libmeshmonk.so' to /usr/local/lib/: `sudo cp /home/user/projects/meshmonk/meshmonk/bin/Release/libmeshmonk.so /usr/local/lib/`
