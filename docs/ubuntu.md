@@ -87,8 +87,11 @@ Next, let's compile MeshMonk using Code::Blocks.
 
 After clicking 'Finish', the meshmonk project is opened automatically. We're going to set some compiler/linker options now:
 1) Right-click the project (called 'meshmonk' with the symbol of Code::Blocks in front of it) and select 'Build options...'
-2) In the 'Compiler settings' tab, select the 'Compiler Flags' subtabtick the 'Optimize even more (for speed) [-O2]' option
+2) In the 'Compiler settings' tab, select the 'Compiler Flags' subtab and tick the 'Optimize even more (for speed) [-O2]' option
 3) In the 'Compiler settings' tab, select the 'Other compiler options' and write `-std=c++14 -Wl,-V -fPIC` in the text field.
+
+Note that you have to change these Compiler settings for both the Debug and Release build! (see the leftside pane in the 'Build options' window).
+
 
 One big thing is still missing from the project, namely the sources themselves! Delete the current main.cpp that is in the meshmonk project (which was automatically generated but we're gonna use our own sources). Now add the sources:
 * Right-click the meshmonk project and select 'Add files recursively...'. Choose the `/home/user/projects/meshmonk/meshmonk/src` folder that you obtained by cloning the repository earlier.
