@@ -106,6 +106,8 @@ Code::Blocks will print a lot of output, including warnings (in blue). Don't wor
 
 If you started building without changing the 'other compiler options' first, you'll have to 'Rebuild' the meshmonk library after changing the compiler options instead of 'Build'.
 
+Now go into the home/user/projects/meshmonk/meshmonk/bin/Release/ folder and you should see the resulting .so file, which is the shared library we just compiled. Make sure the name is 'libmeshmonk.so'. CodeBlocks often wrongfully names it 'liblibmeshmonk.so'. If that's the case, manually change the name back to 'libmeshmonk.so'.
+
 ### Installing meshmonk
 Now that you've compiled everything, we're going to put the library files in the right places so that other applications can access them:
 1) Copy the shared library 'libmeshmonk.so' to /usr/local/lib/: `sudo cp /home/user/projects/meshmonk/meshmonk/bin/Release/libmeshmonk.so /usr/local/lib/`
