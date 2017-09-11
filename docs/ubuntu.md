@@ -26,9 +26,11 @@ First, we'll remove the symbolic links of gcc and g++ to the 5.x versions, we'll
 
 ## Install code::blocks
 We'll use an IDE to make compiling the code easier.
-`sudo add-apt-repository ppa:damien-moore/codeblocks-stable`
-`sudo apt-get update`
-`sudo apt-get install codeblocks codeblocks-contrib`
+```
+sudo add-apt-repository ppa:damien-moore/codeblocks-stable
+sudo apt-get update
+sudo apt-get install codeblocks codeblocks-contrib
+```
 
 ## Install required libraries
 The meshmonk library depends on [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page), [nanoflann](https://github.com/jlblancoc/nanoflann),
