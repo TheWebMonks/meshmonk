@@ -51,36 +51,39 @@ void InlierDetector::update() {
     *_ioProbability = *_inCorrespondingFlags;
 
     //# Distance based inlier/outlier classification
-    //## Re-calculate the parameters sigma and lambda
-    float sigmaa = 0.0;
-    float lambdaa = 0.0;
-    float sigmaNumerator = 0.0;
-    float sigmaDenominator = 0.0;
-    for (size_t i = 0 ; i < _numElements ; i++) {
-        //### Compute distance (squared)
-        FeatureVec difVector = _inCorrespondingFeatures->row(i) - _inFeatures->row(i);
-        const float distanceSquared = difVector.squaredNorm();
+    const float numDistanceBasedIterations = 10;
+    for (size_t it = 0 ; it < numDistanceBasedIterations ; it++) {
+        //## Re-calculate the parameters sigma and lambda
+        float sigmaa = 0.0;
+        float lambdaa = 0.0;
+        float sigmaNumerator = 0.0;
+        float sigmaDenominator = 0.0;
+        for (size_t i = 0 ; i < _numElements ; i++) {
+            //### Compute distance (squared)
+            FeatureVec difVector = _inCorrespondingFeatures->row(i) - _inFeatures->row(i);
+            const float distanceSquared = difVector.squaredNorm();
 
-        sigmaNumerator += (*_ioProbability)[i] * distanceSquared;
-        sigmaDenominator += (*_ioProbability)[i];
-    }
-    //### sigma and lambda
-    sigmaa = std::sqrt(sigmaNumerator/sigmaDenominator);
-    if (sigmaa < _minimalSigma) {sigmaa = _minimalSigma;}
-    else if (sigmaa > _maximalSigma) {sigmaa = _maximalSigma;}
+            sigmaNumerator += (*_ioProbability)[i] * distanceSquared;
+            sigmaDenominator += (*_ioProbability)[i];
+        }
+        //### sigma and lambda
+        sigmaa = std::sqrt(sigmaNumerator/sigmaDenominator);
+        if (sigmaa < _minimalSigma) {sigmaa = _minimalSigma;}
+        else if (sigmaa > _maximalSigma) {sigmaa = _maximalSigma;}
 
-    lambdaa = 1.0/(std::sqrt(2.0 * 3.14159) * sigmaa) * std::exp(-0.5 * _kappa * _kappa);
+        lambdaa = 1.0/(std::sqrt(2.0 * 3.14159) * sigmaa) * std::exp(-0.5 * _kappa * _kappa);
 
-    //## Recalculate the distance-based probabilities
-    for (size_t i = 0 ; i < _numElements ; i++) {
-        //### Get squared distance
-        FeatureVec difVector = _inCorrespondingFeatures->row(i) - _inFeatures->row(i);
-        const float distanceSquared = difVector.squaredNorm();
-        //### Compute probability
-        float probability = 1.0/(std::sqrt(2.0 * 3.14159) * sigmaa) * std::exp(-0.5 * distanceSquared / std::pow(sigmaa, 2.0));
-        probability /= (probability + lambdaa);
-        (*_ioProbability)[i] *= probability;
+        //## Recalculate the distance-based probabilities
+        for (size_t i = 0 ; i < _numElements ; i++) {
+            //### Get squared distance
+            FeatureVec difVector = _inCorrespondingFeatures->row(i) - _inFeatures->row(i);
+            const float distanceSquared = difVector.squaredNorm();
+            //### Compute probability
+            float probability = 1.0/(std::sqrt(2.0 * 3.14159) * sigmaa) * std::exp(-0.5 * distanceSquared / std::pow(sigmaa, 2.0));
+            probability /= (probability + lambdaa);
+            (*_ioProbability)[i] *= probability;
 
+        }
     }
 
 

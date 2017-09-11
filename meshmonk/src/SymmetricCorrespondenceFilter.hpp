@@ -71,9 +71,12 @@ class SymmetricCorrespondenceFilter: public BaseCorrespondenceFilter
         CorrespondenceFilter _pushFilter;
         CorrespondenceFilter _pullFilter;
 
+        //# Parameters
+        bool _normalizePushPullForces = false;
+
         //# Internal functions
-        //## Function to update the sparse affinity matrix
-        void _update_affinity();
+        //## Function to update the internal push and pull correspondence filters
+        void _update_push_and_pull();
         //## Function to convert the sparse affinity weights into corresponding
         //## features and flags
         void _affinity_to_correspondences();

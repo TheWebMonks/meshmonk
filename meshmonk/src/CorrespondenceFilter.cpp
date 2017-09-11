@@ -44,6 +44,11 @@ void CorrespondenceFilter::set_parameters(const size_t numNeighbours,
     _neighbourFinder.set_parameters(_numNeighbours);
 }
 
+
+void CorrespondenceFilter::set_affinity_normalization(const bool normalizeAffinity){
+    _normalizeAffinity = normalizeAffinity;
+}
+
 void CorrespondenceFilter::_update_affinity() {
     /*
     # GOALthe
@@ -109,7 +114,9 @@ void CorrespondenceFilter::_update_affinity() {
                                 affinityElements.end());
 
     //# Normalize the rows of the affinity matrix
-    normalize_sparse_matrix(_affinity);
+    if (_normalizeAffinity) {
+        normalize_sparse_matrix(_affinity);
+    }
 
 }//end wknn_affinity()
 
@@ -125,7 +132,12 @@ void CorrespondenceFilter::update() {
 
     if (_ioCorrespondingFeatures != NULL) {
         //# Use the affinity weights to determine corresponding features and flags.
-        BaseCorrespondenceFilter::_affinity_to_correspondences();
+        if (_normalizeAffinity) {
+            BaseCorrespondenceFilter::_affinity_to_correspondences();
+        }
+        else {
+            std::cout << "Can't compute correspondences without normalizing the affinity matrix!" << std::endl;
+        }
     }
     else {
         /*

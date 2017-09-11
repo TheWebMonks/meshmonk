@@ -57,6 +57,7 @@ class CorrespondenceFilter : public BaseCorrespondenceFilter
         SparseMat get_affinity() const {return _affinity;}
         void set_parameters(const size_t numNeighbours,
                             const float flagThreshold);
+        void set_affinity_normalization(const bool normalizeAffinity = true);
         void update();
 
     protected:
@@ -68,6 +69,8 @@ class CorrespondenceFilter : public BaseCorrespondenceFilter
 
         //# Internal Parameters
         size_t _numAffinityElements = 0;
+        //# Normalize affinity matrix
+        bool _normalizeAffinity = true;
 
         //# Internal Functions
         //## Function to update the sparse affinity matrix

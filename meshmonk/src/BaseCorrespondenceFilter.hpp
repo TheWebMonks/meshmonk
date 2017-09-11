@@ -55,7 +55,7 @@ class BaseCorrespondenceFilter
 
         //# User Parameters
         size_t _numNeighbours = 3;
-        float _flagThreshold = 0.9;
+        float _flagThreshold = 0.99f;
 
         //# Internal Data structures
         SparseMat _affinity;

@@ -223,10 +223,69 @@ void ViscoElasticTransformer::_update_elastically(){
         }
     }
 }
+
+
+void ViscoElasticTransformer::_update_outlier_transformation(){
+    //# The transformation for the outliers is updated via a diffusion process.
+    //## The transformation field for inliers is kept the same, but diffuses into
+    //## outlier areas via diffusion.
+
+    //# Get the neighbour indices
+    Vec3Mat temporaryDisplacementField;
+    MatDynInt neighbourIndices = _neighbourFinder.get_indices();
+
+    //## Start iterative loop
+    for (size_t it = 0 ; it < _outlierDiffusionIterations ; it++){
+        //## Copy the displacement field into a temporary field.
+        temporaryDisplacementField = _displacementField;
+
+        //## Loop over the displacement vectors of the outliers (with inlier weight < 0.8).
+        for (size_t i = 0 ; i < _numElements ; i++) {
+            //## Check if the current element is an inlier
+            float inlierWeight = (*_inWeights)[i];
+            if (inlierWeight > 0.8) {
+                //### Current element is an inlier, go to next iteration
+                continue;
+            }
+            else {
+                //## For the current displacement, compute the weighted average of the neighbouring
+                //## vectors.
+                Vec3Float vectorAverage = Vec3Float::Zero();
+                Vec3Float neighbourVector;
+                float sumWeights = 0.0f;
+                for (size_t j = 0 ; j < _numNeighbours ; j++) {
+                    // get neighbour index
+                    size_t neighbourIndex = neighbourIndices(i,j);
+                    // get neighbour weight and vector
+                    float weight = (*_inWeights)[neighbourIndex] * _smoothingWeights(i,j);
+                    neighbourVector = temporaryDisplacementField.row(neighbourIndex);
+                    // rescale the weight between [eps,1.0] instead of [0.0,1.0]. If we wouldn't do this,
+                    // all the nodes with inlierWeight equal to 0.0 would end up with a deformation vector
+                    // of length 0.0.
+                    weight = (1.0f - _minWeight) * weight + _minWeight;
+                    sumWeights += weight;
+
+                    // increment the weighted average with current weighted neighbour vector
+                    vectorAverage += weight * neighbourVector;
+                }
+
+                //## We want diffusion of the displacement field in outlier areas, but in inlier areas we don't want the
+                //## displacement to change. We therefor use the inlier weight to weigh the assignment of the newly computed
+                //## averaged displacement versus its old value.
+                vectorAverage /= sumWeights;
+                _displacementField.row(i) *= inlierWeight;
+                _displacementField.row(i) += (1.0f-inlierWeight) * vectorAverage;
+            }
+        }
+    }
+}
+
+
 //## Function to update the transformation
 void ViscoElasticTransformer::_update_transformation(){
     _update_viscously();
     _update_elastically();
+    _update_outlier_transformation();
 }
 
 

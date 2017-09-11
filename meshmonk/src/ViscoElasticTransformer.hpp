@@ -52,6 +52,7 @@ class ViscoElasticTransformer
         float _sigma = 3.0;
         size_t _viscousIterations = 0;
         size_t _elasticIterations = 0;
+        size_t _outlierDiffusionIterations = 15;
 
         //# Internal Data structures
         Vec3Mat _displacementField;
@@ -75,6 +76,8 @@ class ViscoElasticTransformer
         void _update_viscously();
         //## Update the displacement field in an elastic manner
         void _update_elastically();
+        //## Update the transformation for any outliers (via a diffusion process)
+        void _update_outlier_transformation();
         //## Function to update the transformation
         void _update_transformation();
         //## Function to apply the transformation
