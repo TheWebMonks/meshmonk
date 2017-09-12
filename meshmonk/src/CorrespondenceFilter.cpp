@@ -136,7 +136,22 @@ void CorrespondenceFilter::update() {
             BaseCorrespondenceFilter::_affinity_to_correspondences();
         }
         else {
-            std::cout << "Can't compute correspondences without normalizing the affinity matrix!" << std::endl;
+            //## You shouldn't compute correspondences without normalization of the affinity matrix. However the
+            //## user requested no normalization of the affinity matrix. We therefor temporarily normalize
+            //## the affinity matrix to compute correspondences, and then restore the non-normalized affinity
+            //## matrix.
+
+            //### Copy non-normalized affinity matrix
+            SparseMat affinityCopy = _affinity;
+
+            //### Normalize the affinity matrix
+            normalize_sparse_matrix(_affinity);
+
+            //### Compute corresponding features and flags
+            BaseCorrespondenceFilter::_affinity_to_correspondences();
+
+            //### Restore the affinity matrix
+            _affinity = affinityCopy;
         }
     }
     else {

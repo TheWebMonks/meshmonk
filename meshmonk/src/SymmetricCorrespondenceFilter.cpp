@@ -51,7 +51,6 @@ void SymmetricCorrespondenceFilter::_update_push_and_pull() {
     //# Compute the push and pull affinity
     _pushFilter.update();
     _pullFilter.update();
-
     //# Get the affinities
     _affinity = _pushFilter.get_affinity();
     SparseMat pullAffinity = _pullFilter.get_affinity();
@@ -69,7 +68,6 @@ void SymmetricCorrespondenceFilter::_update_push_and_pull() {
 
 
 void SymmetricCorrespondenceFilter::update() {
-
     //# Update the I/O for the push- and pull-filters
     _pushFilter.set_floating_input(_inFloatingFeatures, _inFloatingFlags);
     _pushFilter.set_target_input(_inTargetFeatures, _inTargetFlags);
@@ -94,7 +92,7 @@ void SymmetricCorrespondenceFilter::update() {
     BaseCorrespondenceFilter::_affinity_to_correspondences();
 
     //# Merge the just computed corresponding flags with the corresponding pull flags.
-    (*BaseCorrespondenceFilter::_ioCorrespondingFlags) *= correspondingPullFlags;
+    (*BaseCorrespondenceFilter::_ioCorrespondingFlags) = (*BaseCorrespondenceFilter::_ioCorrespondingFlags).cwiseProduct(correspondingPullFlags);
 
 }//end wkkn_correspondences()
 

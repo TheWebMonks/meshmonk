@@ -615,172 +615,172 @@ void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
     }
 }
 
-void load_obj_to_eigen(const std::string inObjFilename,
-                                TriMesh &outMesh,
-                                FeatureMat &outFeatureMatrix){
-    /*
-    GOAL
-    This function loads an OBJ file given by a filename and converts it to
-    OpenMesh's TriMesh type and feature matrices we use internally.
-
-    INPUT
-    -inObjFilename:
-
-    PARAMETERS
-
-    OUTPUT
-    -outMesh
-    -outFeatureMatrix
-    */
-
-    OpenMesh::IO::_OBJReader_(); //NOTE: this issue should only appear when STATICALLY linking OpenMesh
-    if (!OpenMesh::IO::read_mesh(outMesh,inObjFilename)){
-        std::cerr << "Read error \n";
-        exit(1);
-    };
-
-    // Update Normals
-    outMesh.request_face_normals();
-    outMesh.request_vertex_normals();
-    outMesh.update_face_normals();
-    outMesh.update_vertex_normals();
-
-    // Convert to Eigen Matrices
-    convert_mesh_to_matrices(outMesh, outFeatureMatrix);
-
-}
-
-
-
+//void load_obj_to_eigen(const std::string inObjFilename,
+//                                TriMesh &outMesh,
+//                                FeatureMat &outFeatureMatrix){
+//    /*
+//    GOAL
+//    This function loads an OBJ file given by a filename and converts it to
+//    OpenMesh's TriMesh type and feature matrices we use internally.
+//
+//    INPUT
+//    -inObjFilename:
+//
+//    PARAMETERS
+//
+//    OUTPUT
+//    -outMesh
+//    -outFeatureMatrix
+//    */
+//
+//    OpenMesh::IO::_OBJReader_(); //NOTE: this issue should only appear when STATICALLY linking OpenMesh
+//    if (!OpenMesh::IO::read_mesh(outMesh,inObjFilename)){
+//        std::cerr << "Read error \n";
+//        exit(1);
+//    };
+//
+//    // Update Normals
+//    outMesh.request_face_normals();
+//    outMesh.request_vertex_normals();
+//    outMesh.update_face_normals();
+//    outMesh.update_vertex_normals();
+//
+//    // Convert to Eigen Matrices
+//    convert_mesh_to_matrices(outMesh, outFeatureMatrix);
+//
+//}
+//
 
 
-void write_eigen_to_obj(const FeatureMat &inFeatures,
-                                TriMesh &inMesh,
-                                const std::string inObjFilename){
-    /*
-    GOAL
-    This function converts a feature representation of a mesh using Eigen
-    matrices into a mesh representation using OpenMesh and then writes the
-    result to an obj file.
-
-    INPUT
-    -inFeatures:
-    a numVertices x 6 Eigen dense matrix where the first three columns are made
-    up of the positions of the vertices, and the last three columns the normals
-    of those vertices.
-    -inMesh
-    -inObjFilename
-
-    PARAMETERS
-
-    OUTPUT
-
-    */
-
-    //# Info and Initialization
-    const int numRows = inFeatures.rows();
-    const int numVertices = inMesh.n_vertices();
-     if (numRows != numVertices) {
-    std::cerr << "Number of rows does not correspond with number of vertices when"
-    << " calling write_eigen_features_to_obj()" << std::endl;
-    }
-
-    //# Convert feature matrix to OpenMesh structure
-    convert_eigen_to_openmesh(inFeatures, inMesh);
-
-    //# Write resulting mesh to OBJ file
-    OpenMesh::IO::_OBJWriter_();
-    if (!OpenMesh::IO::write_mesh(inMesh, inObjFilename))
-    {
-        std::cerr << "write error\n";
-        exit(1);
-    }
-}//end write_eigen_features_to_obj()
-
-bool import_data(const std::string inFloatingMeshPath,
-                 const std::string inTargetMeshPath,
-                 FeatureMat &outFloatingFeatures,
-                 FeatureMat &outTargetFeatures,
-                 FacesMat &outFloatingFaces,
-                 FacesMat &outTargetFaces){
-    std::cout << "Importing Data..." << std::endl;
-
-    //# Safety check (do the input files exist?)
-    bool inputfilesExist = true;
-    //## Floating Mesh
-    std::ifstream infile(inFloatingMeshPath);
-    if (infile.good() != true){
-        inputfilesExist = false;
-        std::cerr << "Floating mesh file does not exist" << std::endl;
-    }
-    infile.close();
-    //## Target Mesh
-    infile.open(inTargetMeshPath);
-    if (infile.good() != true){
-        inputfilesExist = false;
-        std::cerr << "Target mesh file does not exist" << std::endl;
-    }
-    infile.close();
-    if (!inputfilesExist){
-        std::cout<< "DataImporter can't update - input files not found!" << std::endl;
-        return inputfilesExist;
-    }
-
-    //# Load OpenMesh meshes
-    //## Floating Mesh
-    TriMesh floatingMesh;
-    OpenMesh::IO::_OBJReader_();
-    if (!OpenMesh::IO::read_mesh(floatingMesh,inFloatingMeshPath)){
-        std::cerr << "Read error \n";
-        exit(1);
-    };
-    //## Target Mesh
-    TriMesh targetMesh;
-    if (!OpenMesh::IO::read_mesh(targetMesh,inTargetMeshPath)){
-        std::cerr << "Read error \n";
-        exit(1);
-    };
-
-    //# Update the mesh vertex normals
-    floatingMesh.request_face_normals();
-    floatingMesh.request_vertex_normals();
-    floatingMesh.update_face_normals();
-    floatingMesh.update_vertex_normals();
-    targetMesh.request_face_normals();
-    targetMesh.request_vertex_normals();
-    targetMesh.update_face_normals();
-    targetMesh.update_vertex_normals();
-
-    //# Convert OpenMesh meshes to Eigen matrices
-    convert_mesh_to_matrices(floatingMesh, outFloatingFeatures, outFloatingFaces);
-    convert_mesh_to_matrices(targetMesh, outTargetFeatures, outTargetFaces);
 
 
-    std::cout << "Imported Data" << std::endl;
+//void write_eigen_to_obj(const FeatureMat &inFeatures,
+//                                TriMesh &inMesh,
+//                                const std::string inObjFilename){
+//    /*
+//    GOAL
+//    This function converts a feature representation of a mesh using Eigen
+//    matrices into a mesh representation using OpenMesh and then writes the
+//    result to an obj file.
+//
+//    INPUT
+//    -inFeatures:
+//    a numVertices x 6 Eigen dense matrix where the first three columns are made
+//    up of the positions of the vertices, and the last three columns the normals
+//    of those vertices.
+//    -inMesh
+//    -inObjFilename
+//
+//    PARAMETERS
+//
+//    OUTPUT
+//
+//    */
+//
+//    //# Info and Initialization
+//    const int numRows = inFeatures.rows();
+//    const int numVertices = inMesh.n_vertices();
+//     if (numRows != numVertices) {
+//    std::cerr << "Number of rows does not correspond with number of vertices when"
+//    << " calling write_eigen_features_to_obj()" << std::endl;
+//    }
+//
+//    //# Convert feature matrix to OpenMesh structure
+//    convert_eigen_to_openmesh(inFeatures, inMesh);
+//
+//    //# Write resulting mesh to OBJ file
+//    OpenMesh::IO::_OBJWriter_();
+//    if (!OpenMesh::IO::write_mesh(inMesh, inObjFilename))
+//    {
+//        std::cerr << "write error\n";
+//        exit(1);
+//    }
+//}//end write_eigen_features_to_obj()
 
-    return true;
-}//end import_data()
+//bool import_data(const std::string inFloatingMeshPath,
+//                 const std::string inTargetMeshPath,
+//                 FeatureMat &outFloatingFeatures,
+//                 FeatureMat &outTargetFeatures,
+//                 FacesMat &outFloatingFaces,
+//                 FacesMat &outTargetFaces){
+//    std::cout << "Importing Data..." << std::endl;
+//
+//    //# Safety check (do the input files exist?)
+//    bool inputfilesExist = true;
+//    //## Floating Mesh
+//    std::ifstream infile(inFloatingMeshPath);
+//    if (infile.good() != true){
+//        inputfilesExist = false;
+//        std::cerr << "Floating mesh file does not exist" << std::endl;
+//    }
+//    infile.close();
+//    //## Target Mesh
+//    infile.open(inTargetMeshPath);
+//    if (infile.good() != true){
+//        inputfilesExist = false;
+//        std::cerr << "Target mesh file does not exist" << std::endl;
+//    }
+//    infile.close();
+//    if (!inputfilesExist){
+//        std::cout<< "DataImporter can't update - input files not found!" << std::endl;
+//        return inputfilesExist;
+//    }
+//
+//    //# Load OpenMesh meshes
+//    //## Floating Mesh
+//    TriMesh floatingMesh;
+//    OpenMesh::IO::_OBJReader_();
+//    if (!OpenMesh::IO::read_mesh(floatingMesh,inFloatingMeshPath)){
+//        std::cerr << "Read error \n";
+//        exit(1);
+//    };
+//    //## Target Mesh
+//    TriMesh targetMesh;
+//    if (!OpenMesh::IO::read_mesh(targetMesh,inTargetMeshPath)){
+//        std::cerr << "Read error \n";
+//        exit(1);
+//    };
+//
+//    //# Update the mesh vertex normals
+//    floatingMesh.request_face_normals();
+//    floatingMesh.request_vertex_normals();
+//    floatingMesh.update_face_normals();
+//    floatingMesh.update_vertex_normals();
+//    targetMesh.request_face_normals();
+//    targetMesh.request_vertex_normals();
+//    targetMesh.update_face_normals();
+//    targetMesh.update_vertex_normals();
+//
+//    //# Convert OpenMesh meshes to Eigen matrices
+//    convert_mesh_to_matrices(floatingMesh, outFloatingFeatures, outFloatingFaces);
+//    convert_mesh_to_matrices(targetMesh, outTargetFeatures, outTargetFaces);
+//
+//
+//    std::cout << "Imported Data" << std::endl;
+//
+//    return true;
+//}//end import_data()
 
 
-bool export_data(FeatureMat &inResultFeatures,
-                 FacesMat &inResultFaces,
-                 const std::string inResultMeshPath) {
-    std::cout << "Exporting Data..." << std::endl;
-
-    //# Convert the matrices to a mesh
-    TriMesh resultMesh;
-    convert_matrices_to_mesh(inResultFeatures, inResultFaces, resultMesh);
-    //# Write the mesh to file
-    OpenMesh::IO::_OBJWriter_();
-    if (!OpenMesh::IO::write_mesh(resultMesh, inResultMeshPath))
-    {
-        std::cerr << "write error\n";
-        exit(1);
-    }
-    else {std::cout << "Data Exported." << std::endl;}
-
-    return true;
-}
+//bool export_data(FeatureMat &inResultFeatures,
+//                 FacesMat &inResultFaces,
+//                 const std::string inResultMeshPath) {
+//    std::cout << "Exporting Data..." << std::endl;
+//
+//    //# Convert the matrices to a mesh
+//    TriMesh resultMesh;
+//    convert_matrices_to_mesh(inResultFeatures, inResultFaces, resultMesh);
+//    //# Write the mesh to file
+//    OpenMesh::IO::_OBJWriter_();
+//    if (!OpenMesh::IO::write_mesh(resultMesh, inResultMeshPath))
+//    {
+//        std::cerr << "write error\n";
+//        exit(1);
+//    }
+//    else {std::cout << "Data Exported." << std::endl;}
+//
+//    return true;
+//}
 
 void update_normals_for_altered_positions(TriMesh &ioMesh,
                                         FeatureMat &ioFeatures){

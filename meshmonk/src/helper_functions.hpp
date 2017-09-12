@@ -4,8 +4,8 @@
 #include <iostream>
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
-#include <OpenMesh/Core/IO/reader/OBJReader.hh>
-#include <OpenMesh/Core/IO/writer/OBJWriter.hh>
+//#include <OpenMesh/Core/IO/reader/OBJReader.hh>
+//#include <OpenMesh/Core/IO/writer/OBJWriter.hh>
 #include <nanoflann.hpp>
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
@@ -66,25 +66,25 @@ void convert_matrices_to_mesh(const FeatureMat &inFeatures,
                                 TriMesh &outMesh);
 
 
-void load_obj_to_eigen(const std::string inObjFilename,
-                                TriMesh &outMesh,
-                                FeatureMat &outFeatureMatrix);
+//void load_obj_to_eigen(const std::string inObjFilename,
+//                                TriMesh &outMesh,
+//                                FeatureMat &outFeatureMatrix);
 
 
-void write_eigen_to_obj(const FeatureMat &inFeatures,
-                                TriMesh &inMesh,
-                                const std::string inObjFilename);
+//void write_eigen_to_obj(const FeatureMat &inFeatures,
+//                                TriMesh &inMesh,
+//                                const std::string inObjFilename);
 
-bool import_data(const std::string inFloatingMeshPath,
-                 const std::string inTargetMeshPath,
-                 FeatureMat &outFloatingFeatures,
-                 FeatureMat &outTargetFeatures,
-                 FacesMat &outFloatingFaces,
-                 FacesMat &outTargetFaces);
+//bool import_data(const std::string inFloatingMeshPath,
+//                 const std::string inTargetMeshPath,
+//                 FeatureMat &outFloatingFeatures,
+//                 FeatureMat &outTargetFeatures,
+//                 FacesMat &outFloatingFaces,
+//                 FacesMat &outTargetFaces);
 
-bool export_data(FeatureMat &inResultFeatures,
-                 FacesMat &inResultFaces,
-                 const std::string inResultMeshPath);
+//bool export_data(FeatureMat &inResultFeatures,
+//                 FacesMat &inResultFaces,
+//                 const std::string inResultMeshPath);
 
 
 void update_normals_for_altered_positions(TriMesh &ioMesh,
