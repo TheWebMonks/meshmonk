@@ -34,10 +34,12 @@ void SymmetricCorrespondenceFilter::set_target_input(const FeatureMat * const in
 }
 
 void SymmetricCorrespondenceFilter::set_parameters(const size_t numNeighbours,
-                                                   const float flagThreshold)
+                                                   const float flagThreshold,
+                                                   const bool equalizePushPull)
 {
     _numNeighbours = numNeighbours;
     _flagThreshold = flagThreshold;
+    _equalizePushPull = equalizePushPull;
     _pushFilter.set_parameters(_numNeighbours, _flagThreshold);
     _pullFilter.set_parameters(_numNeighbours, _flagThreshold);
     _pushFilter.set_affinity_normalization(false);
@@ -55,7 +57,7 @@ void SymmetricCorrespondenceFilter::_update_push_and_pull() {
     SparseMat pullAffinity = _pullFilter.get_affinity();
 
     //# Normalize the affinities before fusing them?
-    if (_normalizePushPullForces) {
+    if (_equalizePushPull) {
         normalize_sparse_matrix(_affinity);
         normalize_sparse_matrix(pullAffinity);
     }

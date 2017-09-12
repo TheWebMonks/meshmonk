@@ -44,9 +44,9 @@ class RigidRegistration
                        const VecDynFloat * const inFloatingFlags,
                        const VecDynFloat * const inTargetFlags);
         void set_parameters(bool symmetric, size_t numNeighbours,
-                            float flagThreshold, float kappaa,
-                            bool inlierUseOrientation, size_t numIterations,
-                            bool useScaling);
+                            float flagThreshold, bool equalizePushPull,
+                            float kappaa, bool inlierUseOrientation,
+                            size_t numIterations, bool useScaling);
 
         void update();
 
@@ -64,6 +64,7 @@ class RigidRegistration
         bool _symmetric = true;
         size_t _numNeighbours = 3;
         float _flagThreshold = 0.9f;
+        bool _equalizePushPull = false;
         //## Inliers
         float _kappaa = 3.0;
         bool _inlierUseOrientation = true;

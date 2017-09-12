@@ -26,7 +26,8 @@ clear targetPoints;
 %# Set Parameters
 correspondencesSymmetric = true;
 correspondencesNumNeighbours = 5;
-correspondencesFlagThreshold = 0.9;
+correspondencesFlagThreshold = 0.999;
+correspondencesEqualizePushPull = false;
 correspondingFeatures = floatingFeatures;
 correspondingFlags = floatingFlags;
 
@@ -34,7 +35,7 @@ compute_correspondences(floatingFeatures, targetFeatures,...
                         floatingFlags, targetFlags,...
                         correspondingFeatures, correspondingFlags,...
                         correspondencesSymmetric, correspondencesNumNeighbours,...
-                        correspondencesFlagThreshold);
+                        correspondencesFlagThreshold, correspondencesEqualizePushPull);
 
                             
 %% Write Result

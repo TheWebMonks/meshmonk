@@ -25,6 +25,7 @@ void PyramidNonrigidRegistration::set_parameters(size_t numIterations /*= 60*/,
                                                 bool correspondencesSymmetric /* = true*/,
                                                 size_t correspondencesNumNeighbours /* = 5*/,
                                                 float correspondencesFlagThreshold /* = 0.9f*/,
+                                                bool correspondencesEqualizePushPull /* = false*/,
                                                 float inlierKappa /* = 4.0f*/,
                                                 bool inlierUseOrientation /* = true*/,
                                                 float transformSigma /* = 3.0f*/,
@@ -59,6 +60,7 @@ void PyramidNonrigidRegistration::set_parameters(size_t numIterations /*= 60*/,
         _correspondencesSymmetric = correspondencesSymmetric;
         _correspondencesNumNeighbours = correspondencesNumNeighbours;
         _correspondencesFlagThreshold = correspondencesFlagThreshold;
+        _correspondencesEqualizePushPull = correspondencesEqualizePushPull;
         _inlierKappa = inlierKappa;
         _inlierUseOrientation = inlierUseOrientation;
         _transformSigma = transformSigma;
@@ -161,7 +163,7 @@ void PyramidNonrigidRegistration::update(){
         NonrigidRegistration nonrigidRegistration;
         nonrigidRegistration.set_input(&floatingFeatures, &targetFeatures, &floatingFaces, &floatingFlags, &targetFlags);
         nonrigidRegistration.set_parameters(_correspondencesSymmetric, _correspondencesNumNeighbours,
-                                            _correspondencesFlagThreshold,
+                                            _correspondencesFlagThreshold, _correspondencesEqualizePushPull,
                                             _inlierKappa, _inlierUseOrientation,
                                             _iterationsPerLayer, _transformSigma,
                                             _viscousIterationsIntervals[i], _viscousIterationsIntervals[i+1],

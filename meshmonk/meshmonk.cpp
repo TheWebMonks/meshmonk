@@ -24,7 +24,7 @@ extern "C"
                                 const float downsampleFloatStart/*= 90*/, const float downsampleTargetStart/*= 90*/,
                                 const float downsampleFloatEnd/*= 0*/, const float downsampleTargetEnd/*= 0*/,
                                 const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
-                                const float correspondencesFlagThreshold/* = 0.9f*/,
+                                const float correspondencesFlagThreshold/* = 0.9f*/, const bool correspondencesEqualizePushPull /*= false*/,
                                 const float inlierKappa/*= 4.0f*/, const bool inlierUseOrientation/*=true*/,
                                 const float transformSigma/*= 3.0f*/,
                                 const size_t transformNumViscousIterationsStart/*= 50*/, const size_t transformNumViscousIterationsEnd/*= 1*/,
@@ -44,7 +44,7 @@ extern "C"
                                 downsampleFloatStart, downsampleTargetStart,
                                 downsampleFloatEnd, downsampleTargetEnd,
                                 correspondencesSymmetric, correspondencesNumNeighbours,
-                                correspondencesFlagThreshold,
+                                correspondencesFlagThreshold, correspondencesEqualizePushPull,
                                 inlierKappa, inlierUseOrientation,
                                 transformSigma,
                                 transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
@@ -63,7 +63,7 @@ extern "C"
                                 const float floatingFlagsArray[], const float targetFlagsArray[],
                                 const size_t numIterations/*= 60*/,
                                 const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
-                                const float correspondencesFlagThreshold/* = 0.9f*/,
+                                const float correspondencesFlagThreshold/* = 0.9f*/, const bool correspondencesEqualizePushPull /*= false*/,
                                 const float inlierKappa/*= 4.0f*/, const bool inlierUseOrientation/*=true*/,
                                 const float transformSigma/*= 3.0f*/,
                                 const size_t transformNumViscousIterationsStart/*= 50*/, const size_t transformNumViscousIterationsEnd/*= 1*/,
@@ -82,7 +82,7 @@ extern "C"
                                 floatingFlags, targetFlags,
                                 numIterations,
                                 correspondencesSymmetric, correspondencesNumNeighbours,
-                                correspondencesFlagThreshold,
+                                correspondencesFlagThreshold, correspondencesEqualizePushPull,
                                 inlierKappa, inlierUseOrientation,
                                 transformSigma,
                                 transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
@@ -100,7 +100,7 @@ extern "C"
                                 const float floatingFlagsArray[], const float targetFlagsArray[],
                                 const size_t numIterations/*= 60*/,
                                 const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
-                                const float correspondencesFlagThreshold/* = 0.9f*/,
+                                const float correspondencesFlagThreshold/* = 0.9f*/, const bool correspondencesEqualizePushPull /*= false*/,
                                 const float inlierKappa/*= 4.0f*/, const bool inlierUseOrientation/*=true*/,
                                 const bool useScaling/*= false*/){
         //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
@@ -117,7 +117,7 @@ extern "C"
                             floatingFlags, targetFlags,
                             numIterations,
                             correspondencesSymmetric, correspondencesNumNeighbours,
-                            correspondencesFlagThreshold,
+                            correspondencesFlagThreshold, correspondencesEqualizePushPull,
                             inlierKappa,
                             useScaling);
 
@@ -131,7 +131,7 @@ extern "C"
                                     const float floatingFlagsArray[], const float targetFlagsArray[],
                                     float correspondingFeaturesArray[], float correspondingFlagsArray[],
                                     const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
-                                    const float correspondencesFlagThreshold /*= 0.9f*/){
+                                    const float correspondencesFlagThreshold /*= 0.9f*/, const bool correspondencesEqualizePushPull /*= false*/){
         //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
         const FeatureMat floatingFeatures = Eigen::Map<const FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
         const FeatureMat targetFeatures = Eigen::Map<const FeatureMat>(targetFeaturesArray, numTargetElements, registration::NUM_FEATURES);
@@ -145,7 +145,7 @@ extern "C"
                                 floatingFlags, targetFlags,
                                 correspondingFeatures, correspondingFlags,
                                 correspondencesSymmetric, correspondencesNumNeighbours,
-                                correspondencesFlagThreshold);
+                                correspondencesFlagThreshold, correspondencesEqualizePushPull);
 
         //# Convert back to raw data
         Eigen::Map<FeatureMat>(correspondingFeaturesArray, correspondingFeatures.rows(), correspondingFeatures.cols()) = correspondingFeatures;
@@ -294,7 +294,7 @@ extern "C"
                                 const float downsampleFloatStart/* = 90*/, const float downsampleTargetStart/* = 90*/,
                                 const float downsampleFloatEnd/* = 0*/, const float downsampleTargetEnd/* = 0*/,
                                 const bool correspondencesSymmetric/* = true*/, const size_t correspondencesNumNeighbours/* = 5*/,
-                                const float correspondencesFlagThreshold/* = 0.9f*/,
+                                const float correspondencesFlagThreshold/* = 0.99f*/, const bool correspondencesEqualizePushPull /*= false*/,
                                 const float inlierKappa/* = 4.0f*/, const bool inlierUseOrientation/* = true*/,
                                 const float transformSigma/* = 3.0f*/,
                                 const size_t transformNumViscousIterationsStart/* = 50*/, const size_t transformNumViscousIterationsEnd/* = 1*/,
@@ -308,7 +308,7 @@ extern "C"
                                     downsampleFloatStart, downsampleTargetStart,
                                     downsampleFloatEnd, downsampleTargetEnd,
                                     correspondencesSymmetric, correspondencesNumNeighbours,
-                                    correspondencesFlagThreshold,
+                                    correspondencesFlagThreshold, correspondencesEqualizePushPull,
                                     inlierKappa, inlierUseOrientation,
                                     transformSigma,
                                     transformNumViscousIterationsStart, transformNumViscousIterationsEnd,
@@ -325,7 +325,7 @@ extern "C"
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 const size_t numIterations/* = 60*/,
                                 const bool correspondencesSymmetric/* = true*/, const size_t correspondencesNumNeighbours/* = 5*/,
-                                const float correspondencesFlagThreshold/* = 0.9f*/,
+                                const float correspondencesFlagThreshold/* = 0.99f*/, const bool correspondencesEqualizePushPull /*= false*/,
                                 const float inlierKappa/* = 4.0f*/, const bool inlierUseOrientation/* = true*/,
                                 const float transformSigma/* = 3.0f*/,
                                 const size_t transformNumViscousIterationsStart/* = 50*/, const size_t transformNumViscousIterationsEnd/* = 1*/,
@@ -337,7 +337,7 @@ extern "C"
                                 &floatingFaces,
                                 &floatingFlags, &targetFlags);
         registrator.set_parameters(correspondencesSymmetric, correspondencesNumNeighbours,
-                                    correspondencesFlagThreshold,
+                                    correspondencesFlagThreshold, correspondencesEqualizePushPull,
                                     inlierKappa, inlierUseOrientation,
                                     numIterations,
                                     transformSigma,
@@ -354,7 +354,7 @@ extern "C"
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 const size_t numIterations/* = 20*/,
                                 const bool correspondencesSymmetric/* = true*/, const size_t correspondencesNumNeighbours/* = 5*/,
-                                const float correspondencesFlagThreshold/* = 0.9f*/,
+                                const float correspondencesFlagThreshold/* = 0.99f*/, const bool correspondencesEqualizePushPull /*= false*/,
                                 const float inlierKappa/* = 4.0f*/, const bool inlierUseOrientation/*=true*/,
                                 const bool useScaling/* = false*/)
     {
@@ -362,9 +362,9 @@ extern "C"
         registrator.set_input(&floatingFeatures, &targetFeatures,
                                 &floatingFlags, &targetFlags);
         registrator.set_parameters(correspondencesSymmetric, correspondencesNumNeighbours,
-                                    correspondencesFlagThreshold, inlierKappa,
-                                    inlierUseOrientation, numIterations,
-                                    useScaling);
+                                    correspondencesFlagThreshold, correspondencesEqualizePushPull,
+                                    inlierKappa, inlierUseOrientation,
+                                    numIterations, useScaling);
         registrator.update();
     }
 
@@ -380,18 +380,19 @@ extern "C"
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
                                 FeatureMat& correspondingFeatures, VecDynFloat& correspondingFlags,
                                 const bool symmetric/* = true*/, const size_t numNeighbours/* = 5*/,
-                                const float correspondencesFlagThreshold/* = 0.9f*/){
+                                const float correspondencesFlagThreshold/* = 0.99f*/, const bool correspondencesEqualizePushPull /*= false*/){
         registration::BaseCorrespondenceFilter* correspondenceFilter = NULL;
         if (symmetric) {
             correspondenceFilter = new registration::SymmetricCorrespondenceFilter();
+            correspondenceFilter->set_parameters(numNeighbours, correspondencesFlagThreshold, correspondencesEqualizePushPull);
         }
         else {
             correspondenceFilter = new registration::CorrespondenceFilter();
+            correspondenceFilter->set_parameters(numNeighbours, correspondencesFlagThreshold);
         }
         correspondenceFilter->set_floating_input(&floatingFeatures, &floatingFlags);
         correspondenceFilter->set_target_input(&targetFeatures, &targetFlags);
         correspondenceFilter->set_output(&correspondingFeatures, &correspondingFlags);
-        correspondenceFilter->set_parameters(numNeighbours, correspondencesFlagThreshold);
         correspondenceFilter->update();
 
         delete correspondenceFilter;

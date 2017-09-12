@@ -17,6 +17,7 @@ void NonrigidRegistration::set_input(FeatureMat * const ioFloatingFeatures,
 void NonrigidRegistration::set_parameters(bool symmetric,
                             size_t numNeighbours,
                             float flagThreshold,
+                            bool equalizePushPull,
                             float kappaa,
                             bool inlierUseOrientation,
                             size_t numIterations,
@@ -28,6 +29,7 @@ void NonrigidRegistration::set_parameters(bool symmetric,
     _symmetric = symmetric;
     _numNeighbours = numNeighbours;
     _flagThreshold = flagThreshold;
+    _equalizePushPull = equalizePushPull;
     _kappaa = kappaa;
     _inlierUseOrientation = inlierUseOrientation;
     _numIterations = numIterations;
@@ -76,14 +78,16 @@ void NonrigidRegistration::update(){
 
     if (_symmetric) {
         correspondenceFilter = new SymmetricCorrespondenceFilter();
+        correspondenceFilter->set_parameters(_numNeighbours, _flagThreshold, _equalizePushPull);
     }
     else {
         correspondenceFilter = new CorrespondenceFilter();
+        correspondenceFilter->set_parameters(_numNeighbours, _flagThreshold);
     }
     correspondenceFilter->set_floating_input(_ioFloatingFeatures, _inFloatingFlags);
     correspondenceFilter->set_target_input(_inTargetFeatures, _inTargetFlags);
     correspondenceFilter->set_output(&correspondingFeatures, &correspondingFlags);
-    correspondenceFilter->set_parameters(_numNeighbours, _flagThreshold);
+
 
     //## Inlier Filter
     VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);

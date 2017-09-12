@@ -60,7 +60,8 @@ class SymmetricCorrespondenceFilter: public BaseCorrespondenceFilter
         void set_target_input(const FeatureMat * const inTargetFeatures,
                             const VecDynFloat * const inTargetFlags);
         void set_parameters(const size_t numNeighbours,
-                            const float flagThreshold);
+                            const float flagThreshold,
+                            const bool _equalizePushPull);
         void update();
 
     protected:
@@ -72,7 +73,7 @@ class SymmetricCorrespondenceFilter: public BaseCorrespondenceFilter
         CorrespondenceFilter _pullFilter;
 
         //# Parameters
-        bool _normalizePushPullForces = false;
+        bool _equalizePushPull = false;
 
         //# Internal functions
         //## Function to update the internal push and pull correspondence filters

@@ -13,12 +13,13 @@ void RigidRegistration::set_input(FeatureMat * const ioFloatingFeatures,
 }//end set_input()
 
 void RigidRegistration::set_parameters(bool symmetric, size_t numNeighbours,
-                                       float flagThreshold, float kappaa,
-                                       bool inlierUseOrientation, size_t numIterations,
-                                       bool useScaling){
+                                       float flagThreshold, bool equalizePushPull,
+                                       float kappaa, bool inlierUseOrientation,
+                                       size_t numIterations, bool useScaling){
     _symmetric = symmetric;
     _numNeighbours = numNeighbours;
     _flagThreshold = flagThreshold;
+    _equalizePushPull = equalizePushPull;
     _kappaa = kappaa;
     _inlierUseOrientation = inlierUseOrientation;
     _numIterations = numIterations;
@@ -41,14 +42,15 @@ void RigidRegistration::update(){
 
     if (_symmetric) {
         correspondenceFilter = new SymmetricCorrespondenceFilter();
+        correspondenceFilter->set_parameters(_numNeighbours, _flagThreshold, _equalizePushPull);
     }
     else {
         correspondenceFilter = new CorrespondenceFilter();
+        correspondenceFilter->set_parameters(_numNeighbours, _flagThreshold);
     }
     correspondenceFilter->set_floating_input(_ioFloatingFeatures, _inFloatingFlags);
     correspondenceFilter->set_target_input(_inTargetFeatures, _inTargetFlags);
     correspondenceFilter->set_output(&correspondingFeatures, &correspondingFlags);
-    correspondenceFilter->set_parameters(_numNeighbours, _flagThreshold);
 
     //## Inlier Filter
     VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
@@ -61,7 +63,7 @@ void RigidRegistration::update(){
     RigidTransformer rigidTransformer;
     rigidTransformer.set_input(&correspondingFeatures, &floatingWeights);
     rigidTransformer.set_output(_ioFloatingFeatures);
-    rigidTransformer.set_parameters(false);
+    rigidTransformer.set_parameters(_useScaling);
 
     //# Perform ICP
     time_t timeStart, timePreIteration, timePostIteration, timeEnd;

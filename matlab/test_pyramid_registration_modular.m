@@ -42,7 +42,8 @@ downsampleTargetStart = 70;
 downsampleTargetEnd = 0;
 correspondencesSymmetric = true;
 correspondencesNumNeighbours = 5;
-correspondencesFlagThreshold = 0.9;
+correspondencesFlagThreshold = 0.999;
+correspondencesEqualizePushPull = false;
 inlierKappa = 4.0;
 inlierUseOrientation = true;
 transformSigma = 3.0;
@@ -119,7 +120,7 @@ for i=1:numPyramidLayers
                                 floatingFlagsTemp, targetFlagsTemp,...
                                 correspondingFeatures, correspondingFlags,...
                                 correspondencesSymmetric, correspondencesNumNeighbours,...
-                                correspondencesFlagThreshold);
+                                correspondencesFlagThreshold, correspondencesEqualizePushPull);
         
         %# Compute Inlier Weights
         compute_inlier_weights(floatingFeaturesTemp, correspondingFeatures,...

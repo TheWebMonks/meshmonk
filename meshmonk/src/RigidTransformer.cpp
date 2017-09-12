@@ -13,7 +13,7 @@ void RigidTransformer::set_output(FeatureMat * const ioFeatures){
     _ioFeatures = ioFeatures;
 }
 void RigidTransformer::set_parameters(bool scaling){
-    _scaling = false;
+    _scaling = scaling;
 }
 
 
