@@ -55,6 +55,9 @@ void BaseCorrespondenceFilter::_affinity_to_correspondences(){
             (*_ioCorrespondingFlags)[i] = 0.0;
         }
     }
+
+    //# Merge corresponding and floating flags
+    (*_ioCorrespondingFlags) = (*_ioCorrespondingFlags).cwiseProduct(*_inFloatingFlags);
 }
 
 }//namespace registration
