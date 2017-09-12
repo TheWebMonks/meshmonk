@@ -11,9 +11,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                       "Zero LHS output required.");
     }
     //## Number of output arguments
-    if(nrhs != 4) {
+    if(nrhs != 5) {
     mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nrhs",
-                      "4 inputs required.");
+                      "5 inputs required.");
     }
     
     //# Get Inputs
@@ -24,13 +24,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     float *correspondingFeatures = reinterpret_cast<float *>(mxGetData(prhs[1]));
     //## Inlier Weights
     float *inlierWeights = reinterpret_cast<float *>(mxGetData(prhs[2]));
+    //## Transformation Matrix
+    float *transformationMatrix = reinterpret_cast<float *>(mxGetData(prhs[3]));
     //## Parameters
     //### Allow Scaling
-    bool useScaling = static_cast<bool>(mxGetScalar(prhs[3]));
+    bool useScaling = static_cast<bool>(mxGetScalar(prhs[4]));
     
     //# Execute c++ function                                        
     meshmonk::compute_rigid_transformation_mex(floatingFeatures, numFloatingElements,
                                                 correspondingFeatures, inlierWeights,
+                                                transformationMatrix,
                                                 useScaling);
     
     //# Set Output

@@ -13,6 +13,7 @@
 
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
+typedef Eigen::Matrix4f Mat4Float;
 
 namespace registration{
 
@@ -47,6 +48,7 @@ class RigidRegistration
                             float flagThreshold, bool equalizePushPull,
                             float kappaa, bool inlierUseOrientation,
                             size_t numIterations, bool useScaling);
+        Mat4Float get_transformation() const {return _transformationMatrix;}
 
         void update();
 
@@ -73,6 +75,7 @@ class RigidRegistration
         bool _useScaling = false;
 
         //# Internal Data structures
+        Mat4Float _transformationMatrix = Mat4Float::Identity();
 
         //# Internal Parameters
 

@@ -34,6 +34,7 @@ typedef Eigen::Matrix< int, Eigen::Dynamic, 3> FacesMat; //matrix Mx3 of type un
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
 typedef Eigen::MatrixX3f Vec3Mat;
+typedef Eigen::Matrix4f Mat4Float;
 
 
 namespace meshmonk{
@@ -115,6 +116,7 @@ extern "C"
     void rigid_registration(FeatureMat& floatingFeatures, const FeatureMat& targetFeatures,
                                 const FacesMat& floatingFaces, const FacesMat& targetFaces,
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
+                                Mat4Float& transformationMatrix,
                                 const size_t numIterations = 20,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
                                 const float correspondencesFlagThreshold = 0.99f, const bool correspondencesEqualizePushPull = false,
@@ -142,7 +144,8 @@ extern "C"
 
     //# Rigid Transformation
     void compute_rigid_transformation(FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
-                                    const VecDynFloat& inlierWeights, const bool useScaling = false);
+                                    const VecDynFloat& inlierWeights, Mat4Float& transformationMatrix,
+                                    const bool useScaling = false);
 
     //# Nonrigid Transformation
     void compute_nonrigid_transformation(FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
@@ -222,6 +225,7 @@ extern "C"
                                 const int floatingFacesArray[], const int targetFacesArray[],
                                 const size_t numFloatingFaces, const size_t numTargetFaces,
                                 const float floatingFlagsArray[], const float targetFlagsArray[],
+                                float transformationMatrixArray[],
                                 const size_t numIterations = 60,
                                 const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
                                 const float correspondencesFlagThreshold = 0.99f, const bool correspondencesEqualizePushPull = false,
@@ -242,6 +246,7 @@ extern "C"
 
     void compute_rigid_transformation_mex(float floatingFeaturesArray[], const size_t numFloatingElements,
                                         const float correspondingFeaturesArray[], const float inlierWeightsArray[],
+                                        float transformationMatrixArray[],
                                         const bool useScaling /*= false*/);
 
     void compute_nonrigid_transformation_mex(float floatingFeaturesArray[], const float correspondingFeaturesArray[],

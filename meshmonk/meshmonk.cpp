@@ -98,6 +98,7 @@ extern "C"
                                 const int floatingFacesArray[], const int targetFacesArray[],
                                 const size_t numFloatingFaces, const size_t numTargetFaces,
                                 const float floatingFlagsArray[], const float targetFlagsArray[],
+                                float transformationMatrixArray[],
                                 const size_t numIterations/*= 60*/,
                                 const bool correspondencesSymmetric/*= true*/, const size_t correspondencesNumNeighbours/*= 5*/,
                                 const float correspondencesFlagThreshold/* = 0.9f*/, const bool correspondencesEqualizePushPull /*= false*/,
@@ -110,11 +111,13 @@ extern "C"
         const FacesMat targetFaces = Eigen::Map<const FacesMat>(targetFacesArray, numTargetFaces, 3);
         const VecDynFloat floatingFlags = Eigen::Map<const VecDynFloat>(floatingFlagsArray, numFloatingElements);
         const VecDynFloat targetFlags = Eigen::Map<const VecDynFloat>(targetFlagsArray, numTargetElements);
+        Mat4Float transformationMatrix = Eigen::Map<Mat4Float>(transformationMatrixArray, 4, 4);
 
         //# Run rigid registration
         rigid_registration(floatingFeatures, targetFeatures,
                             floatingFaces, targetFaces,
                             floatingFlags, targetFlags,
+                            transformationMatrix,
                             numIterations,
                             correspondencesSymmetric, correspondencesNumNeighbours,
                             correspondencesFlagThreshold, correspondencesEqualizePushPull,
@@ -123,6 +126,7 @@ extern "C"
 
         //# Convert back to raw data
         Eigen::Map<FeatureMat>(floatingFeaturesArray, floatingFeatures.rows(), floatingFeatures.cols()) = floatingFeatures;
+        Eigen::Map<Mat4Float>(transformationMatrixArray, 4, 4) = transformationMatrix;
     }
 
 
@@ -175,18 +179,22 @@ extern "C"
 
     void compute_rigid_transformation_mex(float floatingFeaturesArray[], const size_t numFloatingElements,
                                         const float correspondingFeaturesArray[], const float inlierWeightsArray[],
+                                        float transformationMatrixArray[],
                                         const bool useScaling /*= false*/){
         //# Convert arrays to Eigen matrices (see http://dovgalecs.com/blog/eigen-how-to-get-in-and-out-data-from-eigen-matrix/)
         FeatureMat floatingFeatures = Eigen::Map<FeatureMat>(floatingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
         const FeatureMat correspondingFeatures = Eigen::Map<const FeatureMat>(correspondingFeaturesArray, numFloatingElements, registration::NUM_FEATURES);
         const VecDynFloat inlierWeights = Eigen::Map<const VecDynFloat>(inlierWeightsArray, numFloatingElements);
+        Mat4Float transformationMatrix = Eigen::Map<Mat4Float>(transformationMatrixArray, 4, 4);
 
         //# Run nonrigid registration
         compute_rigid_transformation(floatingFeatures, correspondingFeatures,
-                                    inlierWeights, useScaling);
+                                    inlierWeights, transformationMatrix,
+                                    useScaling);
 
         //# Convert back to raw data
         Eigen::Map<FeatureMat>(floatingFeaturesArray, floatingFeatures.rows(), floatingFeatures.cols()) = floatingFeatures;
+        Eigen::Map<Mat4Float>(transformationMatrixArray, 4, 4) = transformationMatrix;
     }
 
 
@@ -352,12 +360,14 @@ extern "C"
     void rigid_registration(FeatureMat& floatingFeatures, const FeatureMat& targetFeatures,
                                 const FacesMat& floatingFaces, const FacesMat& targetFaces,
                                 const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
+                                Mat4Float& transformationMatrix,
                                 const size_t numIterations/* = 20*/,
                                 const bool correspondencesSymmetric/* = true*/, const size_t correspondencesNumNeighbours/* = 5*/,
                                 const float correspondencesFlagThreshold/* = 0.99f*/, const bool correspondencesEqualizePushPull /*= false*/,
                                 const float inlierKappa/* = 4.0f*/, const bool inlierUseOrientation/*=true*/,
                                 const bool useScaling/* = false*/)
     {
+        //# Set up rigid registration object
         registration::RigidRegistration registrator;
         registrator.set_input(&floatingFeatures, &targetFeatures,
                                 &floatingFlags, &targetFlags);
@@ -365,7 +375,12 @@ extern "C"
                                     correspondencesFlagThreshold, correspondencesEqualizePushPull,
                                     inlierKappa, inlierUseOrientation,
                                     numIterations, useScaling);
+
+        //# Perform rigid registration
         registrator.update();
+
+        //# Return final transformation matrix
+        transformationMatrix = registrator.get_transformation();
     }
 
 
@@ -412,12 +427,19 @@ extern "C"
 
     //# Rigid Transformation
     void compute_rigid_transformation(FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
-                                    const VecDynFloat& inlierWeights, const bool useScaling/* = false*/){
+                                    const VecDynFloat& inlierWeights, Mat4Float& transformationMatrix,
+                                    const bool useScaling/* = false*/){
+        //# Set up rigid transformer
         registration::RigidTransformer rigidTransformer;
         rigidTransformer.set_input(&correspondingFeatures, &inlierWeights);
         rigidTransformer.set_output(&floatingFeatures);
         rigidTransformer.set_parameters(useScaling);
+
+        //# Perform rigid transformation
         rigidTransformer.update();
+
+        //# Return transformation matrix
+        transformationMatrix = rigidTransformer.get_transformation();
     }
 
     //# Nonrigid Transformation

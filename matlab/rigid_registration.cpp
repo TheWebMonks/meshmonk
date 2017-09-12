@@ -11,9 +11,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                       "Zero LHS output required.");
     }
     //## Number of output arguments
-    if(nrhs != 14) {
+    if(nrhs != 15) {
     mexErrMsgIdAndTxt("MyToolbox:arrayProduct:nrhs",
-                      "14 inputs required.");
+                      "15 inputs required.");
     }
     
     //# Get Inputs
@@ -33,23 +33,25 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     float *floatingFlags = reinterpret_cast<float *>(mxGetData(prhs[4]));
     //## Target Flags
     float *targetFlags = reinterpret_cast<float *>(mxGetData(prhs[5]));
+    //## Transformation Matrix
+    float *transformationMatrix = reinterpret_cast<float *>(mxGetData(prhs[6]));
     //## Parameters
     //### Total number of iterations
-    mwSize numIterations = static_cast<mwSize>(mxGetScalar(prhs[6]));
+    mwSize numIterations = static_cast<mwSize>(mxGetScalar(prhs[7]));
     //### Use symmetric correspondences
-    bool correspondencesSymmetric = static_cast<bool>(mxGetScalar(prhs[7]));
+    bool correspondencesSymmetric = static_cast<bool>(mxGetScalar(prhs[8]));
     //### Number of neighbours to use to compute corresponding points
-    mwSize correspondencesNumNeighbours = static_cast<mwSize>(mxGetScalar(prhs[8]));
+    mwSize correspondencesNumNeighbours = static_cast<mwSize>(mxGetScalar(prhs[9]));
     //### Flag threshold to mark corresponding flag as 0.0 or 1.0
-    float correspondencesFlagThreshold = static_cast<float>(mxGetScalar(prhs[9]));
+    float correspondencesFlagThreshold = static_cast<float>(mxGetScalar(prhs[10]));
     //### Equalize the push and pull forces (when using symmetric correspondences)
-    bool correspondencesEqualizePushPull = static_cast<bool>(mxGetScalar(prhs[10]));
+    bool correspondencesEqualizePushPull = static_cast<bool>(mxGetScalar(prhs[11]));
     //### Inlier kappa
-    float inlierKappa = static_cast<float>(mxGetScalar(prhs[11]));
+    float inlierKappa = static_cast<float>(mxGetScalar(prhs[12]));
     //### Inlier Orientation
-    float inlierUseOrientation = static_cast<float>(mxGetScalar(prhs[12]));
+    float inlierUseOrientation = static_cast<float>(mxGetScalar(prhs[13]));
     //### Allow Scaling
-    bool useScaling = static_cast<bool>(mxGetScalar(prhs[13]));
+    bool useScaling = static_cast<bool>(mxGetScalar(prhs[14]));
     
     
     //# Execute c++ function
@@ -58,6 +60,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                                 floatingFaces, targetFaces,
                                 numFloatingFaces, numTargetFaces,
                                 floatingFlags, targetFlags,
+                                transformationMatrix,
                                 numIterations,
                                 correspondencesSymmetric, correspondencesNumNeighbours,
                                 correspondencesFlagThreshold, correspondencesEqualizePushPull,

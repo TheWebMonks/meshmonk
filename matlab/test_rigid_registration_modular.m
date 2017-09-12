@@ -31,9 +31,11 @@ numTargetElements = size(targetFeatures,1);
 targetFlags = single(ones(numTargetElements,1));
 clear targetPoints;
 
-%% Try the mexed pyramid_registration
-%mex pyramid_registration.cpp -lmeshmonk
+%Set up resulting transformation matrix
+transformationMatrix = single(eye(4,4));
+tempTransformationMatrix = single(eye(4,4));
 
+%% Try modular rigid registration
 %# Set Parameters
 numIterations = 20;
 correspondencesSymmetric = true;
@@ -68,7 +70,11 @@ for i=1:numIterations
     
     %# Compute Transformation
     compute_rigid_transformation(floatingFeatures, correspondingFeatures,...
-                                    inlierWeights, useScaling);
+                                    inlierWeights, tempTransformationMatrix,...
+                                    useScaling);
+                                
+    %# Update transformation matrix
+    transformationMatrix = tempTransformationMatrix * transformationMatrix;
 end
 
 

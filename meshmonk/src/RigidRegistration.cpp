@@ -82,6 +82,10 @@ void RigidRegistration::update(){
         //# Transformation
         rigidTransformer.update();
 
+        //# Update final transformation matrix
+        Mat4Float currentTransform = rigidTransformer.get_transformation();
+        _transformationMatrix = currentTransform * _transformationMatrix;
+
         //# Print info
         timePostIteration = time(0);
         std::cout << "Iteration " << iteration << "/" << _numIterations << " took "<< difftime(timePostIteration, timePreIteration) <<" second(s)."<< std::endl;
