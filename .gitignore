@@ -11,14 +11,14 @@ venv/
 
 MeshMonkExtreme/bin/*
 MeshMonkExtreme/obj/*
-meshmonk/bin/*
-meshmonk/build/
-meshmonk/floating.obj
-meshmonk/target.obj
-meshmonk/libmeshmonk.dylib
-meshmonk/example
-meshmonk/meshmonkexe/
-meshmonk/registrationexample/
+bin/*
+build/
+floating.obj
+target.obj
+libmeshmonk.dylib
+example
+meshmonkexe/
+registrationexample/
 *.cbp
 *.depend
 *.layout
