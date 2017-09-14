@@ -94,6 +94,16 @@ void SymmetricCorrespondenceFilter::update() {
     //# Merge the just computed corresponding flags with the corresponding pull flags.
     (*BaseCorrespondenceFilter::_ioCorrespondingFlags) = (*BaseCorrespondenceFilter::_ioCorrespondingFlags).cwiseProduct(correspondingPullFlags);
 
+    //# Make these final flags binary again
+    for (size_t i = 0 ; i < _numFloatingElements ; i++) {
+        if ((*BaseCorrespondenceFilter::_ioCorrespondingFlags)[i] > BaseCorrespondenceFilter::_flagThreshold){
+            (*BaseCorrespondenceFilter::_ioCorrespondingFlags)[i] = 1.0f;
+        }
+        else {
+            (*BaseCorrespondenceFilter::_ioCorrespondingFlags)[i] = 0.0f;
+        }
+    }
+
 }//end wkkn_correspondences()
 
 }//namespace registration
