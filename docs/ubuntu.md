@@ -51,10 +51,11 @@ The meshmonk library depends on [Eigen](http://eigen.tuxfamily.org/index.php?tit
  3) Move the Eigen subfolder (which contains all the headers) to /usr/local/include/ so that you end up with /usr/local/include/Eigen/: `sudo mv /home/user/Downloads/eigen-eigen-67e894c6cd8f/Eigen /usr/local/include/`
  
  ### Installing nanoflann
- Like Eigen, nanoflann is also a header-only library. So follow practically the same procedure:
- 1) Download the zipped source files from their [repository](https://github.com/jlblancoc/nanoflann) (see the green 'clone or download' button -> Download Zip)
- 2) Extract it locally
- 3) Move it to /usr/local/include/: `sudo mv /home/user/Downloads/nanoflann-master/include/nanoflann.hpp /usr/local/include/`
+ Like Eigen, nanoflann is also a header-only library. There is only one header file you need, so we deliver that in the 
+ meshmonk repository under '/vendor' directory. So all that's left is to copy that to /usr/local/include:
+```
+sudo cp /home/user/projects/meshmonk/vendor/nanoflann.hpp /usr/local/include/
+```
  
  ### Installing OpenMesh
 OpenMesh can be compiled and used as both a static (.a) and shared library (.so). We'll download the source, configure build settings with 'cmake', and build it using 'make'. After all that's happened, we move the compiled library files to /usr/local/lib/ and the header files to /usr/local/include/. And finally, we'll have to update some configurations so that these library files will be found when compiling/linking to it later.
@@ -72,8 +73,8 @@ OpenMesh can be compiled and used as both a static (.a) and shared library (.so)
 #### Getting the sources
 First, clone the meshmonk repository:
 1) Make a folder 'projects' in home (`/home/user/projects/`)
-2) Go into the folder: `cd /home/user/projects/`)
-3) Clone the online repository into the current projects folder: `git clone https://github.com/TheWebMonks/meshmonk.git`
+2) Go into the folder:`cd /home/user/projects/`
+3) From inside the projects directory, clone the online repository: `git clone https://github.com/TheWebMonks/meshmonk.git`
 
 #### Setting up the Shared library project
 Next, let's compile MeshMonk using Code::Blocks.
@@ -81,8 +82,8 @@ Next, let's compile MeshMonk using Code::Blocks.
 2) Choose C++
 3) Fill in the project form:
 * Project title: 'meshmonk'
-* Folder to create project in: '/home/user/projects/meshmonk/'
-* The other fields are filled in automatically, just verify the 'Resulting filename' equals '/home/user/projects/meshmonk/meshmonk/meshmonk.cbp'
+* Folder to create project in: '/home/user/projects'
+* The other fields are filled in automatically, just verify the 'Resulting filename' equals '/home/user/projects/meshmonk/meshmonk.cbp'
 4) Set configurations:
 * Compiler: 'GNU GCC Compiler'
 * Tick both the Debug and Release box
@@ -94,10 +95,11 @@ After clicking 'Finish', the meshmonk project is opened automatically. We're goi
 
 Note that you have to change these Compiler settings for both the Debug and Release build! (see the leftside pane in the 'Build options' window).
 
+Now let's make sure the build target has the correct name. We want the final compiled product to be named 'libmeshmonk.so'. So right-click the project again but this time select 'Properties'. Go to the 'Build targets' tab. For both the Release and Debug build, ensure the 'Output filename' field is respectively bin/Debug/libmeshmonk.so and bin/Release/libmeshmonk.so. (It might be named 'liblibmeshmonk.so' initially, which would not give us what we need).
 
 One big thing is still missing from the project, namely the sources themselves! Delete the current main.cpp that is in the meshmonk project (which was automatically generated but we're gonna use our own sources). Now add the sources:
-* Right-click the meshmonk project and select 'Add files recursively...'. Choose the `/home/user/projects/meshmonk/meshmonk/src` folder that you obtained by cloning the repository earlier.
-* Right-click the meshmonk project and select 'Add files...'. Choose the meshmonk.hpp and meshmonk.cpp files located in the `home/user/projects/meshmonk/meshmonk/` folder.
+* Right-click the meshmonk project and select 'Add files recursively...'. Choose the `/home/user/projects/meshmonk/src` folder that you obtained by cloning the repository earlier.
+* Right-click the meshmonk project and select 'Add files...'. Choose the meshmonk.hpp and meshmonk.cpp files located in the `home/user/projects/meshmonk/` folder. 
 
 #### Compile the project
 Now, compile the code by clicking the small yellow cog in the top toolbar ('Build'). Make sure the version is set to 'Release' and not 'Debug' (should be to the right of the build buttons).
@@ -106,11 +108,11 @@ Code::Blocks will print a lot of output, including warnings (in blue). Don't wor
 
 If you started building without changing the 'other compiler options' first, you'll have to 'Rebuild' the meshmonk library after changing the compiler options instead of 'Build'.
 
-Now go into the home/user/projects/meshmonk/meshmonk/bin/Release/ folder and you should see the resulting .so file, which is the shared library we just compiled. Make sure the name is 'libmeshmonk.so'. CodeBlocks often wrongfully names it 'liblibmeshmonk.so'. If that's the case, manually change the name back to 'libmeshmonk.so'.
+Now go into the home/user/projects/meshmonk/meshmonk/bin/Release/ folder and you should see the resulting .so file, which is the shared library we just compiled. Make sure the name is 'libmeshmonk.so'. If that's not the case, simply change the name back to 'libmeshmonk.so' yourself.
 
 ### Installing meshmonk
 Now that you've compiled everything, we're going to put the library files in the right places so that other applications can access them:
-1) Copy the shared library 'libmeshmonk.so' to /usr/local/lib/: `sudo cp /home/user/projects/meshmonk/meshmonk/bin/Release/libmeshmonk.so /usr/local/lib/`
+1) Copy the shared library 'libmeshmonk.so' to /usr/local/lib/: `sudo cp /home/user/projects/meshmonk/bin/Release/libmeshmonk.so /usr/local/lib/`
 2) Copy the header files to /usr/local/include/: `(cd /home/user/projects/meshmonk/ && find . -name '*.hpp' -print | tar --create --files-from -) | (cd /usr/local/include/ && sudo tar xvfp -)`
 3) Run ldconfig to update your library list: `sudo ldconfig -v`
 
