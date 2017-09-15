@@ -6,11 +6,14 @@
 #include <iostream>
 #include <map>
 #include "../global.hpp"
+#include "NeighbourFinder.hpp"
 
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
 typedef Eigen::Matrix< float, 1, registration::NUM_FEATURES> FeatureVec; //matrix Mx6 of type float
 typedef Eigen::Vector3f Vec3Float;
+typedef Eigen::Matrix< float, Eigen::Dynamic, 3> Vec3Mat; //matrix Mx3 of type float
+typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat;
 
 namespace registration {
 
@@ -54,6 +57,21 @@ class InlierDetector
         size_t _numElements;
         float _minimalSigma = 0.1f;
         float _maximalSigma = 10.0f;
+        const size_t _numNeighbours = 10;
+        const float _minWeight = 0.00001f;
+        const size_t _numSmoothingPasses = 2;
+
+        //# Internal Data structures
+        NeighbourFinder<Vec3Mat> _neighbourFinder;
+        MatDynFloat _smoothingWeights;
+
+        //# Internal functions
+        //## Find nearest neighbours (required for smoothing inlier weights)
+        void _determine_neighbours();
+        //## Update the weights used for smoothing the inlier weights (distance-based)
+        void _update_smoothing_weights();
+        //## Smooth the inlier weights
+        void _smooth_inlier_weights();
 
     protected:
 

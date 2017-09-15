@@ -81,6 +81,7 @@ void ViscoElasticTransformer::_update_smoothing_weights(){
 
     //# Loop over each neighbour and compute its smoothing weight
     //## 1) compute gaussian weights based on the distance to each neighbour
+    bool printedWarning = false;
     for (size_t i = 0 ; i < _numElements ; i++){
         float sumWeight = 0.0f;
         for (size_t j = 0 ; j < _numNeighbours ; j++){
@@ -104,6 +105,10 @@ void ViscoElasticTransformer::_update_smoothing_weights(){
         //## normalize each row of weights
         if (sumWeight > 0.000001f){
             _smoothingWeights.row(i) /= sumWeight;
+        }
+        else if (!printedWarning) {
+            std::cout << "Sum of smoothing weights in ViscoElastic Transformer should never be smaller than epsilon." << std::endl;
+            printedWarning = true;
         }
     }
 }//end _update_smoothing_weights()
@@ -245,7 +250,7 @@ void ViscoElasticTransformer::_update_outlier_transformation(){
             float inlierWeight = (*_inWeights)[i];
             if (inlierWeight > 0.8) {
                 //### Current element is an inlier, go to next iteration
-                continue;
+                //continue;
             }
             else {
                 //## For the current displacement, compute the weighted average of the neighbouring
@@ -257,12 +262,8 @@ void ViscoElasticTransformer::_update_outlier_transformation(){
                     // get neighbour index
                     size_t neighbourIndex = neighbourIndices(i,j);
                     // get neighbour weight and vector
-                    float weight = (*_inWeights)[neighbourIndex] * _smoothingWeights(i,j);
+                    float weight = _smoothingWeights(i,j); //inlier weight is already incorporated in the smoothing weight.
                     neighbourVector = temporaryDisplacementField.row(neighbourIndex);
-                    // rescale the weight between [eps,1.0] instead of [0.0,1.0]. If we wouldn't do this,
-                    // all the nodes with inlierWeight equal to 0.0 would end up with a deformation vector
-                    // of length 0.0.
-                    weight = (1.0f - _minWeight) * weight + _minWeight;
                     sumWeights += weight;
 
                     // increment the weighted average with current weighted neighbour vector
@@ -272,7 +273,7 @@ void ViscoElasticTransformer::_update_outlier_transformation(){
                 //## We want diffusion of the displacement field in outlier areas, but in inlier areas we don't want the
                 //## displacement to change. We therefor use the inlier weight to weigh the assignment of the newly computed
                 //## averaged displacement versus its old value.
-                vectorAverage /= sumWeights;
+                vectorAverage /= sumWeights; //smoothing weights are already normalized, so this should be redundant.
                 _displacementField.row(i) *= inlierWeight;
                 _displacementField.row(i) += (1.0f-inlierWeight) * vectorAverage;
             }

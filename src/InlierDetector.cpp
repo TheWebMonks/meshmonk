@@ -27,6 +27,96 @@ void InlierDetector::set_parameters(const float kappa, const bool useOrientation
 }
 
 
+void InlierDetector::_determine_neighbours(){
+    Vec3Mat floatingPositions = _inFeatures->leftCols(3);
+    _neighbourFinder.set_source_points(&floatingPositions);
+    _neighbourFinder.set_queried_points(&floatingPositions);
+    _neighbourFinder.set_parameters(_numNeighbours);
+    _neighbourFinder.update();
+}//end _determine_neighbours()
+
+
+void InlierDetector::_update_smoothing_weights(){
+    /*
+    The smoothing weights are the weights assigned to each vertex neighbour which
+    will be used during the smoothing of the inlier weights.
+
+    The weight is based on the inverse of the squared distance to each neighbour.
+    */
+
+    //# Initialize the weights matrix (we'll overwrite these values later)
+    //# and get the neighbour indices
+    _smoothingWeights = _neighbourFinder.get_distances();
+    MatDynInt neighbourIndices = _neighbourFinder.get_indices();
+
+    //# Loop over each neighbour and compute its smoothing weight
+    //## 1) compute gaussian weights based on the distance to each neighbour
+    bool printedWarning = false;
+    for (size_t i = 0 ; i < _numElements ; i++){
+        float sumWeight = 0.0f;
+        for (size_t j = 0 ; j < _numNeighbours ; j++){
+            //## Get the distance to the neighbour
+            const float distanceSquared = _smoothingWeights(i,j); //smoothing weight still equals the squared distance here
+            //## Compute the weight
+            float weight = 1.0f/distanceSquared;
+            //## Crop the weight to [eps, 1.0]
+            if (weight > 1.0f) {weight=1.0f;}
+            if (weight < _minWeight) {weight=_minWeight;}
+
+            //## insert the weight into _smoothingWeights
+            _smoothingWeights(i,j) = weight;
+            sumWeight += weight;
+        }
+        //## normalize each row of weights
+        if (sumWeight > 0.000001f){
+            _smoothingWeights.row(i) /= sumWeight;
+        }
+        else if (!printedWarning) {
+            std::cout << "Sum of smoothing weights in ViscoElastic Transformer should never be smaller than epsilon." << std::endl;
+            printedWarning = true;
+        }
+    }
+}
+
+
+void InlierDetector::_smooth_inlier_weights(){
+    //# Get the neighbour indices
+    VecDynFloat tempInlierWeights;
+    MatDynInt neighbourIndices = _neighbourFinder.get_indices();
+
+    //## Start iterative loop
+    for (size_t it = 0 ; it < _numSmoothingPasses ; it++){
+        //## Copy the inlier weights into a temporary variable.
+        tempInlierWeights = (*_ioProbability);
+
+        //## Loop over the nodes
+        for (size_t i = 0 ; i < _numElements ; i++) {
+            //## For the current node, compute the weighted average of the neighbouring inlier weights
+            float inlierWeightAvg = 0.0f;
+            float neighbourInlierWeight = 0.0f;
+            float sumSmoothingWeights = 0.0f;
+            for (size_t j = 0 ; j < _numNeighbours ; j++) {
+                // get neighbour index
+                size_t neighbourIndex = neighbourIndices(i,j);
+                // get neighbour smoothing weight and inlier weight
+                const float smoothingWeight = _smoothingWeights(i,j); //inlier weight is already incorporated in the smoothing weight.
+                neighbourInlierWeight = tempInlierWeights(neighbourIndex);
+                sumSmoothingWeights += smoothingWeight;
+
+                // increment the weighted average with current weighted neighbour vector
+                inlierWeightAvg += smoothingWeight * neighbourInlierWeight;
+            }
+
+            //## Determine the weighted average inlier weight by dividing by the sum of smoothing weights.
+            inlierWeightAvg /= sumSmoothingWeights; //smoothing weights are already normalized, so this should be redundant.
+            (*_ioProbability)[i] = inlierWeightAvg;
+        }
+
+        //# Multiply the resulting inlier weights with the deterministic corresponding flags again!
+        (*_ioProbability) *= (*_inCorrespondingFlags);
+    }
+}//end _smooth_inlier_weights()
+
 void InlierDetector::update() {
 
 //    _parameterList["jos"] = 2.0f;

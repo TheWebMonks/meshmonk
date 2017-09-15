@@ -241,6 +241,7 @@ void ScaleShifter::_interpolate_new_nodes(){
             //### go wrong.
             const float eps2 = 0.0001f;
             if (weight < eps2) {weight = eps2;}
+            if (weight > 1.0f) {weight = 1.0f;}
 
             //### Weigh the matching features of the low sampled mesh
             deformationField.row(newNodeIndex) += weight * deformationField.row(matchingHighNeighbourIndex);
