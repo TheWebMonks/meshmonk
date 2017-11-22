@@ -88,7 +88,7 @@ git clone https://github.com/TheWebMonks/meshmonk.git
 ```
 Enter the subfolder with the c++ sourcecode and use `make` to compile it
 ```bash
-cd meshmonk/meshmonk
+cd meshmonk
 make
 ```
 From the meshmonk folder, copy the shared library object libmeshmonk.dylib to /usr/local/lib
