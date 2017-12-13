@@ -1,5 +1,9 @@
 # Installing meshmonk
-MeshMonk can be built and installed on [Ubuntu 16.04](https://github.com/TheWebMonks/meshmonk/blob/master/docs/ubuntu.md) and [OSX](https://github.com/TheWebMonks/meshmonk/blob/master/docs/osx.md).
+MeshMonk can be built and installed on:
+
+* [Ubuntu 16.04](docs/ubuntu.md)
+* [OSX](docs/osx.md)
+* [Windows](docs/windows.md)
 
 # Using meshmonk
 
