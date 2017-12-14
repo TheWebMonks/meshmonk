@@ -14,6 +14,7 @@ Visual Studio 2017 community edition. Ensure that you have to
 ### Import project
 * File -> New -> Project From existing code
 * Choose *Visual c++*
+* Choose *meshmonk* as name
 * Choose Project Type: *Static Library (LIB) project*
 
 ### Configure Solution
@@ -39,8 +40,6 @@ Open *Project -> Properties*:
     C:\Program Files\OpenMesh 6.3\include
     ```
     This includes Eigen, OpenMesh and Nanoflann
-* Go to *Linker -> Input*: change to *Additional Dependencies*
-* Go to *Linker -> System -> Subsystem*: change to *Console (/SUBSYSTEM:CONSOLE)*
 * Go to *Librarian -> General -> Additional Dependencies*:
     ```
     C:\Program Files\OpenMesh 6.3\lib\OpenMeshCore.lib
