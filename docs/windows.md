@@ -47,3 +47,8 @@ Open *Project -> Properties*:
     C:\Program Files\OpenMesh 6.3\lib\OpenMeshTools.lib
     ```
 
+### Matlab
+
+After you've build the library you can have to copy/paste the file to
+a folder which is in matlab path. Either the root folder of matlab or
+the relative root folder of the matlab files that you're working on.
