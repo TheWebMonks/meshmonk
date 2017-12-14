@@ -40,3 +40,6 @@ x64/
 
 # Matlab
 *.mexw64
+matlab/*.ini
+matlab/*.lib
+matlab/*.asv
