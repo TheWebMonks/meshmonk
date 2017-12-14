@@ -10,6 +10,7 @@ MeshMonk can be built and installed on:
 ## From Matlab
 
 ### Setting Environment Variables
+
 #### Ubuntu
 Setting the library paths inside Matlab has some unresolved [problems](https://nl.mathworks.com/matlabcentral/newsreader/view_thread/253412). It seems overwriting the library paths to use inside matlab doesn't work. So instead, we'll preload the necessary libs when starting Matlab:
 
@@ -29,3 +30,8 @@ In matlab, go into the projects/meshmonk/matlab folder (or wherever you put the 
 If you're creating your own c++ project and want to use meshmonk, simply add '-lmeshmonk -lOpenMeshCore -lOpenMeshTools' as an option to your linker when compiling your software that uses the meshmonk library.
 
 -include the meshmonk.hpp header
+
+## Data
+
+The matlab scripts use example data files, download:
+* [HANNE](https://s3-eu-west-1.amazonaws.com/webmonks-share/meshmonk/HANNE.tar.gz)

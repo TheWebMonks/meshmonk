@@ -1,5 +1,7 @@
 clear all
 
+%Download object files: https://s3-eu-west-1.amazonaws.com/webmonks-share/meshmonk/HANNE.tar.gz
+
 %Load a mesh
 floatingPath = '/home/jonatan/projects/MIRC/meshmonk/matlab_peter/MyTestMatlab/DATA/HANNE/mappingTemplate.obj';
 %floatingPath = '/home/jonatan/projects/meshmonk/examples/ExPeter/floating.obj';
