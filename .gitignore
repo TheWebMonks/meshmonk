@@ -30,3 +30,13 @@ registrationexample/
  examples/data/
  conda/outputdir/
 .DS_Store
+
+# Exclude Windows specific files
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+x64/
+
+# Matlab
+*.mexw64
