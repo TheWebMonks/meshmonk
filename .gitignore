@@ -45,3 +45,5 @@ Release/
 matlab/*.ini
 matlab/*.lib
 matlab/*.asv
+matlab/*.exp
+matlab/*.mexw64.manifest
