@@ -39,6 +39,7 @@ registrationexample/
 x64/
 Debug/
 Release/
+*.lib
 
 # Matlab
 *.mexw64
