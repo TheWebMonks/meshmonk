@@ -38,6 +38,7 @@ registrationexample/
 *.vcxproj.filters
 x64/
 Debug/
+Release/
 
 # Matlab
 *.mexw64
