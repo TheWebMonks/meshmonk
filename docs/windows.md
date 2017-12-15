@@ -23,7 +23,19 @@ Visual Studio 2017 community edition. Ensure that you have to
 
 ### Exclude files from the project
 
-* all *matlab* files
+* all *matlab* files:
+  * compute_correspondences.cpp
+  * compute_inlier_weights.cpp
+  * compute_nonrigid_transformation.cpp
+  * compute_normals.cpp
+  * compute_rigid_transformation.cpp
+  * downsample_mesh.cpp
+  * mystream.cpp
+  * nonrigid_registration.cpp
+  * pyramid_registration.cpp
+  * rigid_registration.cpp
+  * scaleshift_mesh.cpp
+  * test_meshmonk_mexing.cpp
 * nanaflann.hpp
 * example.cpp
 
