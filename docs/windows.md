@@ -7,9 +7,15 @@ Visual Studio 2017 community edition. Ensure that you have to
 ## Install libraries
 
 * [OpenMesh 6.3](http://openmesh.org/download/): download the vs2015 64bit with apps static [installer](http://www.openmesh.org/media/Releases/6.3/OpenMesh-6.3-VS2015-64-Bit.exe)
-* [Eigen 3.3.4](http://eigen.tuxfamily.org): download the [source zip](http://bitbucket.org/eigen/eigen/get/3.3.4.zip) and extract in *c:\Users\\\<username\>\Documents\GitHub\eigen-eigen-3.3.4*
+* [Eigen 3.3.4](http://eigen.tuxfamily.org): download the [source zip](http://bitbucket.org/eigen/eigen/get/3.3.4.zip) and extract in `c:\Users\<username>\Documents\GitHub\eigen-eigen-3.3.4`
 
 ## Configure Visual Studio project
+
+### Screencast on how to configure & build
+
+[![Screencast](https://img.youtube.com/vi/L9Us4YlcLxw/0.jpg)](https://www.youtube.com/watch?v=L9Us4YlcLxw&feature=youtu.be)
+
+Click on the image to watch the screencast on YouTube.
 
 ### Import project
 * File -> New -> Project From existing code
@@ -20,6 +26,18 @@ Visual Studio 2017 community edition. Ensure that you have to
 ### Configure Solution
 * Choose for Solution Configurations: *Release*
 * Choose for Solution Platform: *x64*
+
+![Configure Solution](windows/configure_solution.png)
+
+### Retarget Solution
+
+* In the *Solution Explorer*
+* Right-click on *Solution 'meshmonk'*
+* Click on *Retarget solution*
+* Choose a *Windows SDK* version higher then 10
+* Click *Ok*
+
+![Configure Solution](windows/retarget_solution.png)
 
 ### Exclude files from the project
 
@@ -45,18 +63,30 @@ Open *Project -> Properties*:
 
 * Go to *General -> Project Defaults -> Configuration Type*: *change to Static library(.lib)*
 * Go to *C++ -> Preprocessor -> Preprocessor Definitions*: add *_USE_MATH_DEFINES*
-* Go to *C++ -> General -> Additional Include Libraries*: add
+* Go to *C++ -> General -> Additional Include Directories*: add
     ```
     C:\Users\lukin0110\Documents\GitHub\eigen-eigen-3.3.4
     C:\Users\lukin0110\Documents\GitHub\meshmonk\vendor
     C:\Program Files\OpenMesh 6.3\include
     ```
-    This includes Eigen, OpenMesh and Nanoflann
+    This includes Eigen, OpenMesh and Nanoflann.
+
+    **Note**: adapt these paths to the paths where you've installed the
+    source code and libraries.
 * Go to *Librarian -> General -> Additional Dependencies*:
     ```
     C:\Program Files\OpenMesh 6.3\lib\OpenMeshCore.lib
     C:\Program Files\OpenMesh 6.3\lib\OpenMeshTools.lib
     ```
+    **Note**: adapt these paths as well to the paths where you've
+    installed OpenMesh.
+
+### Build project
+
+* Go to *Build -> Rebuild Solution*
+
+This will build the static library. The result `meshmonk.lib` can be
+found in `C:\Users\lukin0110\Documents\GitHub\meshmonk\x64\Release`.
 
 ### Matlab
 
