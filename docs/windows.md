@@ -71,7 +71,7 @@ Click on the image to watch the screencast on YouTube.
 ### Configure properties
 
 When you start configuring the properties you need to make sure that you
-have select the *meshmonk* project. Otherwise configuration is not
+have selected the *meshmonk* project. Otherwise the configuration is not
 applied to this projects. E.g:
 
 ![Solution Selection](windows/solution_selection.png)
