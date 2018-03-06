@@ -1,8 +1,19 @@
 # Build on Windows
 
 This installation guide works on a Windows 10 64bit machine with the
-Visual Studio 2017 community edition. Ensure that you have to
-**C++/CLI** tools installed.
+Visual Studio 2017 community edition. Ensure that you have the
+**C++/CLI support** installed.
+
+## Install Visual Studio 10
+
+* Go to: https://www.visualstudio.com/downloads/
+* Download *Visual Studio Community 2017*
+* Double click to run the installer
+* The installer will open
+  ![First window](windows/install_visual_studio.png)
+  In the left pane click the checkboxes of *Universal Windows Platform Development* and *Desktop development with C++*
+  In the right page enable the *C++/CLI support* checkbox
+* Click on install. This will take while since it needs to download +16GB
 
 ## Install libraries
 
@@ -59,9 +70,16 @@ Click on the image to watch the screencast on YouTube.
 
 ### Configure properties
 
+When you start configuring the properties you need to make sure that you
+have select the *meshmonk* project. Otherwise configuration is not
+applied to this projects. E.g:
+
+![Solution Selection](windows/solution_selection.png)
+
 Open *Project -> Properties*:
 
-* Go to *General -> Project Defaults -> Configuration Type*: *change to Static library(.lib)*
+* Go to *General -> Project Defaults -> Configuration Type*: *change to Static library(.lib)*.
+  This changes the *Linker* configuration options to *Librarian*. If this didn't happen, please close and re-open the *Properties*
 * Go to *C++ -> Preprocessor -> Preprocessor Definitions*: add *_USE_MATH_DEFINES*
 * Go to *C++ -> General -> Additional Include Directories*: add
     ```
