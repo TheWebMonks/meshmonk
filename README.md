@@ -35,3 +35,10 @@ If you're creating your own c++ project and want to use meshmonk, simply add '-l
 
 The matlab scripts use example data files, download:
 * [HANNE](https://s3-eu-west-1.amazonaws.com/webmonks-share/meshmonk/HANNE.tar.gz)
+
+## Contributors
+
+* Jonatan Snyders (jonaten AT webmonks.io)
+* Maarten Huijsmans (maarten AT webmonks.io)
+
+Contact us freely if you'd like to contribute and we'll add you to the repository.
