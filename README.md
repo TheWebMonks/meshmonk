@@ -38,7 +38,7 @@ The matlab scripts use example data files, download:
 
 ## Contributors
 
-* Jonatan Snyders (jonaten AT webmonks.io)
-* Maarten Huijsmans (maarten AT webmonks.io)
+* Jonatan Snyders (jonatan@webmonks.io)
+* Maarten Huijsmans (maarten@webmonks.io)
 
 Contact us freely if you'd like to contribute and we'll add you to the repository.
