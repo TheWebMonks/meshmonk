@@ -8,18 +8,21 @@ function [ cleanedFeatures, numElements ] = clean_downsampled_features( uncleane
 numCols = 6;
 
 %# Determine finalValidIndex: the index after which we should cut off
-%# elements. We do that by looping over the faces and stopping when we find
-%# three consecutive zeros.
-startIndex = length(nonzeros(uncleanedFeatures));
-finalValidIndex = numel(uncleanedFeatures);
-if (startIndex < numel(uncleanedFeatures)-2)
-    for i=startIndex:numel(uncleanedFeatures)-2
-        if (uncleanedFeatures(i) == 0.0) && (uncleanedFeatures(i+1) == 0.0) && (uncleanedFeatures(i+2) == 0.0)
-            finalValidIndex = i - 1;
-            break;
-        end
-    end
-end
+%# elements. We do that by finding the last (highest) index that is nonzero
+
+finalValidIndex =find(uncleanedFeatures,1, 'last');
+
+%startIndex = length(nonzeros(uncleanedFeatures));
+%finalValidIndex = numel(uncleanedFeatures);
+% if (startIndex < numel(uncleanedFeatures)-2)
+%     for i=startIndex:numel(uncleanedFeatures)-2
+%         if (uncleanedFeatures(i) == 0.0) && (uncleanedFeatures(i+1) == 0.0) && (uncleanedFeatures(i+2) == 0.0)
+% 
+%             finalValidIndex = i - 1;
+%             break;
+%         end
+%     end
+% end
 
 %# If by coincidence the final valid element was a zero, we would end up
 %# cutting it off. In this case, the number of elements could not be
