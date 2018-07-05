@@ -8,6 +8,9 @@ MeshMonk can be built and installed on:
 # Using meshmonk
 
 ## From Matlab
+The following toolboxes are required from Matlab:
+* Statistics and Machine Learning Toolbox
+* Image Processing Toolbox
 
 ### Setting Environment Variables
 
@@ -24,7 +27,11 @@ setenv('LD_LIBRARY_PATH', p);
 ```
 
 ### Mexing meshmonk functions
+On ubuntu/mac: 
 In matlab, go into the projects/meshmonk/matlab folder (or wherever you put the meshmonk repository) and run the mex_all.m script to mex all the meshmonk functions you need.
+
+On Windows: 
+In matlab, go into the Documents/GitHub/meshmonk folder (or wherever you put the meshmonk repository) and run the mex_windows_all.m script to mex all the meshmonk functions you need.
 
 ## From other software
 If you're creating your own c++ project and want to use meshmonk, simply add '-lmeshmonk -lOpenMeshCore -lOpenMeshTools' as an option to your linker when compiling your software that uses the meshmonk library.
@@ -32,7 +39,6 @@ If you're creating your own c++ project and want to use meshmonk, simply add '-l
 -include the meshmonk.hpp header
 
 ## Data
-
 The matlab scripts use example data files, download:
 * [HANNE](https://s3-eu-west-1.amazonaws.com/webmonks-share/meshmonk/HANNE.tar.gz)
 
