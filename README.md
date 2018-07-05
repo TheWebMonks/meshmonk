@@ -38,9 +38,8 @@ If you're creating your own c++ project and want to use meshmonk, simply add '-l
 
 -include the meshmonk.hpp header
 
-## Data
-The matlab scripts use example data files, download:
-* [HANNE](https://s3-eu-west-1.amazonaws.com/webmonks-share/meshmonk/HANNE.tar.gz)
+## Demo
+An example of a facial registration can be found in the demo folder
 
 ## Contributors
 
