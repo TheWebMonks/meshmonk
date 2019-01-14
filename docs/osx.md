@@ -37,9 +37,14 @@ cmake --version
 ```bash
 brew install eigen
 ```
+or upgrade:
+```bash
+brew upgrade eigen
+```
+
 2. Make a symlink to the main 'Eigen' folder from /usr/local/include/ so that you can include Eigen in your projects.
 ```bash
-ln -s /usr/local/Cellar/eigen/3.3.3/include/eigen3/Eigen /usr/local/include/Eigen
+ln -s /usr/local/Cellar/eigen/3.3.7/include/eigen3/Eigen /usr/local/include/Eigen
 ```
 
 ### 2. _(optional)_ 'Install' nanoflann
