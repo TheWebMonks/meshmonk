@@ -21,9 +21,28 @@ importWavefront(demoFace,filename,path,[])
 % Visualize face to map
 v = viewer(demoFace);
 
-%% Load Template and face to map
+%%
+%load template
 load Template;
-viewer(Template,v); % This visualization shows the Template and the Target face, turn the face to the side to see them both
+
+%% Initialisation using landmarks
+% makes use of recorded 
+% landmarks on the template and target to rigidly aling the template to
+% target using some helper functions.
+
+
+% load landmark files
+DemoLandmarks = readTextLandmarkFile('DemoFaceLandmarks.csv',',',1,3,1,5);
+TemplateLandmarks = readTextLandmarkFile('TemplateLandmarks.csv',',',1,3,1,5);
+
+% learn Procrustes transform from template landmarks to demo face landmarks
+T = computeTransform(TemplateLandmarks,DemoLandmarks);
+
+% apply transformation onto the template
+Template = applyTransform(Template,T);
+
+% show template after initialisation
+viewer(Template,v)%
 
 %% Mapping demo face
 
