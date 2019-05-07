@@ -146,11 +146,11 @@ classdef ShapeMapper < superHandleClass
            out = exp(log(single(obj.TransformMorphableModelNetaEnd)/single(obj.TransformMorphableModelNetaStart))/(obj.NumIterations-1));
        end
        function out = get.NumViscousIterations(obj)
-           out = uint32(round(obj.TransformNumViscousIterationsStart * obj.ViscousAnnealingRate^(obj.Iteration)));
+           out = uint32(round(obj.TransformNumViscousIterationsStart * obj.ViscousAnnealingRate^(obj.Iteration-1)));
            if (out < obj.TransformNumViscousIterationsEnd), out = obj.TransformNumViscousIterationsEnd;end
        end
        function out = get.NumElasticIterations(obj)
-           out = uint32(round(obj.TransformNumElasticIterationsStart * obj.ElasticAnnealingRate^(obj.Iteration)));
+           out = uint32(round(obj.TransformNumElasticIterationsStart * obj.ElasticAnnealingRate^(obj.Iteration-1)));
            if (out < obj.TransformNumElasticIterationsEnd), out = transformNumElasticIterationsEnd;end
        end
        function out = get.NetaValue(obj)
