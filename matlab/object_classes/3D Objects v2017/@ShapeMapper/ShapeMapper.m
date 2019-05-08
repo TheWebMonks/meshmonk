@@ -220,6 +220,15 @@ classdef ShapeMapper < superHandleClass
           obj.CorrespondingFeatures = in;
           if~isempty(obj.CorrespondingShape), obj.CorrespondingShape.Vertices = in(:,1:3);end %#ok<*MCSUP>
        end
+       function obj = set.TransformationType(obj,in)
+            if ismember(in,{'nonrigid','rigid'})
+                obj.TransformationType = in;
+            elseif ismember(in,{'pca'})
+                error('TransformationType not yet implemented')
+            else
+                error('Invalid TransformationType')
+            end
+       end 
    end
    methods % INTERFACING
        function map(obj)
