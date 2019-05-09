@@ -1,0 +1,8 @@
+newmtl Template_Rigidly_Aligned
+ka 0.3 0.3 0.3
+kd 0.8 0.8 0.8
+ks 0 0 0
+illum 0
+map_Ka Template_Rigidly_Aligned.png
+map_Kd Template_Rigidly_Aligned.png
+map_Ks Template_Rigidly_Aligned.png
