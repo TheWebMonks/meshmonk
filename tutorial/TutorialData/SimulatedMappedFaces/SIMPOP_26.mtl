@@ -1,0 +1,8 @@
+newmtl SIMPOP_26
+ka 0.3 0.3 0.3
+kd 0.8 0.8 0.8
+ks 0 0 0
+illum 0
+map_Ka SIMPOP_26.png
+map_Kd SIMPOP_26.png
+map_Ks SIMPOP_26.png
