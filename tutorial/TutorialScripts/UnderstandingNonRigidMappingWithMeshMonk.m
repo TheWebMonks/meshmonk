@@ -241,7 +241,7 @@ viewer(wireDeformedFloating,v);
 viewer(target,v)
 target.Alpha = 0.5;
 v.SceneLightVisible = true;
-V.SceneLightLinked;
+v.SceneLightLinked;
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

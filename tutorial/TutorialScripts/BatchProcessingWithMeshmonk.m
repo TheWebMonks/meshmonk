@@ -31,7 +31,7 @@
 clear all; close all;
 addpath(genpath('/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/matlab')) % change this to the correct path on your computer
 
-
+tutorialPath = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/tutorial/';
 path2objs = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/tutorial/TutorialData/Targets/'; % check always that the path ends with a separator chara
 path2landmarks = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/tutorial/TutorialData/Landmarks/';
 path2results = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/tutorial/MappedResults';
@@ -132,10 +132,10 @@ NRM.TransformNumNeighbors = 80;
 
 % load Template floating face
 Floating = shape3D;
-Floating.importWavefront('Template.obj','/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/tutorial/TutorialData/')
+Floating.importWavefront('Template.obj',strcat(tutorialPath, filesep,'TutorialData/'));
 
 % load landmarks on template
-FloatingLandmarks = readTextLandmarkFile('/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/tutorial/TutorialData/Template.csv',',');
+FloatingLandmarks = readTextLandmarkFile(strcat(tutorialPath,filesep,'TutorialData/Template.csv',','));
 
 
 
