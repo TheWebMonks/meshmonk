@@ -135,7 +135,7 @@ Floating = shape3D;
 Floating.importWavefront('Template.obj',strcat(tutorialPath, filesep,'TutorialData/'));
 
 % load landmarks on template
-FloatingLandmarks = readTextLandmarkFile(strcat(tutorialPath,filesep,'TutorialData/Template.csv',','));
+FloatingLandmarks = readTextLandmarkFile(strcat(tutorialPath,filesep,'TutorialData/Template.csv'),',');
 
 
 
