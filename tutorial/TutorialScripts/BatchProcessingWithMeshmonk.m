@@ -183,7 +183,7 @@ for f = 1:numel(objs)
    % Execute Non-Rigid Mapping
    forNRM = clone(NRM);
    forNRM.FloatingShape = forRM.FloatingShape; % floating shape is now the floating shaoe after Rigid Mapping
-   forNRM.TargetShape = TargetShape;
+   forNRM.TargetShape = Target;
    forNRM.map()
    
    
