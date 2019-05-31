@@ -91,7 +91,7 @@ Clone the online MeshMonk repository
 ```
 git clone https://github.com/TheWebMonks/meshmonk.git
 ```
-Enter the subfolder with the c++ sourcecode and use `make` to compile it
+Enter the subfolder with the c++ sourcecode and use `make` to compile it. As an alternative to this step, you may use the precompiled version of 'libmeshmonk.dylib' in the 'builds' folder of the meshmonk download. 
 ```bash
 cd meshmonk
 make

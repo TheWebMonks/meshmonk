@@ -77,6 +77,8 @@ First, clone the meshmonk repository:
 3) From inside the projects directory, clone the online repository: `git clone https://github.com/TheWebMonks/meshmonk.git`
 
 #### Setting up the Shared library project
+As an alternative to this, and the next step, you may use the precompiled version of the meshmonk library in the 'builds' folder.
+
 Next, let's compile MeshMonk using Code::Blocks.
 1) Select 'Create a new project' and choose 'Shared library'
 2) Choose C++

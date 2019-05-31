@@ -28,6 +28,7 @@ Visual Studio 2017 community edition. Ensure that you have the
 ## Configure Visual Studio project
 
 ### Screencast on how to configure & build
+As an alternative to building the library yourself, wou may use the precompiled version of 'meshmonk.lib' in the 'builds' folder of the meshmonk download.
 
 [![Screencast](https://img.youtube.com/vi/L9Us4YlcLxw/0.jpg)](https://www.youtube.com/watch?v=L9Us4YlcLxw&feature=youtu.be)
 
