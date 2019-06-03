@@ -3,7 +3,7 @@
 % practice
 
 
-tutorialPath = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/matlab/tutorial';
+tutorialPath = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/tutorial';
 chdir(tutorialPath)
 
 % add meshmonk classes to your MATLAB path
