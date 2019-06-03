@@ -7,8 +7,8 @@ addpath(genpath('/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/matlab')) % c
 
 
 
-tutorialPath = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/matlab/tutorial';
-DataPath = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/matlab/tutorial/TutorialData/SimulatedMappedFaces';
+tutorialPath = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/tutorial';
+DataPath = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/tutorial/TutorialData/SimulatedMappedFaces';
 chdir(tutorialPath);
 
 %% Load all faces
@@ -99,18 +99,8 @@ for f = 1:nFaces
     viewer(shp,v);
     shp.ViewMode = 'wireframe';
     % make semi transparent
-    shp.Alpha = 0.3;
-        
-        
-    
-    
-    
+    shp.Alpha = 0.3;    
 end
-
-
-
-
-
 
 
 %% 
@@ -364,8 +354,8 @@ Y = arrayStructure2Vector(DataMatrix3D);
 
 close all;
 
-PLSxaxis = 1; % scores on which PC to plot on the x axis.
-PLSyaxis = 2; % scores on which PC to plot on the y axis
+PLSxaxis = 1; % scores on which PLS component to plot on the x axis.
+PLSyaxis = 2; % scores on which P to plot on the y axis
 
 xaxis_scores = Yscores(:,PCxaxis);
 yaxis_scores = Yscores(:,PCyaxis);
@@ -423,30 +413,34 @@ ageEffect = arrayVector2Structure(Beta(2,:)); % the first row of Beta is the mod
 BMIEffect = arrayVector2Structure(Beta(3,:));
 SexEffect = arrayVector2Structure(Beta(4,:));
 
-% consruct average face to visualise one
+%create shape3D of average shape
 AverageShape = shape3D;
-AverageShape.Faces = Template.Faces;
 AverageShape.Vertices = meanPoints;
+AverageShape.Faces = Template.Faces;
 
 
 
-% for each variable to plot create a copy of the average and a separate
-% viewer
 
+titles = {'Age','BMI','Sex'};
+i = 0; % count from zero
 for effect = {ageEffect,BMIEffect,SexEffect}
-    obj = clone(AverageShape);
-    v = viewer(obj);
-    v.BackgroundColor = [1,1,1];
-    v.SceneLightVisible = true;
-    V.SceneLightLinked = true;
-    % calculae effect along he surface normals of the average
-    normals = obj.VertexNormals;
-    normComp = sum(effect{1}.*normals,2);
-    obj.VertexValue = normComp;
-    obj.ColorMode = 'Indexed';
-    colorbar()
+   i = i+1;
+   obj = clone(AverageShape);
+   v = viewer(obj);
+   v.BackgroundColor = [1,1,1];
+   v.SceneLightVisible = true;
+   v.SceneLightLinked = true;
+   v.Tag = titles{i};
+   
+   % calculate effect along he surface normals of the average
+   normals = obj.VertexNormals;
+   normComp = sum(effect{1}.*normals,2);
+   obj.VertexValue = normComp;
+   
+   % view obj color-indexed to the effect along the surface normals
+   obj.ColorMode = "Indexed";
+   colorbar()
 end
-
 
 %% Permutation test on partial R-squared
 
