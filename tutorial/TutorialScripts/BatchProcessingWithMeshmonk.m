@@ -34,8 +34,13 @@ addpath(genpath('/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/matlab')) % c
 tutorialPath = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/tutorial/';
 path2objs = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/tutorial/TutorialData/Targets/'; % check always that the path ends with a separator chara
 path2landmarks = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/tutorial/TutorialData/Landmarks/';
-path2results = '/uz/data/avalok/mic/tmp/hmatth5/Projects/meshmonk/tutorial/MappedResults';
+path2results = strcat(tutorialPath,filesep,'MappedResults');
 % get structs containing information for each file
+
+%check if path2results exists and create it if not
+if ~exist(path2results,'dir')
+    mkdir(path2results)
+end
 
 objs = dir(strcat(path2objs,'*.obj'));
 landmarks = dir(strcat(path2landmarks,'*.csv'));
