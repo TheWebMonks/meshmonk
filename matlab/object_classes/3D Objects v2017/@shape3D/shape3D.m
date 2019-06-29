@@ -493,7 +493,10 @@ classdef shape3D < superHandleClass
           Z_areas = (areas-mean(areas))/std(areas);
           out.TriangleAreas = areas;
           out.AreaZscores = Z_areas;
-          out.TriangleQuality = pdetriq(vertices,faces);
+          try % TriangleQuality is not essential for mapping so this is embedded in a catch statement to avoid dependency on the partial differential eqquation toolbox
+          	out.TriangleQuality = pdetriq(vertices,faces);
+          catch
+          end
         end
         function out = numberTrianglesPerVertex(obj)
           out = hist(obj.Faces(:),1:obj.nVertices);% nr of triangles a vertex participates in    
