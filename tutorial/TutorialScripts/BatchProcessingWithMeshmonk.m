@@ -160,7 +160,7 @@ for f = 1:numel(objs)
    T = computeTransform(FloatingLandmarks,TargetLandmarks,true);
    
    % apply rigid transform to Floating
-   Floating = applyTransform(Floating,T);
+   forFloating = applyTransform(Floating,T);
    
    
    %check normals of floating and target consistently point inward or
@@ -173,14 +173,14 @@ for f = 1:numel(objs)
    % e.g v = viewer(Shape)
    %    plotVectorField(Shape.Vertices,Shape.VertexNormals,v)
    
-   if ~normalsConsistent(Target, Floating)
+   if ~normalsConsistent(Target, forFloating)
        Target.FlipNormals = true;
    end
    
    
    % Execute Rigid Mapping
    forRM = clone(RM);
-   forRM.FloatingShape = clone(Floating);
+   forRM.FloatingShape = clone(forFloating);
    forRM.TargetShape = clone(Target);
    
    forRM.map();
