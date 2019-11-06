@@ -96,6 +96,7 @@ RM.UpSampleTarget = false; % will upsample the target mesh. if meshes are irregu
 
 % Set up non rigid ICP with ShapeMapper with 'nonrigid' transformation type
 NRM = ShapeMapper;
+NRM.TransformationType = 'nonrigid';
 NRM.NumIterations = 200; 
 NRM.CorrespondencesSymmetric = true;
 NRM.CorrespondencesNumNeighbours = 3;
