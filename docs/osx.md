@@ -48,11 +48,9 @@ ln -s /usr/local/Cellar/eigen/3.3.7/include/eigen3/Eigen /usr/local/include/Eige
 ```
 
 ### 2. _(optional)_ 'Install' nanoflann
-In your terminal, go to your Downloads folder. Download the nanoflann header (which is the only file you need from the nanoflann library) and copy it to /usr/local/include/.
+Like Eigen, nanoflann is also a header-only library. There is only one header file you need, so we deliver that in the meshmonk repository under '/vendor' directory. So all that's left is to copy that to /usr/local/include:
 ```bash
-cd /Users/user/Downloads/
-wget https://raw.githubusercontent.com/jlblancoc/nanoflann/v1.2.3/include/nanoflann.hpp
-cp nanoflann.hpp /usr/local/include
+sudo cp /home/user/projects/meshmonk/vendor/nanoflann.hpp /usr/local/include/
 ```
 
 ### 3. Install OpenMesh
