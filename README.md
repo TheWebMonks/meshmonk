@@ -41,9 +41,3 @@ If you're creating your own c++ project and want to use meshmonk, simply add '-l
 ## Demo
 An example of a facial registration can be found in the demo folder
 
-## Contributors
-
-* Jonatan Snyders (jonatan@webmonks.io)
-* Maarten Huijsmans (maarten@webmonks.io)
-
-Contact us freely if you'd like to contribute and we'll add you to the repository.
