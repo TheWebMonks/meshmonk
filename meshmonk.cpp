@@ -525,17 +525,17 @@ extern "C"
     //################################  INPUT/OUTPUT  ######################################
     //######################################################################################
 
-//    void read_obj_files(const std::string floatingMeshPath, const std::string targetMeshPath,
-//                        FeatureMat& floatingFeatures, FeatureMat& targetFeatures,
-//                        FacesMat& floatingFaces, FacesMat& targetFaces){
-//        registration::import_data(floatingMeshPath, targetMeshPath,
-//                                    floatingFeatures, targetFeatures,
-//                                    floatingFaces, targetFaces);
-//    }
-//
-//    void write_obj_files(FeatureMat& features, FacesMat& faces, const std::string meshPath){
-//        registration::export_data(features, faces, meshPath);
-//    }
+    void read_obj_files(const std::string floatingMeshPath, const std::string targetMeshPath,
+                        FeatureMat& floatingFeatures, FeatureMat& targetFeatures,
+                        FacesMat& floatingFaces, FacesMat& targetFaces){
+        registration::import_data(floatingMeshPath, targetMeshPath,
+                                    floatingFeatures, targetFeatures,
+                                    floatingFaces, targetFaces);
+    }
+
+    void write_obj_files(FeatureMat& features, FacesMat& faces, const std::string meshPath){
+        registration::export_data(features, faces, meshPath);
+    }
 
 #ifdef __cplusplus
 }//extern C
