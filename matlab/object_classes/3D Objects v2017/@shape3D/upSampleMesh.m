@@ -81,7 +81,7 @@ function Findex = performSubdivision(obj,Findex)
     if ~isempty(obj.VertexRGB)
        rgb = obj.VertexRGB';
        rgb = [rgb, (rgb(:,i)+rgb(:,j))/2 ];
-       obj.TextureColor = rgb';
+       obj.VertexRGB = rgb';
        clear rgb;
     end
     if ~isempty(obj.UV)
