@@ -99,8 +99,8 @@ void NeighbourFinder<VecMatType>::set_source_points(const VecMatType * const inS
     //# Update internal data structures
     //## The kd-tree has to be rebuilt.
     if (_kdTree != NULL) { delete _kdTree; _kdTree = NULL;}
-    _kdTree = new nanoflann::KDTreeEigenMatrixAdaptor<VecMatType>(*_inSourcePoints,
-                                                                _leafSize);
+    _kdTree = new nanoflann::KDTreeEigenMatrixAdaptor<VecMatType>(_numDimensions
+                                                                  *_inSourcePoints);
     _kdTree->index->buildIndex();
 }
 
