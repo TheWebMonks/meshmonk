@@ -38,6 +38,7 @@ classdef ShapeMapper < superHandleClass
        InlierUseOrientation = true;
        FlagFloatingBoundary = true;
        FlagTargetBoundary = true;
+       UseInlierWeights = true;
        FlagTargetBadlySizedTriangles = true;
        TriangleSizeZscore = 6;% maximum zscore allowed before triangles are flagged;
        UpSampleTarget = false;
@@ -290,7 +291,14 @@ classdef ShapeMapper < superHandleClass
                % UPDATE INLIER WEIGHTS
                compute_inlier_weights(floatingFeatures, obj.CorrespondingFeatures,...
                            obj.CorrespondingFlags, obj.InlierWeights,...
-                           obj.InlierKappa, obj.InlierUseOrientation);     
+                           obj.InlierKappa, obj.InlierUseOrientation);
+                           
+               if ~obj.UseInlierWeights % if not using inlier weights - still make use of flags
+                   %set any points that are not flagged to have
+                   %inlierWeights of 1
+                   obj.InlierWeights(obj.CorrespondingFlags==1) = 1;
+                   
+               end               
                if obj.Display||strcmpi(obj.TransformationType,'pca')
                   obj.CorrespondingShape.Vertices = obj.CorrespondingFeatures(:,1:3);
                   obj.CorrespondingShape.VertexValue = obj.InlierWeights;
