@@ -1,3 +1,6 @@
+# Note
+This project is now maintained at KU Leuven GitLab: https://gitlab.kuleuven.be/mirc/meshmonk
+
 # Installing meshmonk
 MeshMonk can be built and installed on:
 
