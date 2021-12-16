@@ -165,11 +165,11 @@ extern "C"
     //################################  INPUT/OUTPUT  ######################################
     //######################################################################################
 
-//    void read_obj_files(const std::string floatingMeshPath, const std::string targetMeshPath,
-//                        FeatureMat& floatingFeatures, FeatureMat& targetFeatures,
-//                        FacesMat& floatingFaces, FacesMat& targetFaces);
-//
-//    void write_obj_files(FeatureMat& features, FacesMat& faces, const std::string meshPath);
+    void read_obj_files(const std::string floatingMeshPath, const std::string targetMeshPath,
+                        FeatureMat& floatingFeatures, FeatureMat& targetFeatures,
+                        FacesMat& floatingFaces, FacesMat& targetFaces);
+
+    void write_obj_files(FeatureMat& features, FacesMat& faces, const std::string meshPath);
 
 
     //######################################################################################
