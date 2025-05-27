@@ -1,20 +1,83 @@
-disp('Mexing "compute_correspondences"...')
-mex -I/usr/local/include/ mex/compute_correspondences.cpp -lmeshmonk
-disp('Mexing "compute_inlier_weights"...')
-mex -I/usr/local/include/ mex/compute_inlier_weights.cpp -lmeshmonk
-disp('Mexing "compute_nonrigid_transformation"...')
-mex -I/usr/local/include/ mex/compute_nonrigid_transformation.cpp -lmeshmonk
-disp('Mexing "compute_rigid_transformation"...')
-mex -I/usr/local/include/ mex/compute_rigid_transformation.cpp -lmeshmonk
-disp('Mexing "downsample_mesh"...')
-mex -I/usr/local/include/ mex/downsample_mesh.cpp -lmeshmonk
-disp('Mexing "nonrigid_registration"...')
-mex -I/usr/local/include/ mex/nonrigid_registration.cpp -lmeshmonk
-disp('Mexing "pyramid_registration"...')
-mex -I/usr/local/include/ mex/pyramid_registration.cpp -lmeshmonk
-disp('Mexing "rigid_registration"...')
-mex -I/usr/local/include/ mex/rigid_registration.cpp -lmeshmonk
-disp('Mexing "scaleshift_mesh"...')
-mex -I/usr/local/include/ mex/scaleshift_mesh.cpp -lmeshmonk
-disp('Mexing "compute_normals"...')
-mex -I/usr/local/include/ mex/compute_normals.cpp -lmeshmonk
+% Define base paths
+% It's generally better practice for the user to set meshmonkRoot appropriately
+% or for the script to determine it dynamically, but for this automated step,
+% we'll use the fixed absolute path based on the execution environment.
+meshmonkRoot = '/app'; 
+
+% Include directories
+eigenIncludeDir = '/usr/include/eigen3'; % Standard system path for Eigen
+openMeshIncludeDir = fullfile(meshmonkRoot, 'vendor', 'OpenMesh-11.0.0', 'src');
+meshmonkIncludeDir = meshmonkRoot;
+meshmonkSrcDir = fullfile(meshmonkRoot, 'src');
+meshmonkVendorDir = fullfile(meshmonkRoot, 'vendor'); % For nanoflann.hpp
+
+% Library directory
+libDir = fullfile(meshmonkRoot, 'build');
+
+% Common MEX flags
+% Using C++17 standard, consistent with the main CMake build
+% Adding -std=c++17. Add CXXFLAGS='-std=c++17' if MEX complains.
+% For OpenMP, if used by MeshMonk: CXXFLAGS="$CXXFLAGS -fopenmp" LDFLAGS="$LDFLAGS -fopenmp"
+% For now, assuming no explicit OpenMP flags needed directly in mex command here if not in main build.
+commonFlags = { ...
+    ['-I', meshmonkIncludeDir], ...
+    ['-I', meshmonkSrcDir], ...
+    ['-I', meshmonkVendorDir], ...
+    ['-I', eigenIncludeDir], ...
+    ['-I', openMeshIncludeDir], ...
+    ['-L', libDir], ...
+    '-lmeshmonk_shared', ...
+    '-lstdc++' ... % Common on Linux, might need adjustment for other OS
+};
+
+% Source files directory
+mexSrcDir = fullfile(meshmonkRoot, 'matlab', 'mex');
+
+% List of MEX files to compile (base names)
+mexFiles = {
+    'compute_correspondences', ...
+    'compute_inlier_weights', ...
+    'compute_nonrigid_transformation', ...
+    'compute_rigid_transformation', ...
+    'downsample_mesh', ...
+    'nonrigid_registration', ...
+    'pyramid_registration', ...
+    'rigid_registration', ...
+    'scaleshift_mesh', ...
+    'compute_normals' ...
+};
+
+disp('Starting MEX compilation for MeshMonk...');
+
+for i = 1:length(mexFiles)
+    baseName = mexFiles{i};
+    cppFile = fullfile(mexSrcDir, [baseName, '.cpp']);
+    outputName = baseName; % Default output name, can be explicit with -output
+
+    disp(['Mexing "', baseName, '" from "', cppFile, '"...']);
+    
+    % Construct the mex command
+    % Note: Using '-output' explicitly ensures the output name matches the baseName,
+    % which is good practice and avoids potential issues with platform-specific prefixes/extensions
+    % if the .cpp file was named, e.g., pyramid_registration_mex.cpp but we want pyramid_registration as output.
+    % The original script implies output name is derived from cpp filename.
+    % The .cpp files are e.g. 'pyramid_registration.cpp', so output will be 'pyramid_registration.mexa64'
+    
+    mexCommand = ['mex ', sprintf('%s ', commonFlags{:}), ...
+                  % '-output ', outputName, ' ', ... % Let MATLAB derive output name for now
+                  cppFile];
+    
+    disp(['Executing: ', mexCommand]);
+    
+    try
+        eval(mexCommand);
+        disp(['Successfully mexed "', outputName, '".']);
+    catch e
+        disp(['Error mexing "', outputName, '":']);
+        disp(e.message);
+        disp('Skipping this file and continuing...');
+    end
+    disp('---');
+end
+
+disp('MEX compilation finished.');
