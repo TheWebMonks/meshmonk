@@ -127,35 +127,35 @@ int main(int argc, char* argv[]) {
     // Command-specific options
     // Pyramid Registration options
     options.add_options("pyramid_reg")
-        ("num_iterations", "Number of iterations per level", cxxopts::value<size_t>()->default_value("60"))
-        ("smoothness", "Smoothness term weight (transformSigma)", cxxopts::value<float>()->default_value("3.0f"))
-        ("num_pyramid_layers", "Number of pyramid layers", cxxopts::value<size_t>()->default_value("3"))
-        ("ds_float_start", "Downsample start % for float mesh", cxxopts::value<float>()->default_value("90.0f"))
-        ("ds_target_start", "Downsample start % for target mesh", cxxopts::value<float>()->default_value("90.0f"))
-        ("ds_float_end", "Downsample end % for float mesh", cxxopts::value<float>()->default_value("0.0f"))
-        ("ds_target_end", "Downsample end % for target mesh", cxxopts::value<float>()->default_value("0.0f"))
-        ("correspondences_symmetric", "Use symmetric correspondences", cxxopts::value<bool>()->default_value("true"))
-        ("correspondences_num_neighbours", "Num neighbours for correspondences", cxxopts::value<size_t>()->default_value("5"))
-        ("correspondences_flag_threshold", "Flag threshold for correspondences", cxxopts::value<float>()->default_value("0.99f"))
-        ("correspondences_equalize_push_pull", "Equalize push/pull for correspondences", cxxopts::value<bool>()->default_value("false"))
-        ("inlier_kappa", "Kappa value for inlier detection", cxxopts::value<float>()->default_value("4.0f"))
-        ("inlier_use_orientation", "Use orientation for inlier detection", cxxopts::value<bool>()->default_value("true"))
-        ("transform_num_viscous_iterations_start", "Num viscous iterations (start)", cxxopts::value<size_t>()->default_value("50"))
-        ("transform_num_viscous_iterations_end", "Num viscous iterations (end)", cxxopts::value<size_t>()->default_value("1"))
-        ("transform_num_elastic_iterations_start", "Num elastic iterations (start)", cxxopts::value<size_t>()->default_value("50"))
-        ("transform_num_elastic_iterations_end", "Num elastic iterations (end)", cxxopts::value<size_t>()->default_value("1"));
+        ("num_iterations", "Number of iterations per level", cxxopts::value<size_t>()->default_value("90")) // MATLAB: 90
+        ("smoothness", "Smoothness term weight (transformSigma)", cxxopts::value<float>()->default_value("3.0f")) // MATLAB: 3.0
+        ("num_pyramid_layers", "Number of pyramid layers", cxxopts::value<size_t>()->default_value("3")) // MATLAB: 3
+        ("ds_float_start", "Downsample start % for float mesh", cxxopts::value<float>()->default_value("50.0f")) // MATLAB: 50
+        ("ds_target_start", "Downsample start % for target mesh", cxxopts::value<float>()->default_value("70.0f")) // MATLAB: 70
+        ("ds_float_end", "Downsample end % for float mesh", cxxopts::value<float>()->default_value("0.0f")) // MATLAB: 0.0
+        ("ds_target_end", "Downsample end % for target mesh", cxxopts::value<float>()->default_value("0.0f")) // MATLAB: 0.0
+        ("correspondences_symmetric", "Use symmetric correspondences", cxxopts::value<bool>()->default_value("true")) // MATLAB: true
+        ("correspondences_num_neighbours", "Num neighbours for correspondences", cxxopts::value<size_t>()->default_value("3")) // MATLAB: 3
+        ("correspondences_flag_threshold", "Flag threshold for correspondences", cxxopts::value<float>()->default_value("0.999f")) // MATLAB: 0.999
+        ("correspondences_equalize_push_pull", "Equalize push/pull for correspondences", cxxopts::value<bool>()->default_value("false")) // MATLAB: false
+        ("inlier_kappa", "Kappa value for inlier detection", cxxopts::value<float>()->default_value("12.0f")) // MATLAB: 12.0
+        ("inlier_use_orientation", "Use orientation for inlier detection", cxxopts::value<bool>()->default_value("true")) // MATLAB: true
+        ("transform_num_viscous_iterations_start", "Num viscous iterations (start)", cxxopts::value<size_t>()->default_value("90")) // MATLAB: 90 (numIterations)
+        ("transform_num_viscous_iterations_end", "Num viscous iterations (end)", cxxopts::value<size_t>()->default_value("1")) // MATLAB: 1
+        ("transform_num_elastic_iterations_start", "Num elastic iterations (start)", cxxopts::value<size_t>()->default_value("90")) // MATLAB: 90 (numIterations)
+        ("transform_num_elastic_iterations_end", "Num elastic iterations (end)", cxxopts::value<size_t>()->default_value("1")); // MATLAB: 1
 
     // Rigid Registration options
     options.add_options("rigid_reg")
         ("transform_output", "Output file for the 4x4 transformation matrix (TXT)", cxxopts::value<std::string>()->default_value(""))
-        ("rigid_num_iterations", "Number of iterations for rigid registration", cxxopts::value<size_t>()->default_value("20"))
-        ("rigid_correspondences_symmetric", "Use symmetric correspondences (rigid)", cxxopts::value<bool>()->default_value("true"))
-        ("rigid_correspondences_num_neighbours", "Num neighbours for correspondences (rigid)", cxxopts::value<size_t>()->default_value("5"))
-        ("rigid_correspondences_flag_threshold", "Flag threshold for correspondences (rigid)", cxxopts::value<float>()->default_value("0.99f"))
-        ("rigid_correspondences_equalize_push_pull", "Equalize push/pull for correspondences (rigid)", cxxopts::value<bool>()->default_value("false"))
-        ("rigid_inlier_kappa", "Kappa value for inlier detection (rigid)", cxxopts::value<float>()->default_value("4.0f"))
-        ("rigid_inlier_use_orientation", "Use orientation for inlier detection (rigid)", cxxopts::value<bool>()->default_value("true"))
-        ("rigid_use_scaling", "Enable scaling in rigid registration", cxxopts::value<bool>()->default_value("false"));
+        ("rigid_num_iterations", "Number of iterations for rigid registration", cxxopts::value<size_t>()->default_value("80")) // MATLAB: 80
+        ("rigid_correspondences_symmetric", "Use symmetric correspondences (rigid)", cxxopts::value<bool>()->default_value("true")) // MATLAB: true
+        ("rigid_correspondences_num_neighbours", "Num neighbours for correspondences (rigid)", cxxopts::value<size_t>()->default_value("3")) // MATLAB: 3
+        ("rigid_correspondences_flag_threshold", "Flag threshold for correspondences (rigid)", cxxopts::value<float>()->default_value("0.9f")) // MATLAB: 0.9
+        ("rigid_correspondences_equalize_push_pull", "Equalize push/pull for correspondences (rigid)", cxxopts::value<bool>()->default_value("false")) // MATLAB: false
+        ("rigid_inlier_kappa", "Kappa value for inlier detection (rigid)", cxxopts::value<float>()->default_value("12.0f")) // MATLAB: 12.0
+        ("rigid_inlier_use_orientation", "Use orientation for inlier detection (rigid)", cxxopts::value<bool>()->default_value("true")) // MATLAB: true
+        ("rigid_use_scaling", "Enable scaling in rigid registration", cxxopts::value<bool>()->default_value("false")); // MATLAB: false
 
     auto result = options.parse(argc, argv);
 
