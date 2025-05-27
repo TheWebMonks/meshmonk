@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.25)
+
+project(OpenMesh-Example)
+
+find_package(OpenMesh)
+ 
+set (targetName MyOwnProject)
+ 
+add_executable (${targetName} build_cube.cc)
+target_link_libraries(${targetName} PRIVATE OpenMeshCore OpenMeshTools)
+
