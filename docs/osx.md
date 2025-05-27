@@ -1,3 +1,6 @@
+**IMPORTANT NOTE: The instructions in this document pertain to an older, manual build system for MeshMonk. For building the `meshmonk_cli` tool and the `meshmonk_shared` library using the current CMake-based system (which includes vendored OpenMesh), please refer to the instructions in the main [README.md](../README.md) file in the project root.**
+
+---
 # Build on OSX
 
 ## Pre-requisites
