@@ -1,0 +1,50 @@
+/** 
+\page tutorial_build_internal_apps How to create your own project inside OpenMesh
+
+In this tutorial we will explain, how to create a new app inside the source code of
+%OpenMesh and compile it with the CMake build system. We assume, that you have already
+downloaded the %OpenMesh source files as well as installed the CMake build tools.
+
+<b>If you only want to use OpenMesh from your program, please refer to the tutorial \ref tutorial_build  !</b>
+
+There are quite few steps to follow to successfully add your own application to the build tree:
+
+\li Go to OpenMeshRoot/src/OpenMesh/Apps and create a new directory, say "MyOwnProject"
+\li Now create a new file called "CMakeLists.txt" containing the following lines:
+
+\include CMakeLists.txt-internal
+
+(Remember to replace "MyProjectName" with whatever you have chosen as your project's name.
+Note: If you don't want to use *.hh and *.cc as your C++ source file suffices, you'll
+have to change this, too, because CMake won't build your sources otherwise.
+
+\li Create your source files as for example explained in the previous tutorial (\ref tutorial_01)
+and save them in the same directory.
+
+\li Add \code add_subdirectory (MyOwnProject) \endcode to OpenMeshRoot/src/OpenMesh/Apps/CMakeLists.txt (note: You can either
+add this line right after the other projects or at the end of the file).
+
+\li Create a directory called "build" in OpenMesh's root directory. Change to the newly created directory and call
+\code cmake .. \endcode and \code make \endcode
+
+That's all. Your project will now be built.
+
+
+\page tutorial_build How to create your own project using OpenMesh and cmake
+
+In this tutorial we will explain, how to create a new app using a pre build or
+installed %OpenMesh library. We assume that you already donwloaded and installed 
+OpenMesh or compiled and installed it. 
+
+\li Create a folder in which you want to place the source code of your application.
+\li Create a file called CMakeLists.txt containing the following lines:
+
+\include CMakeLists.txt-external
+
+\li We assume, that your source code is in build_cube.cc. You can take the code from \ref tutorial_01
+\li Create a build directory 
+\li Run cmake inside the build directory. The source directory is the directory with the new CMakelists.txt file.
+\li If cmake can't find OpenMesh, Set the cmake variable <b>OpenMesh_DIR</b> to the installed OpenMesh directory and add <b>share/OpenMesh/cmake</b>
+\li Go to the build directory and compile your application using the generated build files
+
+**/
