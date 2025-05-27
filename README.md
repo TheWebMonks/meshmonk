@@ -107,14 +107,14 @@ Register `Template.obj` (source) to `demoFace.obj` (target) using rigid registra
 
 2.  **Run the `rigid_reg` command:**
     ```bash
-    ./cli/meshmonk_cli rigid_reg ../demo/Template.obj ../demo/demoFace.obj rigid_output.obj --transform_output rigid_transform.txt
+    ./cli/meshmonk_cli rigid_reg ../demo/Template.obj ../demo/demoFace.obj ../demo/rigid_output.obj --transform_output ../demo/rigid_transform.txt
     ```
     *   `../demo/Template.obj`: Path to the source mesh (relative to `build` directory).
     *   `../demo/demoFace.obj`: Path to the target mesh (relative to `build` directory).
-    *   `rigid_output.obj`: Filename for the transformed source mesh that will be saved in the current directory (`build/`).
-    *   `--transform_output rigid_transform.txt`: Specifies that the 4x4 transformation matrix should be saved to `rigid_transform.txt`.
+    *   `../demo/rigid_output.obj`: Filename for the transformed source mesh that will be saved.
+    *   `--transform_output ../demo/rigid_transform.txt`: Specifies that the 4x4 transformation matrix should be saved to `../demo/rigid_transform.txt`.
 
-3.  **Expected Output (in `build/` directory):**
+3.  **Expected Output (in `demo/` directory):**
     *   `rigid_output.obj`: The source mesh transformed to align with the target mesh.
     *   `rigid_transform.txt`: A text file containing the 4x4 transformation matrix (numerical values may vary slightly):
         ```
@@ -125,12 +125,13 @@ Register `Template.obj` (source) to `demoFace.obj` (target) using rigid registra
         ```
 
 ### Example: Pyramid (Non-Rigid) Registration
+Note that you first want to run the previous example, as we'll use its output (the rigidly transformed template) as mesh that we'll register to the target face.
 
 ```bash
-./cli/meshmonk_cli pyramid_reg ../demo/Template.obj ../demo/demoFace.obj pyramid_output.obj --num_iterations 30 --smoothness 0.5
+./cli/meshmonk_cli pyramid_reg ../demo/rigid_output.obj ../demo/demoFace.obj ../demo/pyramid_output.obj
 ```
-*   This saves the non-rigidly transformed source mesh to `pyramid_output.obj`.
-*   It uses example parameters; check `--help` for all options.
+*   This saves the non-rigidly transformed source mesh to `../demo/pyramid_output.obj`.
+*   It uses default parameters; check `--help` for all options.
 
 **Note on Demo Mesh Data:**
 When running with the provided demo meshes (`Template.obj`, `demoFace.obj`), you might see console warnings (e.g., missing `.mtl` files, OpenMesh errors like `complex vertex`). These are related to the demo data itself and typically don't prevent `meshmonk_cli` from completing registration.
