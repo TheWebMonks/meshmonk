@@ -8,7 +8,7 @@
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 #include <OpenMesh/Tools/Decimater/DecimaterT.hh>
 #include <OpenMesh/Tools/Decimater/ModQuadricT.hh>
-#include "../global.hpp"
+#include "meshmonk/global.hpp"
 #include "helper_functions.hpp"
 
 typedef Eigen::Vector3f Vec3Float;

@@ -1,5 +1,6 @@
 
 #include "helper_functions.hpp"
+#include <fstream>
 
 namespace registration {
 
@@ -697,90 +698,90 @@ void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
 //    }
 //}//end write_eigen_features_to_obj()
 
-//bool import_data(const std::string inFloatingMeshPath,
-//                 const std::string inTargetMeshPath,
-//                 FeatureMat &outFloatingFeatures,
-//                 FeatureMat &outTargetFeatures,
-//                 FacesMat &outFloatingFaces,
-//                 FacesMat &outTargetFaces){
-//    std::cout << "Importing Data..." << std::endl;
-//
-//    //# Safety check (do the input files exist?)
-//    bool inputfilesExist = true;
-//    //## Floating Mesh
-//    std::ifstream infile(inFloatingMeshPath);
-//    if (infile.good() != true){
-//        inputfilesExist = false;
-//        std::cerr << "Floating mesh file does not exist" << std::endl;
-//    }
-//    infile.close();
-//    //## Target Mesh
-//    infile.open(inTargetMeshPath);
-//    if (infile.good() != true){
-//        inputfilesExist = false;
-//        std::cerr << "Target mesh file does not exist" << std::endl;
-//    }
-//    infile.close();
-//    if (!inputfilesExist){
-//        std::cout<< "DataImporter can't update - input files not found!" << std::endl;
-//        return inputfilesExist;
-//    }
-//
-//    //# Load OpenMesh meshes
-//    //## Floating Mesh
-//    TriMesh floatingMesh;
-//    OpenMesh::IO::_OBJReader_();
-//    if (!OpenMesh::IO::read_mesh(floatingMesh,inFloatingMeshPath)){
-//        std::cerr << "Read error \n";
-//        exit(1);
-//    };
-//    //## Target Mesh
-//    TriMesh targetMesh;
-//    if (!OpenMesh::IO::read_mesh(targetMesh,inTargetMeshPath)){
-//        std::cerr << "Read error \n";
-//        exit(1);
-//    };
-//
-//    //# Update the mesh vertex normals
-//    floatingMesh.request_face_normals();
-//    floatingMesh.request_vertex_normals();
-//    floatingMesh.update_face_normals();
-//    floatingMesh.update_vertex_normals();
-//    targetMesh.request_face_normals();
-//    targetMesh.request_vertex_normals();
-//    targetMesh.update_face_normals();
-//    targetMesh.update_vertex_normals();
-//
-//    //# Convert OpenMesh meshes to Eigen matrices
-//    convert_mesh_to_matrices(floatingMesh, outFloatingFeatures, outFloatingFaces);
-//    convert_mesh_to_matrices(targetMesh, outTargetFeatures, outTargetFaces);
-//
-//
-//    std::cout << "Imported Data" << std::endl;
-//
-//    return true;
-//}//end import_data()
+bool import_data(const std::string inFloatingMeshPath,
+                 const std::string inTargetMeshPath,
+                 FeatureMat &outFloatingFeatures,
+                 FeatureMat &outTargetFeatures,
+                 FacesMat &outFloatingFaces,
+                 FacesMat &outTargetFaces){
+    std::cout << "Importing Data..." << std::endl;
+
+    //# Safety check (do the input files exist?)
+    bool inputfilesExist = true;
+    //## Floating Mesh
+    std::ifstream infile(inFloatingMeshPath);
+    if (infile.good() != true){
+        inputfilesExist = false;
+        std::cerr << "Floating mesh file does not exist" << std::endl;
+    }
+    infile.close();
+    //## Target Mesh
+    infile.open(inTargetMeshPath);
+    if (infile.good() != true){
+        inputfilesExist = false;
+        std::cerr << "Target mesh file does not exist" << std::endl;
+    }
+    infile.close();
+    if (!inputfilesExist){
+        std::cout<< "DataImporter can't update - input files not found!" << std::endl;
+        return inputfilesExist;
+    }
+
+    //# Load OpenMesh meshes
+    //## Floating Mesh
+    TriMesh floatingMesh;
+    // OpenMesh::IO::_OBJReader_(); // This line might be problematic for static linking or modern OpenMesh
+    if (!OpenMesh::IO::read_mesh(floatingMesh,inFloatingMeshPath)){
+        std::cerr << "Read error \n";
+        exit(1);
+    };
+    //## Target Mesh
+    TriMesh targetMesh;
+    if (!OpenMesh::IO::read_mesh(targetMesh,inTargetMeshPath)){
+        std::cerr << "Read error \n";
+        exit(1);
+    };
+
+    //# Update the mesh vertex normals
+    floatingMesh.request_face_normals();
+    floatingMesh.request_vertex_normals();
+    floatingMesh.update_face_normals();
+    floatingMesh.update_vertex_normals();
+    targetMesh.request_face_normals();
+    targetMesh.request_vertex_normals();
+    targetMesh.update_face_normals();
+    targetMesh.update_vertex_normals();
+
+    //# Convert OpenMesh meshes to Eigen matrices
+    convert_mesh_to_matrices(floatingMesh, outFloatingFeatures, outFloatingFaces);
+    convert_mesh_to_matrices(targetMesh, outTargetFeatures, outTargetFaces);
 
 
-//bool export_data(FeatureMat &inResultFeatures,
-//                 FacesMat &inResultFaces,
-//                 const std::string inResultMeshPath) {
-//    std::cout << "Exporting Data..." << std::endl;
-//
-//    //# Convert the matrices to a mesh
-//    TriMesh resultMesh;
-//    convert_matrices_to_mesh(inResultFeatures, inResultFaces, resultMesh);
-//    //# Write the mesh to file
-//    OpenMesh::IO::_OBJWriter_();
-//    if (!OpenMesh::IO::write_mesh(resultMesh, inResultMeshPath))
-//    {
-//        std::cerr << "write error\n";
-//        exit(1);
-//    }
-//    else {std::cout << "Data Exported." << std::endl;}
-//
-//    return true;
-//}
+    std::cout << "Imported Data" << std::endl;
+
+    return true;
+}//end import_data()
+
+
+bool export_data(FeatureMat &inResultFeatures,
+                 FacesMat &inResultFaces,
+                 const std::string inResultMeshPath) {
+    std::cout << "Exporting Data..." << std::endl;
+
+    //# Convert the matrices to a mesh
+    TriMesh resultMesh;
+    convert_matrices_to_mesh(inResultFeatures, inResultFaces, resultMesh);
+    //# Write the mesh to file
+    // OpenMesh::IO::_OBJWriter_(); // This line might be problematic for static linking or modern OpenMesh
+    if (!OpenMesh::IO::write_mesh(resultMesh, inResultMeshPath))
+    {
+        std::cerr << "write error\n";
+        exit(1);
+    }
+    else {std::cout << "Data Exported." << std::endl;}
+
+    return true;
+}
 
 void update_normals_for_altered_positions(TriMesh &ioMesh,
                                         FeatureMat &ioFeatures){

@@ -6,7 +6,7 @@
 #include <math.h>
 #include <memory.h>
 #include <time.h>
-#include "../global.hpp"
+#include "meshmonk/global.hpp"
 #include "CorrespondenceFilter.hpp"
 #include "SymmetricCorrespondenceFilter.hpp"
 #include "InlierDetector.hpp"
