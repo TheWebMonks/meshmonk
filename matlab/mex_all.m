@@ -1,18 +1,15 @@
 % Define base paths
-% It's generally better practice for the user to set meshmonkRoot appropriately
-% or for the script to determine it dynamically, but for this automated step,
-% we'll use the fixed absolute path based on the execution environment.
-meshmonkRoot = '/app'; 
+meshmonkRoot = '..'; 
 
 % Include directories
-eigenIncludeDir = '/usr/include/eigen3'; % Standard system path for Eigen
-openMeshIncludeDir = fullfile(meshmonkRoot, 'vendor', 'OpenMesh-11.0.0', 'src');
-meshmonkIncludeDir = meshmonkRoot;
-meshmonkSrcDir = fullfile(meshmonkRoot, 'src');
+eigenIncludeDir = fullfile(meshmonkRoot, 'build', '_deps', 'eigen-src');
+openMeshIncludeDir = fullfile(meshmonkRoot, 'build', 'vendor', 'OpenMesh-11.0.0', '_build', 'src');
+meshmonkIncludeDir = fullfile(meshmonkRoot, 'library', 'include');
+meshmonkSrcDir = fullfile(meshmonkRoot, 'library', 'src');
 meshmonkVendorDir = fullfile(meshmonkRoot, 'vendor'); % For nanoflann.hpp
 
 % Library directory
-libDir = fullfile(meshmonkRoot, 'build');
+libDir = fullfile(meshmonkRoot, 'build', 'library');
 
 % Common MEX flags
 % Using C++17 standard, consistent with the main CMake build
@@ -21,10 +18,13 @@ libDir = fullfile(meshmonkRoot, 'build');
 % For now, assuming no explicit OpenMP flags needed directly in mex command here if not in main build.
 commonFlags = { ...
     ['-I', meshmonkIncludeDir], ...
-    ['-I', meshmonkSrcDir], ...
-    ['-I', meshmonkVendorDir], ...
+    ['-I', fullfile(meshmonkIncludeDir, 'meshmonk')], ... % to access headers like meshmonk/global.hpp
+    ['-I', meshmonkSrcDir], ... % if internal headers from library/src are directly included by MEX files
+    ['-I', meshmonkVendorDir], ... % for nanoflann.hpp
     ['-I', eigenIncludeDir], ...
     ['-I', openMeshIncludeDir], ...
+    ['-I', fullfile(openMeshIncludeDir, 'OpenMesh', 'Core')], ... % OpenMesh headers are often in subdirectories
+    ['-I', fullfile(openMeshIncludeDir, 'OpenMesh', 'Tools')], ...
     ['-L', libDir], ...
     '-lmeshmonk_shared', ...
     '-lstdc++' ... % Common on Linux, might need adjustment for other OS
