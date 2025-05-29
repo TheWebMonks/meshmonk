@@ -21,3 +21,4 @@ include_directories(vendor)
 
 # --- Subdirectories ---
 add_subdirectory(library)
+add_subdirectory(cli)

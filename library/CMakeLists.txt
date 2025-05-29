@@ -20,23 +20,23 @@ target_include_directories(meshmonk_shared
   PUBLIC
     # To find headers in library/include/ (e.g., meshmonk/meshmonk.hpp)
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    # For Eigen headers
-    ${EIGEN3_INCLUDE_DIR}
-  PRIVATE
-    # For internal library headers in library/src/
+    # Eigen include directories will be inherited from the Eigen3::Eigen target
+    # For internal library headers in library/src/ (needed by public meshmonk.hpp)
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+  PRIVATE
     # For nanoflann.hpp located in ../vendor/
     ${CMAKE_CURRENT_SOURCE_DIR}/../vendor
 )
 
 # --- Link Dependencies ---
 target_link_libraries(meshmonk_shared
+  PUBLIC
+    # Link against Eigen - PUBLIC because Eigen types are in public headers
+    Eigen3::Eigen
   PRIVATE
     # Link against the static OpenMesh libraries built as part of this project
     OpenMeshCore
     OpenMeshTools
-    # Link against Eigen
-    Eigen3::Eigen
 )
 
 # Optional: Set properties if needed, e.g., C++ standard (already set at root, but can be target-specific)

@@ -16,8 +16,8 @@
 // MeshMonk core library
 // Assuming meshmonk.hpp and global.hpp are accessible via include paths
 // set in the root CMakeLists.txt for meshmonk_shared
-#include "meshmonk.hpp" // Relative to include path, e.g., project root
-#include "global.hpp"   // Relative to include path
+#include "meshmonk/meshmonk.hpp" // Relative to include path, e.g., project root
+#include "meshmonk/global.hpp"   // Relative to include path
 
 // Define a default mesh type for OpenMesh
 struct CLIMeshTraits : public OpenMesh::DefaultTraits
