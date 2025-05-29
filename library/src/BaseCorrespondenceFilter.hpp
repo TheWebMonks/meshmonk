@@ -4,7 +4,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
-#include "../global.hpp"
+#include "meshmonk/global.hpp"
 #include <iostream>
 
 typedef Eigen::VectorXf VecDynFloat;

@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
-#include "../global.hpp"
+#include "meshmonk/global.hpp"
 #include "helper_functions.hpp"
 #include "NeighbourFinder.hpp"
 

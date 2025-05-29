@@ -5,7 +5,7 @@
 #include <Eigen/SparseCore>
 #include <stdio.h>
 #include <iostream>
-#include "../global.hpp"
+#include "meshmonk/global.hpp"
 
 typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat; //matrix MxN of type float

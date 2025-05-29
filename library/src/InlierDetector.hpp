@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <map>
-#include "../global.hpp"
+#include "meshmonk/global.hpp"
 #include "NeighbourFinder.hpp"
 
 typedef Eigen::VectorXf VecDynFloat;

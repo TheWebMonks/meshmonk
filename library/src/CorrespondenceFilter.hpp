@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <stdio.h>
-#include "../global.hpp"
+#include "meshmonk/global.hpp"
 #include "NeighbourFinder.hpp"
 #include "helper_functions.hpp"
 #include "BaseCorrespondenceFilter.hpp"

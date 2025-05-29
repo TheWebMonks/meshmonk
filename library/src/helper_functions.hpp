@@ -9,7 +9,7 @@
 #include <nanoflann.hpp>
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
-#include "../global.hpp"
+#include "meshmonk/global.hpp"
 
 typedef OpenMesh::TriMesh_ArrayKernelT<>  TriMesh;
 typedef Eigen::SparseMatrix<float, 0, int> SparseMat;
@@ -75,16 +75,16 @@ void convert_matrices_to_mesh(const FeatureMat &inFeatures,
 //                                TriMesh &inMesh,
 //                                const std::string inObjFilename);
 
-//bool import_data(const std::string inFloatingMeshPath,
-//                 const std::string inTargetMeshPath,
-//                 FeatureMat &outFloatingFeatures,
-//                 FeatureMat &outTargetFeatures,
-//                 FacesMat &outFloatingFaces,
-//                 FacesMat &outTargetFaces);
+bool import_data(const std::string inFloatingMeshPath,
+                 const std::string inTargetMeshPath,
+                 FeatureMat &outFloatingFeatures,
+                 FeatureMat &outTargetFeatures,
+                 FacesMat &outFloatingFaces,
+                 FacesMat &outTargetFaces);
 
-//bool export_data(FeatureMat &inResultFeatures,
-//                 FacesMat &inResultFaces,
-//                 const std::string inResultMeshPath);
+bool export_data(FeatureMat &inResultFeatures,
+                 FacesMat &inResultFaces,
+                 const std::string inResultMeshPath);
 
 
 void update_normals_for_altered_positions(TriMesh &ioMesh,

@@ -6,7 +6,7 @@
 #include <memory.h>
 #include <time.h>
 #include <Eigen/Dense>
-#include "../global.hpp"
+#include "meshmonk/global.hpp"
 #include "NonrigidRegistration.hpp"
 #include "Downsampler.hpp"
 #include "ScaleShifter.hpp"

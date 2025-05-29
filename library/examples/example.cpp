@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 #include <stdio.h>
 #include <math.h>
-#include "meshmonk.hpp"
+#include "meshmonk/meshmonk.hpp"
 
 using namespace std;
 

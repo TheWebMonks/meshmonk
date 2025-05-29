@@ -11,18 +11,18 @@
 #include <OpenMesh/Tools/Decimater/DecimaterT.hh>
 #include <OpenMesh/Tools/Decimater/ModQuadricT.hh>
 #include <Eigen/Dense>
-#include "src/PyramidNonrigidRegistration.hpp"
-#include "src/RigidRegistration.hpp"
-#include "src/NonrigidRegistration.hpp"
-#include "src/InlierDetector.hpp"
-#include "src/CorrespondenceFilter.hpp"
-#include "src/SymmetricCorrespondenceFilter.hpp"
-#include "src/RigidTransformer.hpp"
-#include "src/ViscoElasticTransformer.hpp"
-#include "src/Downsampler.hpp"
-#include "src/ScaleShifter.hpp"
-#include "global.hpp"
-#include "src/helper_functions.hpp"
+#include "PyramidNonrigidRegistration.hpp"
+#include "RigidRegistration.hpp"
+#include "NonrigidRegistration.hpp"
+#include "InlierDetector.hpp"
+#include "CorrespondenceFilter.hpp"
+#include "SymmetricCorrespondenceFilter.hpp"
+#include "RigidTransformer.hpp"
+#include "ViscoElasticTransformer.hpp"
+#include "Downsampler.hpp"
+#include "ScaleShifter.hpp"
+#include "meshmonk/global.hpp"
+#include "helper_functions.hpp"
 
 
 
@@ -165,11 +165,11 @@ extern "C"
     //################################  INPUT/OUTPUT  ######################################
     //######################################################################################
 
-//    void read_obj_files(const std::string floatingMeshPath, const std::string targetMeshPath,
-//                        FeatureMat& floatingFeatures, FeatureMat& targetFeatures,
-//                        FacesMat& floatingFaces, FacesMat& targetFaces);
-//
-//    void write_obj_files(FeatureMat& features, FacesMat& faces, const std::string meshPath);
+    void read_obj_files(const std::string floatingMeshPath, const std::string targetMeshPath,
+                        FeatureMat& floatingFeatures, FeatureMat& targetFeatures,
+                        FacesMat& floatingFaces, FacesMat& targetFaces);
+
+    void write_obj_files(FeatureMat& features, FacesMat& faces, const std::string meshPath);
 
 
     //######################################################################################
