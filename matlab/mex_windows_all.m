@@ -1,37 +1,115 @@
-%Defining compiler flags
-c_om = ['-I', '%ProgramFiles%\OpenMesh 6.3\include'];
-c_mesh = ['-I', '%USERPROFILE%\Documents\GitHub\meshmonk'];
-c_nano = ['-I', '%USERPROFILE%\Documents\GitHub\meshmonk\vendor'];
-c_eigen = ['-I', '%USERPROFILE%\Documents\GitHub\eigen-eigen-3.3.4'];
-c_math = ['-D', '_USE_MATH_DEFINES'];
-c_lib = ['-l', 'meshmonk'];
+% Define base paths
+meshmonkRoot = '..'; 
 
-disp('Mexing "compute_correspondences"...')
-mex(c_om, c_mesh, c_nano, c_eigen, c_math, c_lib, 'matlab/mex/compute_correspondences.cpp')
+% Include directories
+eigenIncludeDir = fullfile(meshmonkRoot, 'build', '_deps', 'eigen-src'); % Assumes Eigen is available via CMake's FetchContent. User might need to change this if their Eigen is elsewhere.
+openMeshIncludeDir = fullfile(meshmonkRoot, 'build', 'vendor', 'OpenMesh-11.0.0', '_build', 'src'); % This path is based on the CMake build structure.
+meshmonkIncludeDir = fullfile(meshmonkRoot, 'library', 'include');
+meshmonkSrcDir = fullfile(meshmonkRoot, 'library', 'src');
+meshmonkVendorDir = fullfile(meshmonkRoot, 'vendor'); % For nanoflann.hpp
 
-disp('Mexing "compute_inlier_weights"...')
-mex(c_om, c_mesh, c_nano, c_eigen, c_math, c_lib, 'matlab/mex/compute_inlier_weights.cpp')
+% Library directory
+libDir = fullfile(meshmonkRoot, 'build', 'library'); % Expects meshmonk_shared.lib here. The corresponding .dll should be in system's PATH or MATLAB's path at runtime.
 
-disp('Mexing "compute_nonrigid_transformation"...')
-mex(c_om, c_mesh, c_nano, c_eigen, c_math, c_lib, 'matlab/mex/compute_nonrigid_transformation.cpp')
+% Common MEX flags
+% For C++ standard, using COMPFLAGS. MSVC uses /std:c++17
+% Using CXXFLAGS here as a placeholder if COMPFLAGS doesn't work as expected directly in the list.
+% The typical way is: mex COMPFLAGS="\$COMPFLAGS /std:c++17" ...
+% For this script, we'll add it to the list of flags directly.
+commonFlags = { ...
+    ['-I', meshmonkIncludeDir], ...
+    ['-I', fullfile(meshmonkIncludeDir, 'meshmonk')], ... % to access headers like meshmonk/global.hpp
+    ['-I', meshmonkSrcDir], ... % if internal headers from library/src are directly included by MEX files
+    ['-I', meshmonkVendorDir], ... % for nanoflann.hpp
+    ['-I', eigenIncludeDir], ...
+    ['-I', openMeshIncludeDir], ...
+    ['-I', fullfile(openMeshIncludeDir, 'OpenMesh', 'Core')], ... % OpenMesh headers are often in subdirectories
+    ['-I', fullfile(openMeshIncludeDir, 'OpenMesh', 'Tools')], ...
+    ['-L', libDir], ...
+    '-lmeshmonk_shared', ... % mex handles .lib extension automatically
+    '-D_USE_MATH_DEFINES', ... % Common define for Windows
+    'COMPFLAGS="/std:c++17"' % For MSVC compiler, ensure C++17 standard
+};
 
-disp('Mexing "compute_rigid_transformation"...')
-mex(c_om, c_mesh, c_nano, c_eigen, c_math, c_lib, 'matlab/mex/compute_rigid_transformation.cpp')
+% Source files directory
+mexSrcDir = fullfile(meshmonkRoot, 'matlab', 'mex');
 
-disp('Mexing "downsample_mesh"...')
-mex(c_om, c_mesh, c_nano, c_eigen, c_math, c_lib, 'matlab/mex/downsample_mesh.cpp')
+% List of MEX files to compile (base names)
+mexFiles = {
+    'compute_correspondences', ...
+    'compute_inlier_weights', ...
+    'compute_nonrigid_transformation', ...
+    'compute_rigid_transformation', ...
+    'downsample_mesh', ...
+    'nonrigid_registration', ...
+    'pyramid_registration', ...
+    'rigid_registration', ...
+    'scaleshift_mesh', ...
+    'compute_normals' ...
+};
 
-disp('Mexing "nonrigid_registration"...')
-mex(c_om, c_mesh, c_nano, c_eigen, c_math, c_lib, 'matlab/mex/nonrigid_registration.cpp')
+disp('Starting MEX compilation for MeshMonk (Windows)...');
 
-disp('Mexing "pyramid_registration"...')
-mex(c_om, c_mesh, c_nano, c_eigen, c_math, c_lib, 'matlab/mex/pyramid_registration.cpp')
+for i = 1:length(mexFiles)
+    baseName = mexFiles{i};
+    cppFile = fullfile(mexSrcDir, [baseName, '.cpp']);
+    outputName = baseName; % Output name will be 'baseName.mexw64' or similar
 
-disp('Mexing "rigid_registration"...')
-mex(c_om, c_mesh, c_nano, c_eigen, c_math, c_lib, 'matlab/mex/rigid_registration.cpp')
+    disp(['Mexing "', baseName, '" from "', cppFile, '"...']);
+    
+    % Construct the mex command
+    % The flags in commonFlags are passed as separate arguments to mex.
+    % COMPFLAGS is a special argument to mex.
+    
+    % Separate COMPFLAGS from other flags for clarity in command construction
+    compileFlags = {};
+    linkFlags = {};
+    otherMexArgs = {};
+    compFlagsValue = '';
 
-disp('Mexing "scaleshift_mesh"...')
-mex(c_om, c_mesh, c_nano, c_eigen, c_math, c_lib, 'matlab/mex/scaleshift_mesh.cpp')
+    for k = 1:length(commonFlags)
+        flag = commonFlags{k};
+        if startsWith(flag, 'COMPFLAGS=')
+            compFlagsValue = flag; % Keep it as is, e.g., 'COMPFLAGS="/std:c++17"'
+        elseif startsWith(flag, '-L') || startsWith(flag, '-l')
+            linkFlags{end+1} = flag; %#ok<AGROW>
+        else
+            compileFlags{end+1} = flag; %#ok<AGROW>
+        end
+    end
+    
+    mexCommandParts = {'mex'};
+    if ~isempty(compFlagsValue)
+        mexCommandParts{end+1} = compFlagsValue;
+    end
+    mexCommandParts = [mexCommandParts, compileFlags, linkFlags, {cppFile}];
+    
+    % Create the command string for display and evaluation
+    mexCommand = strjoin(mexCommandParts, ' ');
+    
+    disp(['Executing: ', mexCommand]);
+    
+    try
+        % Use feval for safer execution of mex with dynamic arguments
+        argsToMex = [compileFlags, linkFlags, {cppFile}];
+        if ~isempty(compFlagsValue)
+             % Find the actual value for COMPFLAGS, e.g. "/std:c++17"
+            compVal = extractBetween(compFlagsValue, '"', '"');
+            if isempty(compVal) % Fallback if quotes were not used as expected
+                compVal = extractAfter(compFlagsValue, '=');
+            end
+            feval('mex', 'COMPFLAGS', compVal{1}, argsToMex{:});
+        else
+            feval('mex', argsToMex{:});
+        end
+        disp(['Successfully mexed "', outputName, '".']);
+    catch e
+        disp(['Error mexing "', outputName, '":']);
+        disp(e.message);
+        disp(e.getReport('extended', 'on', 'hyperlinks', 'off'));
+        disp('Skipping this file and continuing...');
+    end
+    disp('---');
+end
 
-disp('Mexing "compute_normals"...')
-mex(c_om, c_mesh, c_nano, c_eigen, c_math, c_lib, 'matlab/mex/compute_normals.cpp')
+disp('MEX compilation finished.');

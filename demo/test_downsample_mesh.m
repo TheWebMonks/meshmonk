@@ -1,15 +1,12 @@
 %% Demo downsample mesh
 
-% Add MeshMonk's toolbox to the working path and setup current folder
-addpath(genpath('path\to\meshmonk')) % Set to location of meshmonk
-
-studypath = 'path\to\DemoFolder\';   % Set to location of demo material
-cd(studypath);
+% Add path to compiled MEX files (assuming mex_all.m was run in matlab/ directory)
+addpath(fullfile('..', 'matlab'));
 
 %% Load Data
 
 %Load a mesh
-floatingPath = [studypath '/demoFace.obj'];
+floatingPath = 'demoFace.obj';
 [floatingPoints,floatingFaces] = read_vertices_and_faces_from_obj_file(floatingPath);
 floatingFaces = uint32(floatingFaces-1); %-1 to make it compatible with C++ indexing
 floatingPoints = single(floatingPoints);
