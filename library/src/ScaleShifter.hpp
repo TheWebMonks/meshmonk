@@ -5,8 +5,6 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include <algorithm>
-#include <OpenMesh/Core/IO/MeshIO.hh>
-#include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 #include "meshmonk/global.hpp"
 #include "helper_functions.hpp"
 #include "NeighbourFinder.hpp"
@@ -19,8 +17,6 @@ typedef Eigen::Matrix< int, Eigen::Dynamic, Eigen::Dynamic> IntegerMat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> FloatMat;
 typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
 typedef Eigen::Matrix< int, Eigen::Dynamic, 3> FacesMat;
-typedef OpenMesh::DefaultTraits MyTraits;
-typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits>  TriMesh;
 
 namespace registration{
 

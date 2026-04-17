@@ -1,4 +1,5 @@
 #include "NonrigidRegistration.hpp"
+#include <memory>
 
 namespace registration {
 
@@ -71,18 +72,18 @@ void NonrigidRegistration::update(){
     VecDynFloat correspondingFlags = VecDynFloat::Zero(numFloatingVertices);
 
     //# Set up the filters
-    //## Correspondence Filter (note: this part should be improved by using inheritance in the correspondence filter classes)
-
-    BaseCorrespondenceFilter* correspondenceFilter = NULL;
-    //std::unique_ptr<BaseCorrespondenceFilter> correspondenceFilter = new SymmetricCorrespondenceFilter;
+    //## Correspondence Filter
+    std::unique_ptr<BaseCorrespondenceFilter> correspondenceFilter;
 
     if (_symmetric) {
-        correspondenceFilter = new SymmetricCorrespondenceFilter();
-        correspondenceFilter->set_parameters(_numNeighbours, _flagThreshold, _equalizePushPull);
+        auto* f = new SymmetricCorrespondenceFilter();
+        f->set_parameters(_numNeighbours, _flagThreshold, _equalizePushPull);
+        correspondenceFilter.reset(f);
     }
     else {
-        correspondenceFilter = new CorrespondenceFilter();
-        correspondenceFilter->set_parameters(_numNeighbours, _flagThreshold);
+        auto* f = new CorrespondenceFilter();
+        f->set_parameters(_numNeighbours, _flagThreshold);
+        correspondenceFilter.reset(f);
     }
     correspondenceFilter->set_floating_input(_ioFloatingFeatures, _inFloatingFlags);
     correspondenceFilter->set_target_input(_inTargetFeatures, _inTargetFlags);
@@ -136,7 +137,7 @@ void NonrigidRegistration::update(){
     timeEnd = time(0);
     std::cout << "Nonrigid Registration Completed in " << difftime(timeEnd, timeStart) <<" second(s)."<< std::endl;
 
-    delete correspondenceFilter;
+    // correspondenceFilter is automatically deleted by unique_ptr
 
 }//end update()
 

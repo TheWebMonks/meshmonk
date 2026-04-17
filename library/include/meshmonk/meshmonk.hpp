@@ -1,269 +1,129 @@
 #ifndef MESHMONK_HPP
 #define MESHMONK_HPP
 
-#include <iostream>
-#include <stdio.h>
-#include <math.h>
-#include <OpenMesh/Core/IO/MeshIO.hh>
-#include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
-#include <OpenMesh/Core/IO/reader/OBJReader.hh>
-#include <OpenMesh/Core/IO/writer/OBJWriter.hh>
-#include <OpenMesh/Tools/Decimater/DecimaterT.hh>
-#include <OpenMesh/Tools/Decimater/ModQuadricT.hh>
-#include <Eigen/Dense>
-#include "PyramidNonrigidRegistration.hpp"
-#include "RigidRegistration.hpp"
-#include "NonrigidRegistration.hpp"
-#include "InlierDetector.hpp"
-#include "CorrespondenceFilter.hpp"
-#include "SymmetricCorrespondenceFilter.hpp"
-#include "RigidTransformer.hpp"
-#include "ViscoElasticTransformer.hpp"
-#include "Downsampler.hpp"
-#include "ScaleShifter.hpp"
-#include "meshmonk/global.hpp"
-#include "helper_functions.hpp"
+#include <utility>
+#include <tuple>
+#include <tl/expected.hpp>
+
+#include "types.hpp"
+#include "transform.hpp"
+#include "params.hpp"
+#include "result.hpp"
+#include "logger.hpp"
+
+namespace meshmonk {
+
+//=============================================================================
+// High-level registration pipelines
+// All return tl::expected<Result, RegistrationError> — callers MUST check.
+//=============================================================================
+
+[[nodiscard]] tl::expected<RigidResult, RegistrationError>
+rigid_registration(
+    Eigen::Ref<const FeatureMat>  floating_features,
+    Eigen::Ref<const FeatureMat>  target_features,
+    Eigen::Ref<const FacesMat>    floating_faces,
+    Eigen::Ref<const FacesMat>    target_faces,
+    Eigen::Ref<const VecDynFloat> floating_flags,
+    Eigen::Ref<const VecDynFloat> target_flags,
+    const RigidParams&            params = {});
+
+[[nodiscard]] tl::expected<NonrigidResult, RegistrationError>
+nonrigid_registration(
+    Eigen::Ref<const FeatureMat>  floating_features,
+    Eigen::Ref<const FeatureMat>  target_features,
+    Eigen::Ref<const FacesMat>    floating_faces,
+    Eigen::Ref<const FacesMat>    target_faces,
+    Eigen::Ref<const VecDynFloat> floating_flags,
+    Eigen::Ref<const VecDynFloat> target_flags,
+    const NonrigidParams&         params = {});
+
+[[nodiscard]] tl::expected<PyramidResult, RegistrationError>
+pyramid_registration(
+    Eigen::Ref<const FeatureMat>  floating_features,
+    Eigen::Ref<const FeatureMat>  target_features,
+    Eigen::Ref<const FacesMat>    floating_faces,
+    Eigen::Ref<const FacesMat>    target_faces,
+    Eigen::Ref<const VecDynFloat> floating_flags,
+    Eigen::Ref<const VecDynFloat> target_flags,
+    const PyramidParams&          params = {});
 
 
+//=============================================================================
+// Low-level primitives — value-returning (no in-place mutation of inputs)
+//=============================================================================
 
-typedef OpenMesh::DefaultTraits MyTraits;
-typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits>  TriMesh;
-typedef OpenMesh::Decimater::DecimaterT<TriMesh>    DecimaterType;
-typedef OpenMesh::Decimater::ModQuadricT<TriMesh>::Handle HModQuadric;
-typedef Eigen::Matrix< int, Eigen::Dynamic, 3> FacesMat; //matrix Mx3 of type unsigned int
-typedef Eigen::VectorXf VecDynFloat;
-typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
-typedef Eigen::MatrixX3f Vec3Mat;
-typedef Eigen::Matrix4f Mat4Float;
+// Compute weighted correspondences in 6D feature space (positions + normals)
+// Returns: {corresponding_features (N,6), corresponding_flags (N,)}
+std::pair<FeatureMat, VecDynFloat>
+compute_correspondences(
+    Eigen::Ref<const FeatureMat>  floating_features,
+    Eigen::Ref<const FeatureMat>  target_features,
+    Eigen::Ref<const VecDynFloat> floating_flags,
+    Eigen::Ref<const VecDynFloat> target_flags,
+    bool  symmetric          = true,
+    int   num_neighbours     = 3,
+    float flag_threshold     = 0.9f,
+    bool  equalize_push_pull = false);
 
+// Compute inlier weights given features and their correspondences
+// Returns: inlier_weights (N,)
+VecDynFloat
+compute_inlier_weights(
+    Eigen::Ref<const FeatureMat>  floating_features,
+    Eigen::Ref<const FeatureMat>  corresponding_features,
+    Eigen::Ref<const VecDynFloat> corresponding_flags,
+    float kappa           = 12.0f,
+    bool  use_orientation = true);
 
-namespace meshmonk{
+// Compute rigid transform from features + correspondences + weights.
+// IMPORTANT: returns RigidTransform (does NOT mutate floating_features in place).
+// Implementation requires set_output() on RigidTransformer (REQUIRED or null pointer crash).
+RigidTransform
+compute_rigid_transform(
+    Eigen::Ref<const FeatureMat>  floating_features,
+    Eigen::Ref<const FeatureMat>  corresponding_features,
+    Eigen::Ref<const VecDynFloat> weights,
+    bool use_scaling = false);
 
-#ifdef __cplusplus
-extern "C"
-#endif // __cplusplus
-{
-    //######################################################################################
-    //################################  TEST SHIZZLE  ######################################
-    //######################################################################################
-    /*
-    We're implementing this function simply to test MEX'ing in MATLAB.
-    */
-    void test_meshmonk_mexing(FeatureMat& floatingFeatures, const FeatureMat& targetFeatures, const float multiplier = 2.0f);
+// Apply nonrigid deformation.
+// Returns: deformed_features (N,6)
+FeatureMat
+compute_nonrigid_transform(
+    Eigen::Ref<const FeatureMat>  floating_features,
+    Eigen::Ref<const FeatureMat>  corresponding_features,
+    Eigen::Ref<const FacesMat>    floating_faces,
+    Eigen::Ref<const VecDynFloat> floating_flags,
+    Eigen::Ref<const VecDynFloat> weights,
+    int   num_smoothing_neighbours = 10,
+    float sigma                    = 3.0f,
+    int   num_viscous_iterations   = 50,
+    int   num_elastic_iterations   = 50);
 
-    /*
-    Raw data version of test_meshmonk_mexing()
-    */
-    void test_meshmonk_mexing_raw(float floatingFeaturesRaw[], const float targetFeaturesRaw[],
-                                    const size_t numFloatingElements, const size_t numTargetElements,
-                                    const float multiplier = 2.0f);
+// Downsample a mesh.
+// Returns: {features, faces, flags, original_indices}
+std::tuple<FeatureMat, FacesMat, VecDynFloat, Eigen::VectorXi>
+downsample_mesh(
+    Eigen::Ref<const FeatureMat>  features,
+    Eigen::Ref<const FacesMat>    faces,
+    Eigen::Ref<const VecDynFloat> flags,
+    float downsample_ratio = 0.8f);
 
+// Transfer floating mesh features between pyramid scales.
+// Returns: interpolated features for the new (higher-density) scale
+FeatureMat
+scale_shift_mesh(
+    Eigen::Ref<const FeatureMat>      previous_features,
+    Eigen::Ref<const Eigen::VectorXi> previous_indices,
+    Eigen::Ref<const Eigen::VectorXi> new_indices);
 
+// Compute per-vertex normals from positions + face topology.
+// Returns: normals (N,3)
+Vec3Mat
+compute_normals(
+    Eigen::Ref<const Vec3Mat>   positions,
+    Eigen::Ref<const FacesMat>  faces);
 
+} // namespace meshmonk
 
-    //######################################################################################
-    //################################  REGISTRATION  ######################################
-    //######################################################################################
-    /*
-    Full Pyramid Nonrigid Registration
-    This is the function you'll normally want to call to nonrigidly register a floating mesh to a target mesh.
-    */
-    void pyramid_registration(FeatureMat& floatingFeatures, const FeatureMat& targetFeatures,
-                                const FacesMat& floatingFaces, const FacesMat& targetFaces,
-                                const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
-                                const size_t numIterations = 60, const size_t numPyramidLayers = 3,
-                                const float downsampleFloatStart = 90, const float downsampleTargetStart = 90,
-                                const float downsampleFloatEnd = 0, const float downsampleTargetEnd = 0,
-                                const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                const float correspondencesFlagThreshold = 0.99f, const bool correspondencesEqualizePushPull = false,
-                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
-                                const float transformSigma = 3.0f,
-                                const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
-                                const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1);
-
-    /*
-    Standard Nonrigid Registration
-    This is the standard nonrigid registration procedure without pyramid approach, so computationally a bit slower.
-    */
-    void nonrigid_registration(FeatureMat& floatingFeatures, const FeatureMat& targetFeatures,
-                                const FacesMat& floatingFaces, const FacesMat& targetFaces,
-                                const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
-                                const size_t numIterations = 60,
-                                const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                const float correspondencesFlagThreshold = 0.99f, const bool correspondencesEqualizePushPull = false,
-                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
-                                const float transformSigma = 3.0f,
-                                const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
-                                const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1);
-
-    /*
-    Rigid Registration
-    */
-    void rigid_registration(FeatureMat& floatingFeatures, const FeatureMat& targetFeatures,
-                                const FacesMat& floatingFaces, const FacesMat& targetFaces,
-                                const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
-                                Mat4Float& transformationMatrix,
-                                const size_t numIterations = 20,
-                                const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                const float correspondencesFlagThreshold = 0.99f, const bool correspondencesEqualizePushPull = false,
-                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
-                                const bool useScaling = false);
-
-
-
-
-    //######################################################################################
-    //############################  REGISTRATION MODULES  ##################################
-    //######################################################################################
-
-    //# Correspondences
-    void compute_correspondences(const FeatureMat& floatingFeatures, const FeatureMat& targetFeatures,
-                                const VecDynFloat& floatingFlags, const VecDynFloat& targetFlags,
-                                FeatureMat& correspondingFeatures, VecDynFloat& correspondingFlags,
-                                const bool symmetric = true, const size_t numNeighbours = 5,
-                                const float flagThreshold = 0.99f, const bool equalizePushPull = false);
-
-    //# Inliers
-    void compute_inlier_weights(const FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
-                                const VecDynFloat& correspondingFlags, VecDynFloat& inlierWeights,
-                                const float kappa = 4.0f, const bool useOrientation = true);
-
-    //# Rigid Transformation
-    void compute_rigid_transformation(FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
-                                    const VecDynFloat& inlierWeights, Mat4Float& transformationMatrix,
-                                    const bool useScaling = false);
-
-    //# Nonrigid Transformation
-    void compute_nonrigid_transformation(FeatureMat& floatingFeatures, const FeatureMat& correspondingFeatures,
-                                        const FacesMat& floatingFaces, const VecDynFloat& floatingFlags,
-                                        const VecDynFloat& inlierWeights,
-                                        const size_t numSmoothingNeighbours = 10, const float sigmaSmoothing = 3.0f,
-                                        const size_t numViscousIterations = 50, const size_t numElasticIterations = 50);
-
-
-    //# Downsampler
-    void downsample_mesh(const FeatureMat& features, const FacesMat& faces,
-                        const VecDynFloat& flags,
-                        FeatureMat& downsampledFeatures, FacesMat& downsampledFaces,
-                        VecDynFloat& downsampledFlags, VecDynInt& originalIndices,
-                        const float downsampleRatio = 0.8f);
-
-
-    //# ScaleShifter
-    //## The scaleshifter is meant to transition from one scale in the pyramid to the next.
-    void scale_shift_mesh(const FeatureMat& previousFeatures, const VecDynInt& previousIndices,
-                        FeatureMat& newFeatures, const VecDynInt& newIndices);
-
-    //######################################################################################
-    //###############################  MESH OPERATIONS  ####################################
-    //######################################################################################
-    void compute_normals(const Vec3Mat &inPositions, const FacesMat &inFaces,
-                        Vec3Mat &outNormals);
-
-
-    //######################################################################################
-    //################################  INPUT/OUTPUT  ######################################
-    //######################################################################################
-
-    void read_obj_files(const std::string floatingMeshPath, const std::string targetMeshPath,
-                        FeatureMat& floatingFeatures, FeatureMat& targetFeatures,
-                        FacesMat& floatingFaces, FacesMat& targetFaces);
-
-    void write_obj_files(FeatureMat& features, FacesMat& faces, const std::string meshPath);
-
-
-    //######################################################################################
-    //################################  MEX WRAPPING  ######################################
-    //######################################################################################
-    /*
-    We're wrapping some functionality in the library so it can be easily mexed in Matlab
-    */
-    void pyramid_registration_mex(float floatingFeaturesArray[], const float targetFeaturesArray[],
-                                const size_t numFloatingElements, const size_t numTargetElements,
-                                const int floatingFacesArray[], const int targetFacesArray[],
-                                const size_t numFloatingFaces, const size_t numTargetFaces,
-                                const float floatingFlagsArray[], const float targetFlagsArray[],
-                                const size_t numIterations = 60, const size_t numPyramidLayers = 3,
-                                const float downsampleFloatStart = 90, const float downsampleTargetStart = 90,
-                                const float downsampleFloatEnd = 0, const float downsampleTargetEnd = 0,
-                                const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                const float correspondencesFlagThreshold = 0.99f, const bool correspondencesEqualizePushPull = false,
-                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
-                                const float transformSigma = 3.0f,
-                                const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
-                                const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1);
-
-    void nonrigid_registration_mex(float floatingFeaturesArray[], const float targetFeaturesArray[],
-                                const size_t numFloatingElements, const size_t numTargetElements,
-                                const int floatingFacesArray[], const int targetFacesArray[],
-                                const size_t numFloatingFaces, const size_t numTargetFaces,
-                                const float floatingFlagsArray[], const float targetFlagsArray[],
-                                const size_t numIterations = 60,
-                                const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                const float correspondencesFlagThreshold = 0.99f, const bool correspondencesEqualizePushPull = false,
-                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
-                                const float transformSigma = 3.0f,
-                                const size_t transformNumViscousIterationsStart = 50, const size_t transformNumViscousIterationsEnd = 1,
-                                const size_t transformNumElasticIterationsStart = 50, const size_t transformNumElasticIterationsEnd = 1);
-
-    void rigid_registration_mex(float floatingFeaturesArray[], const float targetFeaturesArray[],
-                                const size_t numFloatingElements, const size_t numTargetElements,
-                                const int floatingFacesArray[], const int targetFacesArray[],
-                                const size_t numFloatingFaces, const size_t numTargetFaces,
-                                const float floatingFlagsArray[], const float targetFlagsArray[],
-                                float transformationMatrixArray[],
-                                const size_t numIterations = 60,
-                                const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                const float correspondencesFlagThreshold = 0.99f, const bool correspondencesEqualizePushPull = false,
-                                const float inlierKappa = 4.0f, const bool inlierUseOrientation = true,
-                                const bool useScaling = false);
-
-    void compute_correspondences_mex(const float floatingFeaturesArray[], const float targetFeaturesArray[],
-                                    const size_t numFloatingElements, const size_t numTargetElements,
-                                    const float floatingFlagsArray[], const float targetFlagsArray[],
-                                    float correspondingFeaturesArray[], float correspondingFlagsArray[],
-                                    const bool correspondencesSymmetric = true, const size_t correspondencesNumNeighbours = 5,
-                                    const float correspondencesFlagThreshold = 0.99f, const bool correspondencesEqualizePushPull = false);
-
-    void compute_inlier_weights_mex(const float floatingFeaturesArray[], const float correspondingFeaturesArray[],
-                                    const size_t numFloatingElements,
-                                    const float correspondingFlagsArray[], float inlierWeightsArray[],
-                                    const float inlierKappa/*= 4.0f*/, const bool useOrientation/*= true*/);
-
-    void compute_rigid_transformation_mex(float floatingFeaturesArray[], const size_t numFloatingElements,
-                                        const float correspondingFeaturesArray[], const float inlierWeightsArray[],
-                                        float transformationMatrixArray[],
-                                        const bool useScaling /*= false*/);
-
-    void compute_nonrigid_transformation_mex(float floatingFeaturesArray[], const float correspondingFeaturesArray[],
-                                            const size_t numFloatingElements,
-                                            const int floatingFacesArray[], const size_t numFloatingFaces,
-                                            const float floatingFlagsArray[], const float inlierWeightsArray[],
-                                            const size_t transformNumNeighbours/*= 10*/, const float transformSigma/*= 3.0f*/,
-                                            const size_t transformNumViscousIterations/*= 50*/, const size_t transformNumElasticIterations/*= 50*/);
-
-    void downsample_mesh_mex(const float featuresArray[], const size_t numElements,
-                            const int facesArray[], const size_t numFaces,
-                            const float flagsArray[],
-                            float sampledFeaturesArray[], const size_t numSampledElements,
-                            int sampledFacesArray[], const size_t numSampledFaces,
-                            float sampledFlagsArray[],
-                            int originalIndicesArray[],
-                            const float downsampleRatio/* = 0.8f*/);
-
-    void scaleshift_mesh_mex(const float oldFeaturesArray[], const size_t numOldElements,
-                            const int oldIndicesArray[],
-                            float newFeaturesArray[], const size_t numNewElements,
-                            const int newIndicesArray[]);
-
-    void compute_normals_mex(const float positionsArray[], const size_t numElements,
-                            const int facesArray[], const size_t numFaces,
-                            float normalsArray[]);
-
-#ifdef __cplusplus
-}//extern C
-#endif // __cplusplus
-
-}//namespace meshmonk
-
-#endif //MESHMONK_HPP
+#endif // MESHMONK_HPP
