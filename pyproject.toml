@@ -1,9 +1,20 @@
 [project]
 name = "meshmonk"
 version = "0.0.0"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 authors = [{ name = "jsnyde0" }]
 requires-python = ">=3.10"
+
+[tool.setuptools]
+packages = []
+
+[project.optional-dependencies]
+dev = [
+    "numpy",
+    "scipy",
+    "meshio",
+    "pytest",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
