@@ -1,26 +1,26 @@
 [build-system]
-requires = ["setuptools>=77"]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core>=0.8", "nanobind>=2.0", "cmake>=3.26"]
+build-backend = "scikit_build_core.build"
 
 [project]
 name = "meshmonk"
-version = "0.0.0"
+version = "0.1.0"
 description = "Python-first 3D mesh registration library"
 readme = "README.md"
-license = "Apache-2.0"
+license = { text = "Apache-2.0" }
 authors = [{ name = "jsnyde0" }]
 requires-python = ">=3.10"
-
-[project.optional-dependencies]
-dev = [
-    "numpy>=1.26",
-    "scipy>=1.11",
-    "meshio>=5.3",
-    "pytest>=8.0",
+dependencies = [
+    "numpy>=1.24",
+    "typer>=0.9",
 ]
 
-[tool.setuptools]
-packages = []
+[project.optional-dependencies]
+io = ["trimesh>=4.0"]
+dev = ["pytest", "pre-commit", "ruff", "scipy>=1.11"]
+
+[project.scripts]
+meshmonk = "meshmonk.cli:app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

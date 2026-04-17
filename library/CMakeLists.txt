@@ -12,15 +12,14 @@ set(OPENMESH_BUILD_APPS OFF CACHE BOOL "Do not build OpenMesh apps" FORCE)
 # The path is relative to this CMakeLists.txt file.
 add_subdirectory(../vendor/OpenMesh-11.0.0 ${CMAKE_CURRENT_BINARY_DIR}/OpenMesh_build)
 
-# --- Define the meshmonk_shared Library ---
-add_library(meshmonk_shared SHARED ${MESHMONK_SOURCES})
+# --- Define the meshmonk_lib Library ---
+add_library(meshmonk_lib SHARED ${MESHMONK_SOURCES})
 
 # --- Include Directories ---
-target_include_directories(meshmonk_shared
+target_include_directories(meshmonk_lib
   PUBLIC
     # To find headers in library/include/ (e.g., meshmonk/meshmonk.hpp)
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    # Eigen include directories will be inherited from the Eigen3::Eigen target
     # For internal library headers in library/src/ (needed by public meshmonk.hpp)
     ${CMAKE_CURRENT_SOURCE_DIR}/src
   PRIVATE
@@ -29,10 +28,7 @@ target_include_directories(meshmonk_shared
 )
 
 # --- Link Dependencies ---
-target_link_libraries(meshmonk_shared
-  PUBLIC
-    # Link against Eigen - PUBLIC because Eigen types are in public headers
-    Eigen3::Eigen
+target_link_libraries(meshmonk_lib
   PRIVATE
     # Link against the static OpenMesh libraries built as part of this project
     OpenMeshCore

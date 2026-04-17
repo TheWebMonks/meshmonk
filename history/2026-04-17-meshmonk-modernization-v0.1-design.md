@@ -28,10 +28,17 @@ namespace meshmonk {
     inline constexpr int NUM_FEATURES = 6;
 
     // Strong rigid transform (library/include/meshmonk/transform.hpp)
+    // Semantic contract: maps original floating positions to aligned positions,
+    // i.e. result.transform.apply(original_features) == result.aligned_features
+    // (up to floating-point rounding).
+    // apply(): positions: R*p + t; normals: R*n (rotation only, no translation).
+    // inverse(): handles similarity transforms correctly when use_scaling=true
+    //   (inverse of [sR|t] is [(1/s)R^T | -(1/s)R^T*t], not just [R^T|-R^T*t]).
+    // compose(): matrix multiplication — correct for both SE(3) and similarity.
     struct RigidTransform {
         Eigen::Matrix4f matrix = Eigen::Matrix4f::Identity();   // 4x4 SE(3); similarity if params.use_scaling
         RigidTransform compose(const RigidTransform&) const;    // returns (*this) * rhs
-        FeatureMat     apply(const FeatureMat&) const;          // transforms positions; rotates normals
+        FeatureMat     apply(const FeatureMat&) const;          // transforms positions (R*p+t); rotates normals (R*n)
         RigidTransform inverse() const;
     };
 
@@ -42,12 +49,19 @@ namespace meshmonk {
     struct ViscoElasticParams {
         float sigma = 3.0f;
         // Viscous + elastic annealing pairs interpolate across num_iterations.
-        // Defaults mirror current MATLAB demos (start == num_iterations, end == 1).
+        // Defaults mirror nonrigid MATLAB demo (start == 200, end == 1).
+        // IMPORTANT: for pyramid registration, the MATLAB demo ties start to
+        // num_iterations (= 90). The Python wrapper auto-populates
+        // viscous/elastic start = num_iterations when the user does not set
+        // them explicitly, matching the MATLAB convention. The C++ struct
+        // defaults (200) are fallbacks for the nonrigid case only.
         int num_viscous_iterations_start = 200;
         int num_viscous_iterations_end   = 1;
         int num_elastic_iterations_start = 200;
         int num_elastic_iterations_end   = 1;
     };
+    // Percentage of vertices to remove (0.0 = no decimation, 90.0 = remove 90%).
+    // Internal code divides by 100 before use. Values match MATLAB demo convention.
     struct DownsampleSchedule { float float_start=50.f, target_start=70.f,
                                       float_end=0.f,   target_end=0.f; };
 
@@ -62,6 +76,16 @@ namespace meshmonk {
     // Result structs (library/include/meshmonk/result.hpp)
     // v0.1 ships minimal shapes; diagnostic fields (fitness, inlier_rmse,
     // num_inliers, converged) are deferred to v0.2 once detection sites exist.
+    //
+    // Implementation note: displacement_field in NonrigidResult/PyramidResult is
+    // computed at the wrapper level as (aligned_positions - original_positions),
+    // NOT extracted from the internal classes (NonrigidRegistration mutates
+    // features in-place and destroys the ViscoElasticTransformer's displacement
+    // field when the function returns). The wrapper saves a copy of input
+    // positions before calling update(), then diffs — cost: one (N,3) float32
+    // copy (~650KB for 54K vertices). Similarly, final_inlier_weights requires
+    // running a final correspondence + inlier-detection pass after registration
+    // completes, since the per-iteration weights are not accumulated.
     using Vec3Mat = Eigen::Matrix<float, Eigen::Dynamic, 3>;  // (N,3) positions or displacements
 
     enum class RegistrationError {
@@ -102,6 +126,12 @@ namespace meshmonk {
     // scale_shift_mesh, compute_normals) share the same param structs.
     // (`compute_rigid_transform` / `compute_nonrigid_transform` are renames of
     // the old `compute_rigid_transformation` / `compute_nonrigid_transformation`.)
+    //
+    // Lifetime requirement: all Eigen::Ref<const ...> parameters must remain
+    // valid for the duration of the function call. Internal KD-tree construction
+    // holds references to input data. Do not pass temporaries that would be
+    // destroyed before the call returns. (nanobind GC-pins numpy arrays
+    // automatically, so Python callers are safe.)
 }
 ```
 
@@ -112,8 +142,8 @@ namespace meshmonk {
 | Error | Detected at | Criterion |
 |---|---|---|
 | `DegenerateInput` | boundary pre-check | empty inputs, dim/shape mismatch, `FeatureMat` rows ≠ `floating_flags.size()`, zero-range bbox, or all-zero inlier flags |
-| `InsufficientInliers` | after `InlierDetector` (boundary-converted) | <4 non-zero inlier weights (rigid needs ≥3 for SVD well-posedness) |
-| `DecompositionFailed` | internal (boundary-converted) | `RigidTransformer` SVD or `EigenVectorDecomposer` fails to converge on valid-shaped input |
+| `InsufficientInliers` | after `InlierDetector` (boundary-converted) | <4 non-zero inlier weights (rigid needs ≥3 non-collinear points for the cross-variance matrix to yield a unique rotation quaternion) |
+| `DecompositionFailed` | internal (boundary-converted) | `RigidTransformer` eigendecomposition (Horn method via `SelfAdjointEigenSolver` on the 4×4 Q matrix) or `EigenVectorDecomposer` fails to converge on valid-shaped input |
 | `NonConvergence` | wrapper loop (v0.2+ only) | convergence criterion (TBD) not met within `num_iterations`; **not raised in v0.1** since convergence tracking is deferred |
 
 **Split between boundary and internal detection:** `DegenerateInput` is raised by an explicit pre-check at the top of each public API function (`rigid_registration()`, `nonrigid_registration()`, `pyramid_registration()`) — so shape / rank / dim errors never reach the algorithmic core. Internal algorithmic classes (`ViscoElasticTransformer`, `InlierDetector`, `RigidTransformer`) are **NOT** rewritten to return an expected type; they retain their existing control flow and signal failure via the log sink plus an internal failure-status bridge that the public wrapper converts before returning. This preserves the "load-bearing code untouched" constraint while still giving callers typed errors.
@@ -122,7 +152,13 @@ namespace meshmonk {
 
 All internal `std::cerr` writes are routed through a logger sink (configurable via `meshmonk.set_log_level()` in Python) so consumers can suppress stderr noise. The log sink is thread-safe (atomic level read) but its effect is global to the process.
 
-Load-bearing algorithmic code (`ViscoElasticTransformer`, `InlierDetector`, `RigidTransformer`, `NonrigidRegistration` annealing, `PyramidNonrigidRegistration` scheduling) remains untouched. The redesign is entirely at the API surface above them, plus confining OpenMesh to an I/O boundary (stop reconstructing `TriMesh` inside `update()` calls).
+Load-bearing algorithmic code (`ViscoElasticTransformer`, `InlierDetector`, `RigidTransformer`, `NonrigidRegistration` annealing, `PyramidNonrigidRegistration` scheduling) remains untouched. The internal `namespace registration` and `global.hpp` are preserved as-is; the new `namespace meshmonk` public API coexists with it. The redesign is entirely at the API surface above them. The `extern "C"` block and all `_mex` function variants in `meshmonk.hpp` are deleted as part of the v0.1 API redesign (consistent with ADR-001 D3, drop MATLAB).
+
+**"Confine OpenMesh to I/O boundary" — scoped clarification:** this goal applies to *new* public-API-level code. `ViscoElasticTransformer` retains its internal `TriMesh` member for per-iteration normal recomputation (this is load-bearing algorithmic usage, not I/O). `Downsampler::update()` rebuilds a TriMesh per call for quadric decimation — also kept. The promise means: no *new* code reconstructs TriMesh objects; the public API wrapper operates purely on Eigen matrices. Writing a pure Eigen-based `compute_normals` (~30 LOC, face-area-weighted averaging) to replace the OpenMesh path in `ViscoElasticTransformer` is a reasonable v0.1 stretch goal but not required.
+
+**Low-risk internal cleanups (behavioral no-ops):**
+- Replace raw `new`/`delete` of `CorrespondenceFilter` in `RigidRegistration::update()` and `NonrigidRegistration::update()` with `std::unique_ptr` (two lines each) — exception-safety fix, no algorithmic change.
+- Remove gratuitous OpenMesh `#include` from `ScaleShifter.hpp` — the class uses only Eigen matrices and `NeighbourFinder`; the include is dead weight.
 
 ### Python API shape (v0.1)
 
@@ -157,9 +193,16 @@ result = meshmonk.rigid_register(
 )
 
 # 3. Low-level composable primitives
-corrs = meshmonk.compute_correspondences(V_float, V_target, flags_float, flags_target)
-weights = meshmonk.compute_inlier_weights(V_float, corrs, kappa=12.0)
-transform = meshmonk.compute_rigid_transform(V_float, corrs, weights)
+# Note: compute_correspondences operates in 6D (positions + normals) —
+# inputs must be (N,6) feature matrices, not (N,3) position matrices.
+feat_float = meshmonk.features_from_vertices(V_float, F_float)  # (N,6) helper
+feat_target = meshmonk.features_from_vertices(V_target, F_target)
+corrs = meshmonk.compute_correspondences(feat_float, feat_target, flags_float, flags_target)
+weights = meshmonk.compute_inlier_weights(feat_float, corrs, kappa=12.0)
+transform = meshmonk.compute_rigid_transform(feat_float, corrs, weights)
+normals = meshmonk.compute_normals(V_float, F_float)       # (N,3) vertex normals
+V_down, F_down = meshmonk.downsample_mesh(V_float, F_float, ratio=50.0)
+V_shifted = meshmonk.scale_shift_mesh(V_float, V_target)   # center + scale to target bbox
 
 # 4. CLI (installed as `meshmonk` by pip entry point)
 # $ meshmonk rigid    Template.obj demoFace.obj --out result.obj
@@ -181,11 +224,13 @@ transform = meshmonk.compute_rigid_transform(V_float, corrs, weights)
 
 Adding two fields with the same prefixed name across different sub-structs is a breaking change (requires an ADR update). Callers who prefer explicit struct-passing can still use `rigid_params=meshmonk.RigidParams(num_iterations=80)`.
 
-**nanobind zero-copy caveats:** the zero-copy path requires `float32` for `FeatureMat` and `int32` for `FacesMat`, plus C-contiguous memory. Default `trimesh` arrays use `int64` faces — the wrapper does a one-time cast at the Python boundary so end users aren't penalized. numpy row-major layout is accepted into Eigen's default column-major storage via a stride-aware `Eigen::Ref<…, 0, Eigen::Stride<Dynamic,Dynamic>>` signature (≈1–2% overhead on KNN loops per our read of Eigen). If profiling flags this as hot in v0.2, internal storage switches to row-major — a larger refactor deferred.
+**nanobind boundary-copy caveats:** the zero-copy path requires `float32` for `FeatureMat` and `int32` for `FacesMat`, plus C-contiguous column-major memory. In practice, numpy arrays are row-major by default, so nanobind performs **one implicit copy per call at the Python→C++ boundary** to match Eigen's column-major storage. For a (54K, 6) float32 matrix this is ~1.3 MB — trivial. Default `trimesh` arrays use `int64` faces — the wrapper does a one-time cast at the Python boundary so end users aren't penalized. If profiling flags the boundary copy as hot in v0.2, internal storage switches to row-major — a larger refactor deferred.
 
 **Normals handling:** precedence is (a) explicit `normals=V_normals` kwarg if passed; else (b) `mesh.vertex_normals` if the mesh object exposes the attribute and its L2 norm per row is non-zero; else (c) recomputed via `meshmonk.compute_normals(V, F)`. Pass `compute_normals=True` to force recomputation even when `.vertex_normals` is available. For the raw-array path, if `floating_features` columns 3–5 are all-zero (as current MATLAB demos pass — `single(zeros(size(floatingPoints)))`), the wrapper auto-recomputes normals and emits a one-line warning via the log sink, matching current C++ behavior while surfacing the smell for the migration. `meshmonk.features_from_vertices(V, F)` is the recommended helper to avoid the warning.
 
 Errors bubble as Python exceptions (nanobind translates unexpected return values via a registered translator). Type stubs (`.pyi`) shipped with the wheel from v0.2 onward.
+
+**GIL release (v0.1 deliverable):** all registration functions and composable primitives release the Python GIL via `nb::call_guard<nb::gil_scoped_release>()` before entering C++. Without this, a `meshmonk.rigid_register()` call (30–180 s) blocks all Python threads for the entire duration. nanobind GC-pins numpy arrays for the duration of the call, so data lifetime is safe under GIL release.
 
 ### Python package dependencies
 
@@ -212,11 +257,19 @@ Use the MATLAB demo-script values as the Python API defaults. These are grounded
 | `correspondences_flag_threshold` (pyramid) | 0.99 | **0.999** |
 | `pyramid.num_iterations` | 60 | **90** |
 
+**Param passthrough rule:** the new public API wrapper functions MUST pass *all* params from the param structs through to the internal classes explicitly. Internal class defaults (e.g., `downsampleFloatStart = 90.0f` in `PyramidNonrigidRegistration`, `numIterations = 10` in `NonrigidRegistration`) differ from the adopted MATLAB-derived defaults. The wrapper must always call `set_parameters()` on internal classes before `update()`, never relying on internal member-initializer defaults.
+
+### Build system migration (v0.1 deliverable)
+
+The current `pyproject.toml` uses `setuptools>=77` (v0.0 scaffolding). v0.1 migrates to `scikit-build-core` as the PEP 517 backend — this gates nanobind binding compilation and should be done early.
+
+The current `CMakeLists.txt` uses `FetchContent_Declare` to download Eigen from GitLab at build time, contradicting the overview design's "no FetchContent at build time — `pip install` works offline" rule. v0.1 vendors Eigen 3.4.0 headers under `vendor/eigen-3.4.0/` and updates CMakeLists.txt to use `add_subdirectory()` on the vendored copy. (`vendor/` currently contains only `OpenMesh-11.0.0` and `nanoflann.hpp`.)
+
 ### Harness strategy
 
 Tiered harness, ordered fast → slow:
 
-- **Tier 1 — Analytical** (deterministic, math-grounded, <5 s total): synthetic rigid recovery (apply known SE(3) to a mesh, run `rigid_registration` from identity, verify recovery), self-consistency, round-trip, correspondence sanity, inlier-weight sanity. This is where end-to-end ICP gets covered.
+- **Tier 1 — Analytical** (deterministic, math-grounded, <5 s total): synthetic rigid recovery (apply known SE(3) to a mesh's full (N,6) feature matrix — positions AND normals — via `RigidTransform::apply()`, run `rigid_registration` from identity, verify both position and normal recovery), self-consistency, round-trip, correspondence sanity, inlier-weight sanity. The synthetic mesh MUST have non-degenerate normals (not all-zero) since the correspondence search operates in 6D feature space; all-zero normals would degenerate the search to effectively 3D. This is where end-to-end ICP gets covered.
 - **Tier 2 — Primitive fixture** (deterministic, <1 s): 8-vertex cube + known correspondences + inlier weights. Exercises `compute_rigid_transform` as a least-squares primitive, **not** end-to-end ICP. Ported from `origin/add-compute-rigid-transform-cli:cli/test_data/rigid_transform/`.
 - **Tier 3 — Human-approved visual golden** (captured once per registration type in v0.1): owner inspects output in Blender or MeshLab, approves, we freeze as `.npz`. Future runs compare with Hausdorff/RMSE via `tests/utils/mesh_compare.py` (~20 lines of numpy).
 - **Tier 3.5 — Legacy scientific-equivalence gate**: reference outputs on `Template.obj ↔ demoFace.obj` anchor the "did the rewrite preserve the current library's numerical behavior?" baseline. New-code output must match within calibrated tolerance. Trust comes from the *library* (research-validated per ADR D1), not from whatever plumbing wraps it. **Capture source, in priority order:** (a) **checked-in outputs on `origin/cli:demo/`** — `rigid_output.obj`, `pyramid_output.obj`, `rigid_transform.txt` from a prior `meshmonk_cli` run are already committed; v0.0 ingests these directly via `obj_to_npz.py`; (b) reproducing those outputs from a fresh `origin/cli` build (`cmake --build build --parallel` after `cmake -S .worktrees/cli -B /tmp/meshmonk-cli-build`) on the owner's toolchain as a separate **reproducibility check** — divergence is information, not a blocker; (c) the MATLAB demos (`test_rigid_registration.m`, `test_pyramid_registration.m`) as a cross-check via MEX against the same research-validated library. Not circular with ADR D7's rejection of untrusted pybind11 output — the baseline is the raw library, not the abandoned binding layer. **Trust-promotion rule:** Tier 3.5 starts as an **advisory** gate (diff reported, not CI-failing) because the committed goldens and the CLI that produced them landed in a single unverified commit (`origin/cli@3b72b72`, 2025-05-29). Promote to a hard CI gate only once at least one of (b) or (c) has confirmed the goldens independently.
@@ -237,3 +290,4 @@ Tiered harness, ordered fast → slow:
 5. Old goldens are preserved via git history — no LFS needed at v0.1 scale (~MB-level npz)
 
 **Visualization tooling:** outsourced to third-party (Blender, MeshLab). No in-repo viewer. Only the numpy compare helper is in-repo.
+
