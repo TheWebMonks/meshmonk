@@ -26,6 +26,8 @@ from meshmonk._meshmonk_core import (  # noqa: E402
     ViscoElasticParams,
     # Transform
     RigidTransform,
+    # Exception
+    MeshMonkError,
     # Result structs (raw C++ objects, wrapped by Python dataclasses below)
     RigidResult as _RigidResult,
     NonrigidResult as _NonrigidResult,
@@ -56,6 +58,8 @@ __all__ = [
     # Enums
     "LogLevel",
     "RegistrationError",
+    # Exception
+    "MeshMonkError",
     # Param structs
     "CorrespondenceParams",
     "DownsampleSchedule",
@@ -261,17 +265,59 @@ def _mesh_to_arrays(mesh_or_path, normals_override=None, force_recompute=False):
     return features, F, flags
 
 
-def _check_normals_and_warn(features: np.ndarray) -> np.ndarray:
-    """If normals (cols 3-5) are all-zero, recompute from positions and warn.
 
-    This requires faces to be available, but for the raw-array path we don't
-    have faces here. The check and recompute happens at the caller level.
-    """
-    return features
+_RIGID_KNOWN_KWARGS = {
+    "correspondences_symmetric",
+    "correspondences_num_neighbours",
+    "correspondences_flag_threshold",
+    "correspondences_equalize_push_pull",
+    "inlier_kappa",
+    "inlier_use_orientation",
+    "num_iterations",
+    "use_scaling",
+}
+
+_NONRIGID_KNOWN_KWARGS = {
+    "correspondences_symmetric",
+    "correspondences_num_neighbours",
+    "correspondences_flag_threshold",
+    "correspondences_equalize_push_pull",
+    "inlier_kappa",
+    "inlier_use_orientation",
+    "transform_sigma",
+    "transform_num_viscous_iterations_start",
+    "transform_num_viscous_iterations_end",
+    "transform_num_elastic_iterations_start",
+    "transform_num_elastic_iterations_end",
+    "num_iterations",
+}
+
+_PYRAMID_KNOWN_KWARGS = {
+    "correspondences_symmetric",
+    "correspondences_num_neighbours",
+    "correspondences_flag_threshold",
+    "correspondences_equalize_push_pull",
+    "inlier_kappa",
+    "inlier_use_orientation",
+    "transform_sigma",
+    "transform_num_viscous_iterations_start",
+    "transform_num_viscous_iterations_end",
+    "transform_num_elastic_iterations_start",
+    "transform_num_elastic_iterations_end",
+    "downsample_float_start",
+    "downsample_target_start",
+    "downsample_float_end",
+    "downsample_target_end",
+    "num_iterations",
+    "num_pyramid_layers",
+}
 
 
 def _apply_rigid_kwargs(params: RigidParams, kwargs: dict) -> RigidParams:
     """Apply kwarg overrides to a RigidParams struct."""
+    unknown = set(kwargs) - _RIGID_KNOWN_KWARGS
+    if unknown:
+        raise TypeError(f"rigid_register() got unexpected keyword arguments: {sorted(unknown)}")
     if "correspondences_symmetric" in kwargs:
         params.correspondences.symmetric = kwargs["correspondences_symmetric"]
     if "correspondences_num_neighbours" in kwargs:
@@ -293,6 +339,9 @@ def _apply_rigid_kwargs(params: RigidParams, kwargs: dict) -> RigidParams:
 
 def _apply_nonrigid_kwargs(params: NonrigidParams, kwargs: dict) -> NonrigidParams:
     """Apply kwarg overrides to a NonrigidParams struct."""
+    unknown = set(kwargs) - _NONRIGID_KNOWN_KWARGS
+    if unknown:
+        raise TypeError(f"nonrigid_register() got unexpected keyword arguments: {sorted(unknown)}")
     if "correspondences_symmetric" in kwargs:
         params.correspondences.symmetric = kwargs["correspondences_symmetric"]
     if "correspondences_num_neighbours" in kwargs:
@@ -326,6 +375,9 @@ def _apply_pyramid_kwargs(params: PyramidParams, kwargs: dict, explicit_kwargs: 
     Also applies the MATLAB convention: viscous/elastic start = num_iterations
     when the user has not explicitly set them.
     """
+    unknown = set(kwargs) - _PYRAMID_KNOWN_KWARGS
+    if unknown:
+        raise TypeError(f"pyramid_register() got unexpected keyword arguments: {sorted(unknown)}")
     if "correspondences_symmetric" in kwargs:
         params.correspondences.symmetric = kwargs["correspondences_symmetric"]
     if "correspondences_num_neighbours" in kwargs:
@@ -429,6 +481,8 @@ def rigid_register(
     -------
     RigidRegResult
     """
+    if (floating is None) != (target is None):
+        raise ValueError("both floating and target must be provided, or neither")
     if floating is not None or target is not None:
         # Pattern A: duck-typed mesh objects
         feat_float, faces_float, flags_float = _mesh_to_arrays(
@@ -457,6 +511,16 @@ def rigid_register(
             )
             feat_float = feat_float.copy()
             feat_float[:, 3:] = normals_recomputed
+        if np.all(feat_target[:, 3:] == 0.0):
+            warnings.warn(
+                "target_features normals are all-zero; recomputing.",
+                stacklevel=2,
+            )
+            normals_recomputed = np.asarray(
+                compute_normals(feat_target[:, :3], faces_target), dtype=np.float32
+            )
+            feat_target = feat_target.copy()
+            feat_target[:, 3:] = normals_recomputed
 
     params = RigidParams()
     params = _apply_rigid_kwargs(params, kwargs)
@@ -496,6 +560,8 @@ def nonrigid_register(
     -------
     NonrigidRegResult
     """
+    if (floating is None) != (target is None):
+        raise ValueError("both floating and target must be provided, or neither")
     if floating is not None or target is not None:
         feat_float, faces_float, flags_float = _mesh_to_arrays(
             floating, normals_override=normals, force_recompute=compute_normals_flag
@@ -521,6 +587,16 @@ def nonrigid_register(
             )
             feat_float = feat_float.copy()
             feat_float[:, 3:] = normals_recomputed
+        if np.all(feat_target[:, 3:] == 0.0):
+            warnings.warn(
+                "target_features normals are all-zero; recomputing.",
+                stacklevel=2,
+            )
+            normals_recomputed = np.asarray(
+                compute_normals(feat_target[:, :3], faces_target), dtype=np.float32
+            )
+            feat_target = feat_target.copy()
+            feat_target[:, 3:] = normals_recomputed
 
     params = NonrigidParams()
     params = _apply_nonrigid_kwargs(params, kwargs)
@@ -564,6 +640,8 @@ def pyramid_register(
     -------
     PyramidRegResult
     """
+    if (floating is None) != (target is None):
+        raise ValueError("both floating and target must be provided, or neither")
     if floating is not None or target is not None:
         feat_float, faces_float, flags_float = _mesh_to_arrays(
             floating, normals_override=normals, force_recompute=compute_normals_flag
@@ -589,6 +667,16 @@ def pyramid_register(
             )
             feat_float = feat_float.copy()
             feat_float[:, 3:] = normals_recomputed
+        if np.all(feat_target[:, 3:] == 0.0):
+            warnings.warn(
+                "target_features normals are all-zero; recomputing.",
+                stacklevel=2,
+            )
+            normals_recomputed = np.asarray(
+                compute_normals(feat_target[:, :3], faces_target), dtype=np.float32
+            )
+            feat_target = feat_target.copy()
+            feat_target[:, 3:] = normals_recomputed
 
     # Pass the set of explicitly provided kwargs so _apply_pyramid_kwargs
     # knows which viscous/elastic start values to auto-populate

@@ -17,18 +17,22 @@ struct RigidTransform {
     }
 
     // Apply transform to feature matrix:
-    //   positions (cols 0-2): R*p + t
-    //   normals   (cols 3-5): R*n  (no translation for normals)
+    //   positions (cols 0-2): sR*p + t  (full matrix applied)
+    //   normals   (cols 3-5): R*n        (rotation only, no scale, no translation)
     FeatureMat apply(const FeatureMat& features) const {
         const int N = static_cast<int>(features.rows());
         Eigen::Matrix3f R = matrix.topLeftCorner<3, 3>();
         Eigen::Vector3f t = matrix.topRightCorner<3, 1>();
 
+        // Extract pure rotation (remove scale) for normals
+        float s = R.col(0).norm();
+        Eigen::Matrix3f R_pure = R / s;
+
         FeatureMat result(N, 6);
-        // Transform positions
+        // Transform positions (full sR + t)
         result.leftCols(3) = (features.leftCols(3) * R.transpose()).rowwise() + t.transpose();
-        // Transform normals (rotation only, no translation)
-        result.rightCols(3) = features.rightCols(3) * R.transpose();
+        // Transform normals (rotation only, no scale, no translation)
+        result.rightCols(3) = features.rightCols(3) * R_pure.transpose();
         return result;
     }
 
@@ -38,13 +42,12 @@ struct RigidTransform {
         Eigen::Matrix3f R = matrix.topLeftCorner<3, 3>();
         Eigen::Vector3f t = matrix.topRightCorner<3, 1>();
         // Compute scale as norm of first column of R (for similarity transforms)
-        float s2 = R.col(0).squaredNorm();  // s^2
+        float s = R.col(0).norm();  // s
         Eigen::Matrix3f Rt = R.transpose();
-        Eigen::Vector3f t_inv = -(Rt * t) / s2;
 
         Eigen::Matrix4f inv = Eigen::Matrix4f::Identity();
-        inv.topLeftCorner<3, 3>() = Rt / s2;
-        inv.topRightCorner<3, 1>() = t_inv;
+        inv.topLeftCorner<3, 3>() = Rt / s;
+        inv.topRightCorner<3, 1>() = -(Rt * t) / s;
         return RigidTransform{inv};
     }
 };

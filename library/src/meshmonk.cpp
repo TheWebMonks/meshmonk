@@ -51,26 +51,25 @@ VecDynFloat run_final_inlier_pass(
     VecDynFloat final_weights          = VecDynFloat::Ones(N);
 
     // Correspondence filter — branch on symmetric
-    registration::BaseCorrespondenceFilter* corr_filter = nullptr;
+    std::unique_ptr<registration::BaseCorrespondenceFilter> corr_filter;
     if (corr_params.symmetric) {
-        auto* f = new registration::SymmetricCorrespondenceFilter();
+        auto f = std::make_unique<registration::SymmetricCorrespondenceFilter>();
         f->set_parameters(
             (size_t)corr_params.num_neighbours,
             corr_params.flag_threshold,
             corr_params.equalize_push_pull);
-        corr_filter = f;
+        corr_filter = std::move(f);
     } else {
-        auto* f = new registration::CorrespondenceFilter();
+        auto f = std::make_unique<registration::CorrespondenceFilter>();
         f->set_parameters(
             (size_t)corr_params.num_neighbours,
             corr_params.flag_threshold);
-        corr_filter = f;
+        corr_filter = std::move(f);
     }
     corr_filter->set_floating_input(&aligned_features, &floating_flags_copy);
     corr_filter->set_target_input(&target_copy, &target_flags_copy);
     corr_filter->set_output(&corresponding_features, &corresponding_flags);
     corr_filter->update();
-    delete corr_filter;
 
     // Inlier detector — set_output() before update(); there is NO get_output()
     registration::InlierDetector inlier_det;
@@ -112,8 +111,12 @@ rigid_registration(
         return tl::unexpected{RegistrationError::DegenerateInput};
     if (floating_flags.maxCoeff() == 0.0f)
         return tl::unexpected{RegistrationError::DegenerateInput};
-    // Zero-range bounding box check
-    if (floating_features.col(0).maxCoeff() == floating_features.col(0).minCoeff())
+    if (target_flags.maxCoeff() == 0.0f)
+        return tl::unexpected{RegistrationError::DegenerateInput};
+    // Zero-range bounding box check — degenerate only if ALL three axes have zero range
+    if (floating_features.col(0).maxCoeff() == floating_features.col(0).minCoeff() &&
+        floating_features.col(1).maxCoeff() == floating_features.col(1).minCoeff() &&
+        floating_features.col(2).maxCoeff() == floating_features.col(2).minCoeff())
         return tl::unexpected{RegistrationError::DegenerateInput};
 
     //-------------------------------------------------------------------------
@@ -151,6 +154,15 @@ rigid_registration(
     // v0.2: add convergence criterion
     // TODO (v0.2): add convergence criterion (NonConvergence error)
 
+    //-------------------------------------------------------------------------
+    // InsufficientInliers check (consistent with nonrigid/pyramid)
+    //-------------------------------------------------------------------------
+    VecDynFloat final_weights = run_final_inlier_pass(
+        floating_copy, target_copy, floating_flags_copy, target_flags_copy,
+        params.correspondences, params.inliers);
+    if ((final_weights.array() > 0.0f).count() < 4)
+        return tl::unexpected{RegistrationError::InsufficientInliers};
+
     RigidResult result;
     result.aligned_features = floating_copy;
     result.transform        = RigidTransform{mat};
@@ -180,9 +192,17 @@ nonrigid_registration(
         return tl::unexpected{RegistrationError::DegenerateInput};
     if (floating_faces.cols() != 3 || target_faces.cols() != 3)
         return tl::unexpected{RegistrationError::DegenerateInput};
+    if (floating_faces.rows() == 0 || target_faces.rows() == 0)
+        return tl::unexpected{RegistrationError::DegenerateInput};
     if (floating_flags.maxCoeff() == 0.0f)
         return tl::unexpected{RegistrationError::DegenerateInput};
-    if (floating_features.col(0).maxCoeff() == floating_features.col(0).minCoeff())
+    if (target_flags.maxCoeff() == 0.0f)
+        return tl::unexpected{RegistrationError::DegenerateInput};
+    if (floating_features.col(0).maxCoeff() == floating_features.col(0).minCoeff() &&
+        floating_features.col(1).maxCoeff() == floating_features.col(1).minCoeff() &&
+        floating_features.col(2).maxCoeff() == floating_features.col(2).minCoeff())
+        return tl::unexpected{RegistrationError::DegenerateInput};
+    if (params.num_iterations < 2)
         return tl::unexpected{RegistrationError::DegenerateInput};
 
     //-------------------------------------------------------------------------
@@ -264,9 +284,17 @@ pyramid_registration(
         return tl::unexpected{RegistrationError::DegenerateInput};
     if (floating_faces.cols() != 3 || target_faces.cols() != 3)
         return tl::unexpected{RegistrationError::DegenerateInput};
+    if (floating_faces.rows() == 0 || target_faces.rows() == 0)
+        return tl::unexpected{RegistrationError::DegenerateInput};
     if (floating_flags.maxCoeff() == 0.0f)
         return tl::unexpected{RegistrationError::DegenerateInput};
-    if (floating_features.col(0).maxCoeff() == floating_features.col(0).minCoeff())
+    if (target_flags.maxCoeff() == 0.0f)
+        return tl::unexpected{RegistrationError::DegenerateInput};
+    if (floating_features.col(0).maxCoeff() == floating_features.col(0).minCoeff() &&
+        floating_features.col(1).maxCoeff() == floating_features.col(1).minCoeff() &&
+        floating_features.col(2).maxCoeff() == floating_features.col(2).minCoeff())
+        return tl::unexpected{RegistrationError::DegenerateInput};
+    if (params.num_iterations < 2)
         return tl::unexpected{RegistrationError::DegenerateInput};
 
     //-------------------------------------------------------------------------
@@ -314,6 +342,9 @@ pyramid_registration(
     //-------------------------------------------------------------------------
     // Compute per_layer_iterations
     // (PyramidNonrigidRegistration does not expose per-layer counts)
+    // NOTE: iters_per_layer is an approximation — rounding means
+    //       iters_per_layer * num_pyramid_layers may differ from num_iterations
+    //       (e.g., 100 iterations / 3 layers → 33 per layer → 33*3 = 99).
     //-------------------------------------------------------------------------
     int iters_per_layer = (int)std::round(
         (float)params.num_iterations / (float)params.num_pyramid_layers);
@@ -366,21 +397,20 @@ compute_correspondences(
     FeatureMat  corresponding_features = FeatureMat::Zero(N, registration::NUM_FEATURES);
     VecDynFloat corresponding_flags    = VecDynFloat::Zero(N);
 
-    registration::BaseCorrespondenceFilter* filter = nullptr;
+    std::unique_ptr<registration::BaseCorrespondenceFilter> filter;
     if (symmetric) {
-        auto* f = new registration::SymmetricCorrespondenceFilter();
+        auto f = std::make_unique<registration::SymmetricCorrespondenceFilter>();
         f->set_parameters((size_t)num_neighbours, flag_threshold, equalize_push_pull);
-        filter = f;
+        filter = std::move(f);
     } else {
-        auto* f = new registration::CorrespondenceFilter();
+        auto f = std::make_unique<registration::CorrespondenceFilter>();
         f->set_parameters((size_t)num_neighbours, flag_threshold);
-        filter = f;
+        filter = std::move(f);
     }
     filter->set_floating_input(&floating_copy, &floating_flags_copy);
     filter->set_target_input(&target_copy, &target_flags_copy);
     filter->set_output(&corresponding_features, &corresponding_flags);
     filter->update();
-    delete filter;
 
     return {corresponding_features, corresponding_flags};
 }

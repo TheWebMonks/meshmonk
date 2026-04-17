@@ -7,13 +7,16 @@ file(GLOB_RECURSE MESHMONK_SOURCES src/*.cpp)
 # Important: Set these BEFORE add_subdirectory for OpenMesh
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build OpenMesh as static" FORCE)
 set(OPENMESH_BUILD_APPS OFF CACHE BOOL "Do not build OpenMesh apps" FORCE)
+# Position-independent code required so static libs can be linked into
+# the shared Python extension module (_meshmonk_core.so)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Add OpenMesh as a subdirectory. CMake will find its CMakeLists.txt.
 # The path is relative to this CMakeLists.txt file.
 add_subdirectory(../vendor/OpenMesh-11.0.0 ${CMAKE_CURRENT_BINARY_DIR}/OpenMesh_build)
 
 # --- Define the meshmonk_lib Library ---
-add_library(meshmonk_lib SHARED ${MESHMONK_SOURCES})
+add_library(meshmonk_lib STATIC ${MESHMONK_SOURCES})
 
 # --- Include Directories ---
 target_include_directories(meshmonk_lib

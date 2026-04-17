@@ -175,4 +175,4 @@ def test_demo_runs_rigid_mode(runner, app, monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
     result = runner.invoke(app, ["demo", "rigid"])
     # Should either succeed or give clear instructions — never a raw traceback
-    assert result.exit_code == 0 or "meshmonk[io]" in result.output or "data/" in result.output or "--download" in result.output
+    assert result.exit_code == 0 or "meshmonk[io]" in result.output or "data/" in result.output

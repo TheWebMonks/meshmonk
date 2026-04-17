@@ -49,14 +49,19 @@ struct NonrigidParams {
 };
 
 struct PyramidParams {
-    CorrespondenceParams correspondences;  // flag_threshold defaults to 0.9 here (inherited from CorrespondenceParams)
-                                           // NOTE: Python wrapper overrides flag_threshold to 0.999 for pyramid calls
-                                           //       (matching the MATLAB pyramid demo). C++ callers get 0.9 by default.
+    CorrespondenceParams correspondences;
     InlierParams         inliers;
     ViscoElasticParams   transform;
     DownsampleSchedule   downsample;
     int                  num_iterations    = 90;  // MATLAB: 90, NOT legacy C++ default of 60
     int                  num_pyramid_layers = 3;
+
+    // Override flag_threshold to MATLAB pyramid default (0.999).
+    // CorrespondenceParams defaults to 0.9 which is correct for rigid/nonrigid,
+    // but pyramid uses 0.999 (matching MATLAB demo).
+    PyramidParams() {
+        correspondences.flag_threshold = 0.999f;
+    }
 };
 
 } // namespace meshmonk

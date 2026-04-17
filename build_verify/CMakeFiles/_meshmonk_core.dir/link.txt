@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -O3 -DNDEBUG -shared -Wl,-s -Wl,--gc-sections  -o _meshmonk_core.cpython-311-aarch64-linux-gnu.so CMakeFiles/_meshmonk_core.dir/bindings/bindings.cpp.o  -Wl,-rpath,/workspace/build_verify/library:/workspace/build_verify/Build/lib: libnanobind-static.a library/libmeshmonk_lib.so -Wl,-rpath-link,/workspace/build_verify/Build/lib

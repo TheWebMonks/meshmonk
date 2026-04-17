@@ -159,7 +159,7 @@ def pyramid(
     floating: str = typer.Argument(..., help="Path to floating (source) mesh OBJ."),
     target: str = typer.Argument(..., help="Path to target mesh OBJ."),
     out: str = typer.Option("result.obj", "--out", help="Output OBJ path."),
-    iterations: int = typer.Option(90, "--iterations", help="Iterations per pyramid layer."),
+    iterations: int = typer.Option(90, "--iterations", help="Total iterations across all pyramid layers."),
     layers: int = typer.Option(3, "--layers", help="Number of pyramid layers."),
     kappa: float = typer.Option(12.0, "--kappa", help="Inlier detection kappa."),
     num_neighbours: int = typer.Option(3, "--num-neighbours", help="Correspondence neighbours."),
