@@ -118,7 +118,7 @@ You can see all available options for each command by running:
 
 ### Example: Rigid Registration
 
-Register `Template.obj` (source) to `demoFace.obj` (target) using rigid registration. The demo files are located in the `demo/` directory at the root of the project.
+Register `Template.obj` (source) to `demoFace.obj` (target) using rigid registration. The mesh data files are located in the `data/` directory at the root of the project.
 
 1.  **Navigate to the build directory (if not already there):**
     ```bash
@@ -128,10 +128,10 @@ Register `Template.obj` (source) to `demoFace.obj` (target) using rigid registra
 
 2.  **Run the `rigid_reg` command:**
     ```bash
-    ./cli/meshmonk_cli rigid_reg ../demo/Template.obj ../demo/demoFace.obj ../demo/rigid_output.obj --transform_output ../demo/rigid_transform.txt
+    ./cli/meshmonk_cli rigid_reg ../data/Template.obj ../data/demoFace.obj ../demo/rigid_output.obj --transform_output ../demo/rigid_transform.txt
     ```
-    *   `../demo/Template.obj`: Path to the source mesh.
-    *   `../demo/demoFace.obj`: Path to the target mesh.
+    *   `../data/Template.obj`: Path to the source mesh.
+    *   `../data/demoFace.obj`: Path to the target mesh.
     *   `../demo/rigid_output.obj`: Filename for the transformed source mesh.
     *   `--transform_output ../demo/rigid_transform.txt`: Saves the 4x4 transformation matrix.
 
@@ -143,7 +143,7 @@ Register `Template.obj` (source) to `demoFace.obj` (target) using rigid registra
 This example uses the output from the rigid registration step (`rigid_output.obj`) as the source mesh.
 
 ```bash
-./cli/meshmonk_cli pyramid_reg ../demo/rigid_output.obj ../demo/demoFace.obj ../demo/pyramid_output.obj
+./cli/meshmonk_cli pyramid_reg ../demo/rigid_output.obj ../data/demoFace.obj ../demo/pyramid_output.obj
 ```
 *   This saves the non-rigidly transformed source mesh to `../demo/pyramid_output.obj`.
 *   It uses default parameters; check `--help` for all options.
@@ -193,7 +193,7 @@ Once `libmeshmonk_shared` is built, you can compile the MEX functions:
     ```matlab
     % For Linux/macOS
     mex_all
-    
+
     % For Windows
     % mex_windows_all
     ```
@@ -226,7 +226,7 @@ For MATLAB to find `libmeshmonk_shared` and the compiled MEX functions at runtim
       ```
       Alternatively, you can create a `startup.m` file in your MATLAB user path (typically `~/Documents/MATLAB/`) and add:
       ```matlab
-      addpath('path/to/meshmonk/build/library'); 
+      addpath('path/to/meshmonk/build/library');
       % Or, more robustly for .dylib, consider a symbolic link or install_name_tool adjustments post-build.
       % However, DYLD_LIBRARY_PATH is the most common method for .dylib files not in standard locations.
       ```
