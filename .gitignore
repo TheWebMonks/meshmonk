@@ -51,3 +51,9 @@ matlab/*.mexw64.manifest
 
 # Exlucde data folder
 data/
+
+# Git worktrees
+.worktrees/
+
+# Scratch / notes
+tmp/
