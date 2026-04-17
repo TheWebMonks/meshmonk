@@ -2,9 +2,12 @@
 OBJ -> NPZ converter for MeshMonk golden fixtures.
 
 Pinned output schema:
-    vertices: (N, 3) float64  — required
-    faces:    (M, 3) int32    — required
-    normals:  (N, 3) float64  — optional, absent key means 'not computed'
+    vertices: (N, 3) float64  — required, C-contiguous
+    faces:    (M, 3) int32    — required, C-contiguous; triangles only
+    normals:  (N, 3) float64  — optional, C-contiguous; absent key means 'not computed'
+
+All arrays are guaranteed C-contiguous so that downstream Eigen::Map consumers
+(v0.1+, ADR-001 D6 zero-copy intent) can map them without hidden copies.
 
 Usage:
     python -m tests.utils.obj_to_npz <input.obj> <output.npz>
@@ -21,22 +24,31 @@ def convert(obj_path: "str | Path", npz_path: "str | Path") -> None:
     """Convert an OBJ file to a .npz file using the pinned schema."""
     mesh = meshio.read(str(obj_path))
 
-    vertices = np.asarray(mesh.points, dtype=np.float64)
+    vertices = np.ascontiguousarray(mesh.points, dtype=np.float64)
 
-    # Collect triangle faces from all cell blocks
+    # Collect triangle faces from all cell blocks; reject any non-triangle cells
     triangle_faces = []
+    total_cells = 0
     for cell_block in mesh.cells:
+        total_cells += len(cell_block.data)
         if cell_block.type == "triangle":
             triangle_faces.append(cell_block.data)
     if not triangle_faces:
         raise ValueError(f"No triangle faces found in {obj_path}")
-    faces = np.concatenate(triangle_faces, axis=0).astype(np.int32)
+    faces = np.ascontiguousarray(np.concatenate(triangle_faces, axis=0), dtype=np.int32)
+    dropped = total_cells - len(faces)
+    if dropped > 0:
+        raise ValueError(
+            f"non-triangle cells encountered ({dropped} dropped); retriangulate upstream"
+        )
 
     arrays = {"vertices": vertices, "faces": faces}
 
-    # Include normals if present
-    if mesh.point_data and "Normals" in mesh.point_data:
-        arrays["normals"] = np.asarray(mesh.point_data["Normals"], dtype=np.float64)
+    # Include normals if present; meshio stores OBJ vertex normals under "obj:vn"
+    if mesh.point_data and "obj:vn" in mesh.point_data:
+        arrays["normals"] = np.ascontiguousarray(
+            mesh.point_data["obj:vn"], dtype=np.float64
+        )
 
     np.savez_compressed(str(npz_path), **arrays)
 

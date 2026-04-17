@@ -332,6 +332,17 @@ If `TheWebMonks` wants to continue MATLAB-flavored work, they fork from the tran
 - A concrete stakeholder (funder, institution, co-author) requires the repo live on `TheWebMonks` for branding / grant-reporting reasons
 - PyPI `meshmonk` is already taken (verify before v0.3; fall back to `meshmonk-py` or similar)
 
+## v0.0 Clarifications
+
+### Tag naming collision
+
+The `v0.0` tag coexists with legacy tags `v0.0.1`–`v0.0.6` from the conda/MATLAB
+era. The modernization track reuses the `v0.x` prefix intentionally; legacy tags
+are archived and will not be re-published. Readers should treat `v0.0`–`v0.3` as
+the Python-first modernization track and `v0.0.1`–`v0.0.6` as archived
+pre-modernization MATLAB/conda history. This is a naming clarification, not a
+decision change.
+
 ## Related
 
 - [Design doc](../../history/2026-04-17-meshmonk-modernization-design.md) — what we're building and how, implementation details

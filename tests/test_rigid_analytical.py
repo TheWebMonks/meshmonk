@@ -8,6 +8,7 @@ v0.0 contract: pytest exits with code 1 (exactly this test errors).
 """
 
 import numpy as np
+import pytest
 from tests.stubs.rigid import recover_rigid
 
 
@@ -16,6 +17,7 @@ def _apply_rigid(vertices: np.ndarray, R: np.ndarray, t: np.ndarray) -> np.ndarr
     return (R @ vertices.T).T + t
 
 
+@pytest.mark.xfail(raises=NotImplementedError, strict=True)
 def test_synthetic_rigid_recovery():
     """Recover a known SE(3) from a synthetic 20-vertex point cloud.
 

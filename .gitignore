@@ -49,9 +49,6 @@ matlab/*.asv
 matlab/*.exp
 matlab/*.mexw64.manifest
 
-# Exlucde data folder
-data/
-
 # Git worktrees
 .worktrees/
 

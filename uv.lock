@@ -74,7 +74,7 @@ wheels = [
 [[package]]
 name = "meshmonk"
 version = "0.0.0"
-source = { virtual = "." }
+source = { editable = "." }
 
 [package.optional-dependencies]
 dev = [
@@ -88,10 +88,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "meshio", marker = "extra == 'dev'" },
-    { name = "numpy", marker = "extra == 'dev'" },
-    { name = "pytest", marker = "extra == 'dev'" },
-    { name = "scipy", marker = "extra == 'dev'" },
+    { name = "meshio", marker = "extra == 'dev'", specifier = ">=5.3" },
+    { name = "numpy", marker = "extra == 'dev'", specifier = ">=1.26" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "scipy", marker = "extra == 'dev'", specifier = ">=1.11" },
 ]
 provides-extras = ["dev"]
 

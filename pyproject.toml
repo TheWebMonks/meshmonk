@@ -1,20 +1,26 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "meshmonk"
 version = "0.0.0"
+description = "Python-first 3D mesh registration library"
+readme = "README.md"
 license = "Apache-2.0"
 authors = [{ name = "jsnyde0" }]
 requires-python = ">=3.10"
 
-[tool.setuptools]
-packages = []
-
 [project.optional-dependencies]
 dev = [
-    "numpy",
-    "scipy",
-    "meshio",
-    "pytest",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "meshio>=5.3",
+    "pytest>=8.0",
 ]
+
+[tool.setuptools]
+packages = []
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
