@@ -309,7 +309,7 @@ Deferring the migration also keeps the door open for reconsidering Meson (see D5
 
 **Firmness: FIRM**
 
-Transfer `TheWebMonks/meshmonk` to `jsnyde0/meshmonk` using GitHub's native repo-transfer feature before v0.1 merges. Claim PyPI namespace `meshmonk` under `jsnyde0`.
+Transferred `TheWebMonks/meshmonk` → `jsnyde0/meshmonk` on 2026-04-17 using GitHub's native repo-transfer feature (preserves stars, forks, issues, PRs; old URL 301-redirects indefinitely). PyPI namespace `meshmonk` still to be claimed under `jsnyde0`.
 
 **Rationale:**
 

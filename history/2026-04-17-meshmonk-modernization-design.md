@@ -474,7 +474,7 @@ All decisions captured in [ADR-001](../docs/decisions/ADR-001-meshmonk-moderniza
 - **MATLAB migration**: README banner links to `docs/migration-from-matlab.md` (written in v0.2) — shows MATLAB demo snippets paired with equivalent Python kwargs calls
 - **Release workflow** (from v0.3): GitHub Actions → cibuildwheel → PyPI via trusted-publisher; GitHub release tag and PyPI publish happen atomically in one workflow
 - **PyPI trusted-publishing setup (v0.3 prerequisite):** before first publish: (a) claim the PyPI `meshmonk` name by uploading a placeholder `0.0.0.dev0` from `jsnyde0` manually; (b) configure trusted-publisher on `pypi.org/manage/account/publishing/` bound to `jsnyde0/meshmonk` + `.github/workflows/release.yml` + environment `pypi-release`; (c) dry-run on TestPyPI first. Workflow requires `permissions: id-token: write`.
-- **Repository governance**: the repo transfers from `TheWebMonks/meshmonk` to `jsnyde0/meshmonk` before v0.1 lands (preserves the 85 stars, redirects existing `git clone` URLs, and anchors the Python rewrite under personal attribution). PyPI namespace `meshmonk` will be claimed by `jsnyde0`. If TheWebMonks continues MATLAB work, they fork from the transferred repo.
+- **Repository governance**: the repo was transferred from `TheWebMonks/meshmonk` to `jsnyde0/meshmonk` on 2026-04-17 (preserves the 85 stars; existing `git clone` URLs continue to work via GitHub's 301-redirect; anchors the Python rewrite under personal attribution). PyPI namespace `meshmonk` still to be claimed by `jsnyde0`. If TheWebMonks wants to continue MATLAB work, they fork from the transferred repo.
 - **Documentation scope**: v0.1 = inline doxygen comments + README + ADRs; v0.3 = mkdocs-material site
 
 ---
@@ -532,4 +532,4 @@ When execution starts:
 - [ ] Add `.pre-commit-config.yaml` (ruff, clang-format-16, cmake-format), `.editorconfig`, `NOTICE` file (WebMonks 2017 + jsnyde0 2026 dual-copyright)
 - [ ] Commit this design doc and ADR-001
 - [ ] Tag `v0.0` on the `meshmonk-modernization` branch once the checklist above is green (no PR to `cli` at this milestone — v0.0 is scaffolding, not shippable; the first PR back to `cli` is at the v0.1 milestone)
-- [ ] **Repo transfer**: initiate GitHub repo transfer `TheWebMonks/meshmonk` → `jsnyde0/meshmonk` (owner-controlled; preserves stars, forks, issues; old URL auto-redirects via GitHub)
+- [x] **Repo transfer**: completed 2026-04-17 — `TheWebMonks/meshmonk` → `jsnyde0/meshmonk`. Local `origin` remote updated; old URL continues to redirect. PyPI namespace claim still TODO.
