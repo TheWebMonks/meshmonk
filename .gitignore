@@ -51,6 +51,7 @@ matlab/*.mexw64.manifest
 
 # Git worktrees
 .worktrees/
+.git-main/
 
 # Scratch / notes
 tmp/
