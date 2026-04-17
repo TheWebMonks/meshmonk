@@ -1,0 +1,182 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["master", "main"]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: pre-commit (linting + formatting checks)
+  # ---------------------------------------------------------------------------
+  pre-commit:
+    name: pre-commit (ubuntu-latest, python 3.12)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run pre-commit on all files
+        run: pre-commit run --all-files
+
+  # ---------------------------------------------------------------------------
+  # Job 2: build-and-test matrix
+  # ---------------------------------------------------------------------------
+  build-and-test:
+    name: ${{ matrix.os }} / python ${{ matrix.python-version }} / ${{ matrix.cc }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu 22.04 + gcc-11
+          - os: ubuntu-22.04
+            python-version: "3.10"
+            cc: gcc-11
+            cxx: g++-11
+          - os: ubuntu-22.04
+            python-version: "3.11"
+            cc: gcc-11
+            cxx: g++-11
+          - os: ubuntu-22.04
+            python-version: "3.12"
+            cc: gcc-11
+            cxx: g++-11
+          - os: ubuntu-22.04
+            python-version: "3.13"
+            cc: gcc-11
+            cxx: g++-11
+
+          # Ubuntu 22.04 + clang-15
+          - os: ubuntu-22.04
+            python-version: "3.10"
+            cc: clang-15
+            cxx: clang++-15
+          - os: ubuntu-22.04
+            python-version: "3.11"
+            cc: clang-15
+            cxx: clang++-15
+          - os: ubuntu-22.04
+            python-version: "3.12"
+            cc: clang-15
+            cxx: clang++-15
+          - os: ubuntu-22.04
+            python-version: "3.13"
+            cc: clang-15
+            cxx: clang++-15
+
+          # Ubuntu 24.04 + gcc-13
+          - os: ubuntu-24.04
+            python-version: "3.10"
+            cc: gcc-13
+            cxx: g++-13
+          - os: ubuntu-24.04
+            python-version: "3.11"
+            cc: gcc-13
+            cxx: g++-13
+          - os: ubuntu-24.04
+            python-version: "3.12"
+            cc: gcc-13
+            cxx: g++-13
+          - os: ubuntu-24.04
+            python-version: "3.13"
+            cc: gcc-13
+            cxx: g++-13
+
+          # macOS 13 (x86_64) + AppleClang
+          - os: macos-13
+            python-version: "3.10"
+            cc: clang
+            cxx: clang++
+          - os: macos-13
+            python-version: "3.11"
+            cc: clang
+            cxx: clang++
+          - os: macos-13
+            python-version: "3.12"
+            cc: clang
+            cxx: clang++
+          - os: macos-13
+            python-version: "3.13"
+            cc: clang
+            cxx: clang++
+
+          # macOS 14 (arm64) + AppleClang
+          - os: macos-14
+            python-version: "3.10"
+            cc: clang
+            cxx: clang++
+          - os: macos-14
+            python-version: "3.11"
+            cc: clang
+            cxx: clang++
+          - os: macos-14
+            python-version: "3.12"
+            cc: clang
+            cxx: clang++
+          - os: macos-14
+            python-version: "3.13"
+            cc: clang
+            cxx: clang++
+
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: lukka/get-cmake@v3.28.0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install package with dev and io extras
+        run: uv pip install --system ".[dev,io]"
+
+      - name: Run tests (excluding golden tests)
+        run: pytest tests/ -q --ignore=tests/test_golden.py
+
+  # ---------------------------------------------------------------------------
+  # Job 3: integration test (depends on build-and-test)
+  # ---------------------------------------------------------------------------
+  integration-test:
+    name: integration test (ubuntu-latest, python 3.12)
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: lukka/get-cmake@v3.28.0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install package with dev and io extras
+        run: uv pip install --system ".[dev,io]"
+
+      - name: Run rigid registration
+        run: |
+          meshmonk rigid data/Template.obj data/demoFace.obj --out /tmp/rigid.obj
+          test -s /tmp/rigid.obj || (echo "rigid.obj is missing or empty"; exit 1)
+
+      - name: Run pyramid registration
+        run: |
+          meshmonk pyramid data/Template.obj data/demoFace.obj --out /tmp/pyramid.obj
+          test -s /tmp/pyramid.obj || (echo "pyramid.obj is missing or empty"; exit 1)

@@ -65,3 +65,59 @@ def hausdorff_symmetric(a: np.ndarray, b: np.ndarray) -> float:
     dist_ab, _ = tree_b.query(a)
     dist_ba, _ = tree_a.query(b)
     return float(max(dist_ab.max(), dist_ba.max()))
+
+
+def load_golden(path: str) -> dict:
+    """Load a .npz golden file, returning a dict with all stored arrays.
+
+    Typical keys: 'vertices' (N, 3), 'faces' (M, 3), optional 'transform' (4, 4).
+
+    Parameters
+    ----------
+    path:
+        Path to a .npz file (string or path-like).
+
+    Returns
+    -------
+    dict
+        Mapping from array name to numpy array, one entry per file stored in the .npz.
+    """
+    data = np.load(path)
+    return {k: data[k] for k in data.files}
+
+
+def compare_to_golden(
+    result_vertices: np.ndarray,
+    golden_path: str,
+    atol: float,
+) -> bool:
+    """Return True if result_vertices matches the golden vertices within atol (RMSE).
+
+    Parameters
+    ----------
+    result_vertices:
+        (N, 3) array of vertex positions to compare.
+    golden_path:
+        Path to a .npz golden file containing a 'vertices' key.
+    atol:
+        Tolerance: comparison passes when RMSE(result, golden) <= atol.
+
+    Returns
+    -------
+    bool
+        True when RMSE is within tolerance; False otherwise.
+
+    Raises
+    ------
+    KeyError
+        If the golden file does not contain a 'vertices' key.
+    ValueError
+        If result_vertices or golden['vertices'] have wrong shape / are empty.
+    """
+    golden = load_golden(golden_path)
+    if "vertices" not in golden:
+        raise KeyError(
+            f"Golden file {golden_path!r} does not contain a 'vertices' key. "
+            f"Available keys: {list(golden.keys())}"
+        )
+    return rmse(result_vertices, golden["vertices"]) <= atol

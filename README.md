@@ -1,20 +1,30 @@
 # MeshMonk: High-Performance 3D Mesh Registration
 
-MeshMonk is a C++ library designed for efficient 3D mesh registration. It provides functionalities for rigid, non-rigid, and pyramid-based registration approaches. This repository is currently undergoing modernization. Phase 1, focusing on a CMake build system for the core library, C++ examples, and a command-line interface, is complete.
+> **MATLAB users:** The MATLAB MEX interface has been removed from this repository as part of the Python-first rewrite.
+> For MATLAB support, use the university fork at https://github.com/TheWebMonks/meshmonk
+
+MeshMonk is a C++20 library with Python bindings for high-performance 3D mesh registration. It provides rigid, non-rigid, and pyramid-based registration via a clean Python API (`pip install meshmonk`) backed by a battle-tested C++ algorithmic core.
 
 ## Overview
 
-The core of MeshMonk is a C++ library that can be integrated into your own projects.
-Currently, it can be used:
+MeshMonk v0.1 is a Python-first redesign. The library can be used:
 
-*   **As a C++ Library:** Link against `libmeshmonk_shared` in your C++ applications. A C++ example (`MeshMonkExample`) demonstrating library usage is buildable via CMake.
-*   **As a Command-Line Tool:** Use `meshmonk_cli` to perform registrations directly.
+*   **As a Python library:** `pip install 'meshmonk[io]'` — then `import meshmonk`
+*   **As a CLI tool:** `meshmonk rigid Template.obj demoFace.obj --out result.obj`
+*   **As a C++ library:** Link against `libmeshmonk_shared` with the new C++20 API
 
-Future phases will focus on:
-*   Re-integrating MATLAB MEX bindings.
-*   Introducing Python bindings.
+This document covers installation, usage, and development.
 
-This document primarily focuses on building the core MeshMonk C++ library, its C++ example, and the command-line interface using CMake.
+## CI Matrix
+
+The test suite runs across the following platforms on every pull request:
+
+| OS | Python | Compiler |
+|---|---|---|
+| Ubuntu 22.04 | 3.10, 3.11, 3.12, 3.13 | gcc-11, clang-15 |
+| Ubuntu 24.04 | 3.10, 3.11, 3.12, 3.13 | gcc-13 |
+| macOS 13 (x86_64) | 3.10, 3.11, 3.12, 3.13 | AppleClang 15 |
+| macOS 14 (arm64) | 3.10, 3.11, 3.12, 3.13 | AppleClang 15 |
 
 ## Repository Structure
 
@@ -172,81 +182,8 @@ If you want to use MeshMonk's functionalities in your own C++ projects:
     *   [OSX (Legacy)](docs/osx.md)
     *   [Windows (Legacy)](docs/windows.md)
 
-## Using MeshMonk from MATLAB
+## MATLAB Users
 
-To use MeshMonk's functionalities within MATLAB, you first need to build the core shared library using CMake and then compile the MEX functions.
+The MATLAB MEX interface has been removed in v0.1 as part of the Python-first rewrite (see [ADR-001 D3](docs/decisions/ADR-001-meshmonk-modernization.md)).
 
-### 1. Build `libmeshmonk_shared` via CMake
-
-Follow the main build instructions in this README to configure and build MeshMonk using CMake. This will produce the `libmeshmonk_shared` library (e.g., `libmeshmonk_shared.so` on Linux, `libmeshmonk_shared.dylib` on macOS, or `meshmonk_shared.dll` and `meshmonk_shared.lib` on Windows). This library is typically found in the `build/library/` directory (or `build/bin/` for the DLL on Windows, depending on CMake configuration).
-
-### 2. Compile MEX Functions
-
-Once `libmeshmonk_shared` is built, you can compile the MEX functions:
-
-1.  Open MATLAB.
-2.  Navigate MATLAB's current directory to the `matlab/` directory within the MeshMonk project (e.g., `cd path/to/meshmonk/matlab`).
-3.  Run the appropriate MEX compilation script:
-    *   On **Linux or macOS**: Execute `mex_all` in the MATLAB command window.
-    *   On **Windows**: Execute `mex_windows_all` in the MATLAB command window.
-
-    ```matlab
-    % For Linux/macOS
-    mex_all
-
-    % For Windows
-    % mex_windows_all
-    ```
-
-    These scripts will compile all necessary MEX functions and place them in the current directory (`matlab/`).
-
-**Notes for MEX Compilation:**
-*   The MEX scripts (`mex_all.m` and `mex_windows_all.m`) assume that the MeshMonk project root is one level above the `matlab/` directory (i.e., `meshmonkRoot = '..';`).
-*   The scripts expect to find Eigen3 headers in a directory fetched by CMake (typically `build/_deps/eigen-src/`). If you have Eigen3 installed in a custom system location, you may need to modify the `eigenIncludeDir` variable at the beginning of the respective `mex_*.m` script.
-*   Similarly, OpenMesh headers are expected to be found within the CMake build directory (`build/vendor/OpenMesh-11.0.0/_build/src/`).
-
-### 3. MATLAB Runtime Environment Setup
-
-For MATLAB to find `libmeshmonk_shared` and the compiled MEX functions at runtime:
-
-*   **MEX Functions:** The demo scripts in the `demo/` directory are configured to find MEX files if they are located in the `matlab/` directory (due to `addpath(fullfile('..', 'matlab'))`). Ensure your compiled MEX files (`.mexa64`, `.mexw64`, etc.) are in `matlab/`.
-
-*   **`libmeshmonk_shared` Library:**
-    *   **Linux:** Add the directory containing `libmeshmonk_shared.so` (e.g., `path/to/meshmonk/build/library/`) to your `LD_LIBRARY_PATH` environment variable before launching MATLAB.
-      ```bash
-      export LD_LIBRARY_PATH=/path/to/meshmonk/build/library:$LD_LIBRARY_PATH
-      matlab
-      ```
-      For a persistent setting, add this line to your `~/.bashrc` or `~/.zshrc`.
-
-    *   **macOS:** Add the directory containing `libmeshmonk_shared.dylib` (e.g., `path/to/meshmonk/build/library/`) to your `DYLD_LIBRARY_PATH` environment variable.
-      ```bash
-      export DYLD_LIBRARY_PATH=/path/to/meshmonk/build/library:$DYLD_LIBRARY_PATH
-      matlab
-      ```
-      Alternatively, you can create a `startup.m` file in your MATLAB user path (typically `~/Documents/MATLAB/`) and add:
-      ```matlab
-      addpath('path/to/meshmonk/build/library');
-      % Or, more robustly for .dylib, consider a symbolic link or install_name_tool adjustments post-build.
-      % However, DYLD_LIBRARY_PATH is the most common method for .dylib files not in standard locations.
-      ```
-      *(Note: `addpath` in `startup.m` is generally for M-files and MEX-files, not typically for `.dylib` dependencies directly, but MATLAB might pick them up if they are in its search path. `DYLD_LIBRARY_PATH` is more reliable for shared libraries.)*
-
-    *   **Windows:** Ensure the directory containing `meshmonk_shared.dll` (e.g., `path/to/meshmonk/build/library/` or `path/to/meshmonk/build/bin/`) is in your system's `PATH` environment variable. Alternatively, you can add this directory to MATLAB's path using a `startup.m` file in your MATLAB user path (typically `Documents\MATLAB\`):
-      ```matlab
-      addpath('C:\path\to\meshmonk\build\library'); % Or wherever the .dll is
-      ```
-
-### 4. Running Demo Scripts
-
-The demo scripts (e.g., `test_compute_correspondences.m`) are located in the `demo/` directory.
-1.  Open MATLAB.
-2.  Ensure your runtime environment is set up as described above.
-3.  Navigate MATLAB's current directory to `path/to/meshmonk/demo/`.
-4.  Open and run any of the `test_*.m` scripts. For example:
-    ```matlab
-    test_compute_correspondences
-    ```
-
----
-*MATLAB and Python support are planned for future development phases.*
+For MATLAB support, use the university fork: https://github.com/TheWebMonks/meshmonk
