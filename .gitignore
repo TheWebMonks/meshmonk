@@ -54,3 +54,6 @@ data/
 
 # Git worktrees
 .worktrees/
+
+# Scratch / notes
+tmp/
