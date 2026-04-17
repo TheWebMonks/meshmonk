@@ -42,24 +42,24 @@ The meshmonk library depends on [Eigen](http://eigen.tuxfamily.org/index.php?tit
  2) Compiling it (in OpenMesh's case)
  3) Putting the header files and compiled libs in the right directory
  4) Making sure those directories are searched by the compiler/linker during the compiling/linking process.
- 
+
  Note: if you want to learn more about how libraries work and how to use them, we highly recommend [David Wheeler's How-To](https://www.dwheeler.com/program-library/Program-Library-HOWTO/t1.html). Some other useful sources are:
  * How header files matter for shared libraries: [This stackoverflow answer](http://stackoverflow.com/a/1186836)
- 
- 
+
+
  ### Installing Eigen
  Eigen is a header-only library, which makes it very easy to use in your own projects. The only thing you have to do is download the header files and put them in a directory which your compiler searches so that it finds whatever it needs from the Eigen library.
  1) Go to their webpage and download the latest stable release (3.3.3 at moment of writing). It will end up as an archive in your `/home/user/Downloads/` folder.
  2) Extract it locally.
  3) Move the Eigen subfolder (which contains all the headers) to /usr/local/include/ so that you end up with /usr/local/include/Eigen/: `sudo mv /home/user/Downloads/eigen-eigen-67e894c6cd8f/Eigen /usr/local/include/`
- 
+
  ### Installing nanoflann
- Like Eigen, nanoflann is also a header-only library. There is only one header file you need, so we deliver that in the 
+ Like Eigen, nanoflann is also a header-only library. There is only one header file you need, so we deliver that in the
  meshmonk repository under '/vendor' directory. So all that's left is to copy that to /usr/local/include:
 ```
 sudo cp /home/user/projects/meshmonk/vendor/nanoflann.hpp /usr/local/include/
 ```
- 
+
  ### Installing OpenMesh
 OpenMesh can be compiled and used as both a static (.a) and shared library (.so). We'll download the source, configure build settings with 'cmake', and build it using 'make'. After all that's happened, we move the compiled library files to /usr/local/lib/ and the header files to /usr/local/include/. And finally, we'll have to update some configurations so that these library files will be found when compiling/linking to it later.
 1) Download the latest version of the OpenMesh sourcefiles from their [downloads page](https://www.openmesh.org/download/) (the .tar.gz or .tar.bz2 file)
@@ -104,7 +104,7 @@ Now let's make sure the build target has the correct name. We want the final com
 
 One big thing is still missing from the project, namely the sources themselves! Delete the current main.cpp that is in the meshmonk project (which was automatically generated but we're gonna use our own sources). Now add the sources:
 * Right-click the meshmonk project and select 'Add files recursively...'. Choose the `/home/user/projects/meshmonk/src` folder that you obtained by cloning the repository earlier.
-* Right-click the meshmonk project and select 'Add files...'. Choose the meshmonk.hpp and meshmonk.cpp files located in the `home/user/projects/meshmonk/` folder. 
+* Right-click the meshmonk project and select 'Add files...'. Choose the meshmonk.hpp and meshmonk.cpp files located in the `home/user/projects/meshmonk/` folder.
 
 #### Compile the project
 Now, compile the code by clicking the small yellow cog in the top toolbar ('Build'). Make sure the version is set to 'Release' and not 'Debug' (should be to the right of the build buttons).

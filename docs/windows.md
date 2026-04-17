@@ -65,7 +65,7 @@ Click on the image to watch the screencast on YouTube.
 
 ### Exclude files from the project
 * In the Solution Explorer window, find the following files, then right click each and select *Exclude from project*:
-* In the Header Files: 
+* In the Header Files:
   * nanaflann.hpp
 * In the Source Files:
   * compute_correspondences.cpp
@@ -92,7 +92,7 @@ applied to this projects. E.g:
 
 Open *Project -> Properties*:
 
-* Go to *General -> Project Defaults -> Configuration Type*: *change to Static library(.lib)*. Press *Apply*. 
+* Go to *General -> Project Defaults -> Configuration Type*: *change to Static library(.lib)*. Press *Apply*.
   This changes the *Linker* configuration options to *Librarian*. If this didn't happen, please close and re-open the *Properties*
 * Go to *C++ -> General -> Additional Include Directories*: add the following directories, then press *Apply*.
     ```
@@ -104,7 +104,7 @@ Open *Project -> Properties*:
 
     **Note**: adapt these paths to the paths where you've installed the
     source code and libraries.
-    
+
 * Go to *C++ -> Preprocessor -> Preprocessor Definitions*: type *_USE_MATH_DEFINES* then press *Apply*
 * Go to *Librarian -> General -> Additional Dependencies -> edit*:
     ```
@@ -126,4 +126,4 @@ found in `C:\Users\<username>\Documents\GitHub\meshmonk\x64\Release`.
 
 After you've build the library you will have to copy/paste the file to
 a folder which is in matlab path. Either the root folder of matlab or
-the relative root folder of the matlab files that you're working on. 
+the relative root folder of the matlab files that you're working on.

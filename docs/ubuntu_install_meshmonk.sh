@@ -135,11 +135,11 @@ initialize() {
     real_user_group=`id -Gn $real_user`
     set -- $real_user_group
     real_user_group=$1
-    
+
     # Store home directory of the user who started installation
     real_user_home=`su $real_user -c 'echo $HOME'`
 
-    # Prepare logging 
+    # Prepare logging
     log_dir=$real_user_home/$LOGDIR
     log_file=$log_dir/$LOGFILE
 
@@ -176,9 +176,9 @@ checkCompilerVersions() {
 # install Install code::blocks
 installCodeBlocks() {
     log "installing code::blocks"
-    add-apt-repository ppa:damien-moore/codeblocks-stable -y > $log_dir/$LOGFILE_CODE_BLOCKS 2>&1  
-    DEBIAN_FRONTEND=noninteractive apt-get -yq update >> $log_dir/$LOGFILE_CODE_BLOCKS  
-    DEBIAN_FRONTEND=noninteractive apt-get -yq install codeblocks codeblocks-contrib >> $log_dir/$LOGFILE_CODE_BLOCKS 
+    add-apt-repository ppa:damien-moore/codeblocks-stable -y > $log_dir/$LOGFILE_CODE_BLOCKS 2>&1
+    DEBIAN_FRONTEND=noninteractive apt-get -yq update >> $log_dir/$LOGFILE_CODE_BLOCKS
+    DEBIAN_FRONTEND=noninteractive apt-get -yq install codeblocks codeblocks-contrib >> $log_dir/$LOGFILE_CODE_BLOCKS
     setOwner $log_dir/$LOGFILE_CODE_BLOCKS
 }
 
@@ -186,12 +186,12 @@ installCodeBlocks() {
 #
 # remove previous version, can be optimized by git pull...
 # run a command as the normal user, use 'EOF' instead of EOF to avoid variable expansion
-# 
-# If any character in word is quoted, the delimiter shall be formed by performing quote 
-# removal on word, and the here-document lines shall not be expanded. Otherwise, the 
+#
+# If any character in word is quoted, the delimiter shall be formed by performing quote
+# removal on word, and the here-document lines shall not be expanded. Otherwise, the
 # delimiter shall be the word itself.
 #
-# So the <<EOF version has the shell expand all variables before running the here doc 
+# So the <<EOF version has the shell expand all variables before running the here doc
 # contents and the <<\EOF (or <<'EOF' or <<EO'F' etc.) versions don't expand the contents
 #  (which lets bash in this case do that work).
 cloneMeshMonk() {
@@ -224,14 +224,14 @@ EOF
     setOwnerAndFilePermissions /usr/local/include/Eigen "a+r" "preserve_exec"
 }
 
-# Nanoflann only needs header and 
+# Nanoflann only needs header and
 #    is provided from meshmonk github in vendor directory
 installNanoflann() {
     log "Copy Nanoflann include file, remove old file first"
     nanoflann_file=/usr/local/include/nanoflann.hpp
     rm -f $nanoflann_file
     cp $real_user_home/projects/meshmonk/vendor/nanoflann.hpp /usr/local/include/
-    setOwnerAndFilePermissions $nanoflann_file "a+r" 
+    setOwnerAndFilePermissions $nanoflann_file "a+r"
 }
 
 
@@ -277,16 +277,16 @@ installMeshMonk() {
     (cd $real_user_home/projects/meshmonk/ && find . -name '*.hpp' -print | tar --create --files-from -) | (cd /usr/local/include/ && tar xvfp -)
     setOwnerAndFilePermissions /usr/local/include/src "a+r" "preserve_exec"
     setOwnerAndFilePermissions /usr/local/include/vendor "a+r" "preserve_exec"
-    setOwnerAndFilePermissions /usr/local/include/meshmonk.hpp "a+r" 
-    setOwnerAndFilePermissions /usr/local/include/global.hpp "a+r" 
-        
+    setOwnerAndFilePermissions /usr/local/include/meshmonk.hpp "a+r"
+    setOwnerAndFilePermissions /usr/local/include/global.hpp "a+r"
+
     # Update library loader
     log "Update library loader - ldconfig"
     ldconfig
-    
+
 }
 
-case "$action" in 
+case "$action" in
     prepare)
         initialize
 
