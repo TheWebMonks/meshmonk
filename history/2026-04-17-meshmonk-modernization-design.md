@@ -323,7 +323,7 @@ The CLI (`meshmonk demo`, `meshmonk rigid`, etc.) depends on the `io` extra sinc
 
 ### Staged roadmap
 
-**v0.0 — Reality capture (~1–2 days):** establish trust anchors before refactoring. Create `overhaul/v0.0-prep` from `origin/cli`. Cherry-pick the 8-vertex cube fixture from `origin/add-compute-rigid-transform-cli:cli/test_data/rigid_transform/` to `tests/fixtures/cube_rigid/` before that branch is retired. Move current demo assets (`demo/Template.obj`, `demo/demoFace.obj`, `demo/{Demo,Template}FaceLandmarks.csv`) to `data/`, plus `origin/cli:demo/rigid_transform.txt` (verified present on the `cli` branch, not in current checkout). **Capture legacy baseline:** the `cli` branch already has committed outputs — `origin/cli:demo/rigid_output.obj`, `origin/cli:demo/pyramid_output.obj`, `origin/cli:demo/rigid_transform.txt` — from a prior run of `meshmonk_cli` on `Template.obj ↔ demoFace.obj`. These become the v0.0 Tier 3.5 reference, converted to `.npz` via `tests/utils/obj_to_npz.py` and stored under `tests/golden/legacy_baseline/`. Reproducing them from a fresh `origin/cli` build on the owner's Mac is a **reproducibility check** (see checklist), not a blocker for v0.0 — `cmake` is not currently installed locally. Write the mesh-compare helper. Set up pytest scaffolding. Commit this design doc + ADR. No library changes.
+**v0.0 — Reality capture (~1–2 days):** establish trust anchors before refactoring. Create the `meshmonk-modernization` branch from `origin/cli` and check it out in the dedicated worktree `.worktrees/meshmonk-modernization/` (see Branch strategy). All subsequent work — v0.0 through v0.1 — happens on this single branch in that worktree. Cherry-pick the 8-vertex cube fixture from `origin/add-compute-rigid-transform-cli:cli/test_data/rigid_transform/` to `tests/fixtures/cube_rigid/` before that branch is retired. Move current demo assets (`demo/Template.obj`, `demo/demoFace.obj`, `demo/{Demo,Template}FaceLandmarks.csv`) to `data/`, plus `origin/cli:demo/rigid_transform.txt` (verified present on the `cli` branch, not in current checkout). **Capture legacy baseline:** the `cli` branch already has committed outputs — `origin/cli:demo/rigid_output.obj`, `origin/cli:demo/pyramid_output.obj`, `origin/cli:demo/rigid_transform.txt` — from a prior run of `meshmonk_cli` on `Template.obj ↔ demoFace.obj`. These become the v0.0 Tier 3.5 reference, converted to `.npz` via `tests/utils/obj_to_npz.py` and stored under `tests/golden/legacy_baseline/`. Reproducing them from a fresh `origin/cli` build on the owner's Mac is a **reproducibility check** (see checklist), not a blocker for v0.0 — `cmake` is not currently installed locally. Write the mesh-compare helper. Set up pytest scaffolding. Commit this design doc + ADR. No library changes.
 
 **v0.1 — Foundation (~1–2 focused weeks):** C++20 overhaul + nanobind bindings + Python package + typer CLI + scikit-build-core + GitHub Actions CI. `uv pip install .` (non-editable) works on the owner's Mac; editable installs tracked via [astral-sh/uv#14383](https://github.com/astral-sh/uv/issues/14383) — fallback is `pip install -e . --no-build-isolation`. All required harness tiers passing, including **owner runs one Blender/MeshLab visual sign-off session for rigid / nonrigid / pyramid outputs** to freeze Tier 3 goldens. No `meshmonk::legacy::` hedge — the current public API has no external consumers to preserve (MATLAB/C++-CLI/pybind11 all being dropped).
 
@@ -345,13 +345,34 @@ master (2021, stale)
   ↑ PR at v0.2 milestone, then rename master → main
   │
 cli (integration trunk — current)
-  ↑ merge v0.1 overhaul PR
+  ↑ merge at v0.1 milestone (PR: meshmonk-modernization → cli)
   │
-overhaul/v0.0-prep  ← branched from cli, where v0.0 work happens
-overhaul/v0.1       ← branched from v0.0-prep, where main rebuild happens
+meshmonk-modernization  ← single long-lived branch, forked from origin/cli
+                          where ALL v0.0 and v0.1 work happens;
+                          v0.0 and v0.1 are tags/milestones on this branch,
+                          not separate branches
 ```
 
-Branches to retire: all remote branches except `master`, `cli`, and the new `overhaul/*` — explicitly including `feat-python-bindings`, `add-compute-rigid-transform-cli` (after cube-fixture cherry-pick), `feature/matlab-cmake-adaptation`, `feature/phase1-cmake-restructure`, `feat/meshmonk-cli`, `feat/meshmonk-cli-superbuild-attempt`, `cpp_project`, `development`, `mh-fixdocs`.
+**Development environment:** all modernization work is done inside a dedicated git worktree to keep it isolated from the `master` checkout (which keeps design docs, tmp/ notes, and any browsing):
+
+```
+/Users/jonat/code/personal/meshmonk/                       ← master checkout (design, notes)
+/Users/jonat/code/personal/meshmonk/.worktrees/
+    meshmonk-modernization/                                ← active dev worktree
+    cli/                                                   ← read-only reference (origin/cli)
+    cube-fixture/                                          ← read-only reference
+```
+
+Create it once during v0.0:
+
+```
+git worktree add -b meshmonk-modernization .worktrees/meshmonk-modernization origin/cli
+cd .worktrees/meshmonk-modernization
+```
+
+Editor/IDE sessions and `cmake` builds run from that worktree; design-doc edits and brainstorming continue in the `master` checkout. This avoids constantly swapping branches in a single working tree and keeps `.worktrees/cli` and `.worktrees/cube-fixture` as cheap, read-only references for legacy baseline ingestion and cherry-picking.
+
+Branches to retire: all remote branches except `master`, `cli`, and the new `meshmonk-modernization` — explicitly including `feat-python-bindings`, `add-compute-rigid-transform-cli` (after cube-fixture cherry-pick), `feature/matlab-cmake-adaptation`, `feature/phase1-cmake-restructure`, `feat/meshmonk-cli`, `feat/meshmonk-cli-superbuild-attempt`, `cpp_project`, `development`, `mh-fixdocs`.
 
 ### Canonical parameter defaults
 
@@ -437,7 +458,7 @@ All decisions captured in [ADR-001](../docs/decisions/ADR-001-meshmonk-moderniza
 **What systems need to change:**
 - CMake: require `cmake >= 3.26` at the root (needed for `SKBUILD_*` variables and nanobind's `nanobind_add_module`). Replace `file(GLOB_RECURSE)` in `library/CMakeLists.txt` with explicit source enumeration (official CMake guidance — globs skip incremental rebuilds). `pyproject.toml` + `install(TARGETS … DESTINATION ${SKBUILD_PLATLIB_DIR}/meshmonk)` + delete CLI and MEX targets.
 - Tests: from zero → pytest-based with fixtures, CI, and goldens. `tests/` lives at repo root, NOT shipped in the wheel — dev-only, invoked via `pytest tests/` from a repo checkout.
-- Branch structure: retirement of 9+ obsolete branches plus two new `overhaul/*` branches
+- Branch structure: retirement of 9+ obsolete branches; one new long-lived `meshmonk-modernization` branch (v0.0 and v0.1 land as tags/milestones on it) developed in a dedicated worktree
 - README: completely rewritten, Python-first
 
 ### Release & versioning
@@ -493,7 +514,7 @@ All decisions captured in [ADR-001](../docs/decisions/ADR-001-meshmonk-moderniza
 
 When execution starts:
 
-- [ ] Create branch `overhaul/v0.0-prep` from `origin/cli`
+- [ ] Create modernization worktree: `git worktree add -b meshmonk-modernization .worktrees/meshmonk-modernization origin/cli`. All subsequent v0.0/v0.1 work happens inside that worktree.
 - [ ] Install build prerequisites on owner's Mac: `brew install cmake` (verified absent as of 2026-04-17). AppleClang 17 already present and satisfies C++14 requirement for `origin/cli`.
 - [ ] **Ingest legacy baseline (Tier 3.5, fast path)**: convert already-committed `origin/cli:demo/rigid_output.obj`, `demo/pyramid_output.obj`, `demo/rigid_transform.txt` → `tests/golden/legacy_baseline/*.npz` via `tests/utils/obj_to_npz.py`. No build required.
 - [ ] **Reproducibility check (Tier 3.5, optional-but-recommended)**: build `origin/cli` from scratch — `cd .worktrees/cli && rm -rf build && mkdir build && cd build && cmake .. && make -j$(nproc)` — then run `./cli/meshmonk_cli rigid_reg ../demo/Template.obj ../demo/demoFace.obj /tmp/rigid.obj --transform_output /tmp/rigid.txt` and `./cli/meshmonk_cli pyramid_reg /tmp/rigid.obj ../demo/demoFace.obj /tmp/pyramid.obj`. Compare against the committed outputs using `mesh_compare.py`. Divergence is information — document, do not block. **Fallback if build fails on current Xcode**: run MATLAB demos (`test_rigid_registration.m`, `test_pyramid_registration.m`) — same library via MEX — and compare to the committed outputs.
@@ -507,5 +528,5 @@ When execution starts:
 - [ ] Write first Tier 1 analytical test as a failing placeholder (synthetic rigid recovery)
 - [ ] Add `.pre-commit-config.yaml` (ruff, clang-format-16, cmake-format), `.editorconfig`, `NOTICE` file (WebMonks 2017 + jsnyde0 2026 dual-copyright)
 - [ ] Commit this design doc and ADR-001
-- [ ] Open PR for v0.0 skeleton — review, merge to `cli`
+- [ ] Tag `v0.0` on the `meshmonk-modernization` branch once the checklist above is green (no PR to `cli` at this milestone — v0.0 is scaffolding, not shippable; the first PR back to `cli` is at the v0.1 milestone)
 - [ ] **Repo transfer**: initiate GitHub repo transfer `TheWebMonks/meshmonk` → `jsnyde0/meshmonk` (owner-controlled; preserves stars, forks, issues; old URL auto-redirects via GitHub)
