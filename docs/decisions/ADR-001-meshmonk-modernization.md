@@ -4,7 +4,9 @@
 **Date:** 2026-04-17
 **Design:** [Design doc](../../history/2026-04-17-meshmonk-modernization-design.md)
 **Parent:** —
-**Related:** Supersedes `docs/specs/2025-05-29-modernization-and-python-bindings.md` (obsolete)
+**Related:** Supersedes the May 2025 `modernization-and-python-bindings` spec (remote-branch document; not present in this checkout)
+
+**Scope note:** this ADR captures strategic decisions. File paths and branch names cited in the design doc are expected to be labeled as one of: current checkout, remote branch state under `origin/*`, or proposed future layout.
 
 ## Context
 
@@ -40,7 +42,7 @@ The Rust scientific-geometry ecosystem is not mature enough in 2026 to support t
 
 Realistic cost of a Rust rewrite with numerical re-validation: 12–18 months. The memory-safety argument does not apply to a batch scientific tool processing trusted input.
 
-C++20 gives us the modern idioms we actually need: `std::expected`, designated initializers for aggregate structs, `[[nodiscard]]`, concepts.
+C++20 gives us the modern idioms we actually need: designated initializers for aggregate structs, `[[nodiscard]]`, concepts, and a clean path to standard-library `expected` once the compiler matrix permits it.
 
 **Alternatives considered:**
 
@@ -101,7 +103,7 @@ Migration cost is a single focused afternoon. The 330-line Jules-written pybind1
 
 **Firmness: FIRM**
 
-Remove all MATLAB MEX code (`demo/matlab/`, `_mex` function variants, ~250 LOC plus demos). Redirect MATLAB users to the university fork that already exists.
+Remove all MATLAB MEX code (`matlab/`, `_mex` function variants, and MATLAB-specific demo/tooling). Redirect MATLAB users to the university fork that already exists.
 
 **Rationale:**
 
@@ -131,7 +133,7 @@ Users who need MATLAB can use the university fork. This is explicitly sanctioned
 
 **Firmness: FIRM**
 
-Delete the entire `cli/` directory (`cli.cpp`, `cxxopts` dep, shell test scripts). Build the CLI in Python using `typer`, distributed as a `meshmonk` entry point via `pyproject.toml`.
+Delete the entire `cli/` directory on the CLI branch (`cli.cpp`, `cxxopts` dep, shell test scripts). Build the CLI in Python using `typer`, distributed as a `meshmonk` entry point via `pyproject.toml`.
 
 **Rationale:**
 
@@ -165,7 +167,7 @@ Keep CMake as the primary build system. Use `scikit-build-core` as the PEP 517 b
 
 **Rationale:**
 
-OpenMesh is a CMake project. As long as we vendor it (see D9), CMake must be in the toolchain. Meson would require either `cmake.subproject()` layering (more complex than pure CMake) or porting OpenMesh to Meson (multi-month commitment).
+OpenMesh is a CMake project. As long as we keep it in-tree for v0.1 (see D8), CMake must be in the toolchain. Meson would require either `cmake.subproject()` layering (more complex than pure CMake) or porting OpenMesh to Meson (multi-month commitment).
 
 Beyond the OpenMesh constraint, scikit-build-core is independently the correct 2026 answer for CMake-based Python packages:
 - PEP 517 native (no `setup.py`)
@@ -189,14 +191,14 @@ Known rough edge: `uv pip install -e .` (editable) has an [open bug](https://git
 - scikit-build-core stalls as a project
 - A new build backend emerges that strictly dominates for CMake projects
 
-### D6: Redesign the public API — params structs + result structs + `std::expected`
+### D6: Redesign the public API — params structs + result structs + expected-style typed failure
 
 **Firmness: FIRM**
 
 Replace the current telescoping 15-arg in-place-mutation C++ API with:
 - Config **aggregate structs** (`RigidParams`, `NonrigidParams`, `PyramidParams`) using C++20 designated initializers
 - Value-returned **result structs** (`RigidResult`, `NonrigidResult`, `PyramidResult`)
-- `[[nodiscard]] std::expected<Result, RegistrationError>` for typed failure
+- `[[nodiscard]]` expected-style return values for typed failure (`tl::expected` in v0.1; `std::expected` once the compiler matrix permits it)
 - `Eigen::Ref<const T>` for zero-copy input parameters
 - Strong-typed `RigidTransform` (with `.compose()`, `.apply()`, `.inverse()`)
 - Free functions, no class-based builders
@@ -211,8 +213,8 @@ Derived from first principles, not library cargo-culting:
 - **Minimize numpy-to-C++ friction:** `Eigen::Ref<const T>` is zero-copy for *read-only* inputs from `Eigen::Map` (what nanobind produces from numpy arrays). The floating-features buffer is mutated in place by the internal algorithm, so the wrapper copies it once per call — still a single copy of ~170 KB for the default Template mesh.
 - **Introspectable output:** result structs expose what exists today. v0.1 ships minimal fields. `RigidResult` holds `aligned_features`, `transform`, `iterations_run`. `NonrigidResult` and `PyramidResult` additionally expose `displacement_field` (`(N,3)` per-vertex displacement from original floating) so MATLAB-migrants can recover the transform without diffing outputs. Diagnostic fields (`converged`, `fitness`, `inlier_rmse`, `num_inliers`) land in v0.2 once convergence criteria and inlier thresholds are pinned down. Shipping fields with undefined semantics would be worse than omitting them.
 - **Composable:** Advanced users run stages individually; primitives share types
-- **Safe by construction:** Designated initializers eliminate positional-arg transposition. `std::expected` makes failure explicit for four concrete detection sites: `DegenerateInput` (empty inputs, dim/shape mismatch, zero-range bbox, all-zero inlier flags), `InsufficientInliers` (<4 non-zero inlier weights — rigid needs ≥3 for SVD well-posedness), `DecompositionFailed` (`RigidTransformer` SVD or `EigenVectorDecomposer` fails to converge on valid-shaped input), `NonConvergence` (v0.2+ only; v0.1 runs fixed iterations). Current `std::cerr` failure writes are routed through a logger sink consumers can suppress. Strong types prevent `Transform * Features` confusion.
-- **Boundary vs. internal detection split:** `DegenerateInput` is raised by an explicit pre-check at the top of each public API function so shape / rank / dim errors never reach the algorithmic core. Internal algorithmic classes (`ViscoElasticTransformer`, `InlierDetector`, `RigidTransformer`) are **NOT** rewritten to return `std::expected` — they retain existing control flow and signal failure via the log sink plus a thread-local status slot that the public wrapper reads and converts to `expected` before returning. This preserves the "load-bearing code untouched" constraint while still giving callers typed errors.
+- **Safe by construction:** Designated initializers eliminate positional-arg transposition. Expected-style returns make failure explicit for four concrete detection sites: `DegenerateInput` (empty inputs, dim/shape mismatch, zero-range bbox, all-zero inlier flags), `InsufficientInliers` (<4 non-zero inlier weights — rigid needs ≥3 for SVD well-posedness), `DecompositionFailed` (`RigidTransformer` SVD or `EigenVectorDecomposer` fails to converge on valid-shaped input), `NonConvergence` (v0.2+ only; v0.1 runs fixed iterations). Current `std::cerr` failure writes are routed through a logger sink consumers can suppress. Strong types prevent `Transform * Features` confusion.
+- **Boundary vs. internal detection split:** `DegenerateInput` is raised by an explicit pre-check at the top of each public API function so shape / rank / dim errors never reach the algorithmic core. Internal algorithmic classes (`ViscoElasticTransformer`, `InlierDetector`, `RigidTransformer`) are **NOT** rewritten to return an expected type — they retain existing control flow and signal failure via the log sink plus an internal failure-status bridge that the public wrapper converts before returning. This preserves the "load-bearing code untouched" constraint while still giving callers typed errors.
 - **Pythonic at the top:** kwargs + dataclass-like results + exceptions (translated from `expected`)
 - **Field-order stability:** param struct field order is STABLE across minor versions (v0.x → v0.x+1); reordering requires an ADR update. The nanobind shim uses named `nb::arg()` bindings so Python callers are immune to field reordering. C++ callers using designated initializers would still fail to compile on reorder.
 
@@ -232,16 +234,16 @@ Derived from first principles, not library cargo-culting:
 - C++20 designated initializers break on a required target compiler
 - Benchmarks show `Eigen::Ref` forces hidden copies for our common call patterns beyond the expected floating-buffer mutation copy
 
-### D7: Harness strategy — 5 tiers, analytical+constructed first, no circular baselining
+### D7: Harness strategy — tiered, analytical+constructed first, no circular baselining
 
 **Firmness: FLEXIBLE**
 
 Design verification around:
 1. **Tier 1 — Analytical** (synthetic rigid recovery, self-consistency, round-trip, correspondence sanity) — grounded in math, no reference needed. End-to-end rigid ICP is exercised here (apply known SE(3), recover from identity), not in Tier 2.
-2. **Tier 2 — Primitive fixture** (port `cli/test_data/rigid_transform/` 8-vertex cube + known correspondences/weights) — exercises `compute_rigid_transform` as a least-squares primitive, not end-to-end ICP
+2. **Tier 2 — Primitive fixture** (port the 8-vertex cube fixture from `origin/add-compute-rigid-transform-cli:cli/test_data/rigid_transform/`) — exercises `compute_rigid_transform` as a least-squares primitive, not end-to-end ICP
 3. **Tier 3 — Human-approved visual golden** (user inspects in Blender/MeshLab once, we freeze)
 4. **Tier 3.5 — Legacy scientific-equivalence gate** — capture reference outputs on `Template.obj ↔ demoFace.obj` during v0.0 and lock them as the v0.1 numerical reference. Capture source in priority order: (a) the `cli`-branch C++ CLI if it builds cleanly on the owner's toolchain; (b) the MATLAB demos (`test_rigid_registration.m`, `test_pyramid_registration.m`) — equally valid because they drive the same research-validated library via MEX; (c) if neither is feasible, Tier 3.5 becomes optional and the rewrite leans on Tier 1 + Tier 3 human sign-off. All Tier 3 and 3.5 goldens stored as `.npz` (compressed ~1.3 MB each for 54K-vertex meshes vs 10+ MB as OBJs). NOT circular with rejecting pybind11 output: the baseline is either the raw library (a) or MEX into the raw library (b), not the abandoned binding layer.
-5. **Tier 4 — Soft anchor** (`data/rigid_transform.txt` face-to-face run — loose tolerance)
+5. **Tier 4 — Soft anchor** (a committed rigid-transform reference captured during v0.0; file name TBD) — loose tolerance
 6. **Tier 5 — E2E smoke** (CLI commands exit 0, output exists, is valid OBJ)
 
 Explicitly reject freezing **untrusted pybind11 output** as "ground truth" (circular). The Tier 3.5 legacy baseline is different — it captures the raw C++ library behavior that the research group has been using for years.
@@ -333,5 +335,5 @@ If `TheWebMonks` wants to continue MATLAB-flavored work, they fork from the tran
 ## Related
 
 - [Design doc](../../history/2026-04-17-meshmonk-modernization-design.md) — what we're building and how, implementation details
-- [Obsolete prior spec](../specs/2025-05-29-modernization-and-python-bindings.md) — the May 2025 plan this supersedes
+- Obsolete prior spec: May 2025 `modernization-and-python-bindings` document on a remote modernization branch, not in this checkout
 - Research reports dispatched 2026-04-17 (in-session transcripts): pybind11 vs nanobind, Python build backends, mesh library patterns, C++ architecture review, Rust vs C++, modern C++ idioms

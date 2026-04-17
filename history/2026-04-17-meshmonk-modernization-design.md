@@ -1,18 +1,26 @@
 # Design: MeshMonk Modernization — Python-First Rebuild
 
 **Date:** 2026-04-17
-**Status:** Draft (ready for v0.0 implementation)
+**Status:** Draft (strategic direction settled; implementation details still provisional)
 **Decisions:** [ADR-001](../docs/decisions/ADR-001-meshmonk-modernization.md)
 **Origin:** Brainstorming session 2026-04-17; prompted by revisiting the May 2025 "Phase 5" spec and finding it too narrow
-**Supersedes:** [`docs/specs/2025-05-29-modernization-and-python-bindings.md`](../docs/specs/2025-05-29-modernization-and-python-bindings.md)
+**Supersedes:** May 2025 `modernization-and-python-bindings` spec (remote-branch document; not present in this checkout)
 
 ---
 
 ## Problem
 
+**Reference-frame note:** this document intentionally refers to three different things, and they are easy to blur together unless called out explicitly:
+
+- **Current repo checkout** — what exists in this working tree today (`matlab/`, root `example.cpp`, `demo/`, `tutorial/`, current `meshmonk.hpp`)
+- **Remote branch state** — work visible under `origin/*` but not in this checkout (for example `origin/cli`, `origin/add-compute-rigid-transform-cli`, `origin/feat-python-bindings`)
+- **Proposed post-overhaul layout** — files and directories that do not exist yet, but are the intended target (`library/`, `python/`, `tests/`, `pyproject.toml`)
+
+Unless stated otherwise, references below are proposals, not claims that those paths already exist locally.
+
 MeshMonk is a C++ 3D mesh registration library (rigid ICP, nonrigid deformable registration, pyramid multi-resolution). Algorithmic core represents ~10 years of research-validated tuning by a university lab. A 2025 modernization effort (Phases 1–4) reorganized the repo and added first-pass pybind11 bindings written by a then-young AI agent.
 
-The current state has real structural problems that go beyond what the May 2025 "Phase 5" plan (demo scripts + README polish) would fix:
+The current state across the current repo plus active remote branches has real structural problems that go beyond what the May 2025 "Phase 5" plan (demo scripts + README polish) would fix:
 
 - **No packaging:** users `sys.path.append('./build/python')`; no `pip install`, no `pyproject.toml`, no wheels
 - **Untrusted bindings:** the pybind11 wrapper was never validated numerically; the author's own comments flag confusion about the API shape
@@ -48,6 +56,8 @@ Out of scope for v0.1 (the initial overhaul), explicit:
 
 ### Overview
 
+This section describes the **proposed post-overhaul architecture**, not the current checkout.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  User (Python scripts, agents, CLI)                          │
@@ -67,18 +77,18 @@ Out of scope for v0.1 (the initial overhaul), explicit:
 ┌─────────────────────────────────────────────────────────────┐
 │  libmeshmonk  (C++20 shared library)                         │
 │  Public API:                                                  │
-│    rigid_registration(...)      → std::expected<Result,Err>  │
-│    nonrigid_registration(...)   → std::expected<Result,Err>  │
-│    pyramid_registration(...)    → std::expected<Result,Err>  │
+│    rigid_registration(...)      → expected-style Result/Error│
+│    nonrigid_registration(...)   → expected-style Result/Error│
+│    pyramid_registration(...)    → expected-style Result/Error│
 │    compute_correspondences(...) → Correspondences            │
 │    compute_inlier_weights(...)  → VecDynFloat                │
-│    compute_rigid_transform(...) → std::expected<T,Err>       │
+│    compute_rigid_transform(...) → expected-style Result/Error│
 │    ...                                                        │
 │  Deps: Eigen3, OpenMesh (→ meshoptimizer v0.4+), nanoflann   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Repository layout (after v0.1)
+### Repository layout (proposed after v0.1)
 
 ```
 meshmonk/
@@ -125,11 +135,11 @@ meshmonk/
     └── ci.yml
 ```
 
-**Deleted from current state:** `cli/`, `demo/matlab/`, all `_mex` C++ functions, `test_meshmonk_mexing*`, old `test_bindings.py`, `library/examples/` (dead scratchpad with hardcoded absolute paths — Python CLI is the canonical reference; C++ consumers link against the installed library from their own CMake). Branches `feat-python-bindings`, `add-compute-rigid-transform-cli`, `feature/*`, `feat/meshmonk-cli*` retired.
+**Planned deletions from the current repo / remote branches:** `matlab/`, all `_mex` C++ functions, `test_meshmonk_mexing*`, remote-branch-only `cli/`, old `test_bindings.py` on the bindings branch, and current/branch-local example scratch files such as root `example.cpp`. Branches `origin/feat-python-bindings`, `origin/add-compute-rigid-transform-cli`, `origin/feature/*`, and `origin/feat/meshmonk-cli*` are retired once their useful fixtures are extracted.
 
 ### C++ API shape (v0.1)
 
-High-level pipelines plus low-level composable primitives, all sharing the same param structs:
+Illustrative API sketch for the proposed public surface. File paths in comments are target locations, not current-tree locations. High-level pipelines plus low-level composable primitives all share the same param structs:
 
 ```cpp
 namespace meshmonk {
@@ -168,7 +178,9 @@ namespace meshmonk {
                             int num_iterations=80; bool use_scaling=false; };
     struct NonrigidParams { CorrespondenceParams correspondences; InlierParams inliers;
                             ViscoElasticParams transform; int num_iterations=200; };
-    struct PyramidParams  { /* + DownsampleSchedule; num_pyramid_layers=3; */ };
+    struct PyramidParams  { CorrespondenceParams correspondences; InlierParams inliers;
+                            ViscoElasticParams transform; DownsampleSchedule downsample;
+                            int num_iterations=90; int num_pyramid_layers=3; };
 
     // Result structs (library/include/meshmonk/result.hpp)
     // v0.1 ships minimal shapes; diagnostic fields (fitness, inlier_rmse,
@@ -197,7 +209,7 @@ namespace meshmonk {
     };
 
     // Public API (library/include/meshmonk/meshmonk.hpp)
-    [[nodiscard]] std::expected<RigidResult, RegistrationError>
+    [[nodiscard]] tl::expected<RigidResult, RegistrationError>
     rigid_registration(
         Eigen::Ref<const FeatureMat>  floating_features,
         Eigen::Ref<const FeatureMat>  target_features,
@@ -218,7 +230,7 @@ namespace meshmonk {
 
 **Param struct field-order stability rule:** field order inside each param struct is STABLE across minor versions (v0.x → v0.x+1). Reordering fields requires an ADR update. The Python shim uses named `nb::arg()` bindings (not positional construction) so Python callers are immune to field reordering, but C++ callers using designated initializers would be. This protects against silent field-swap hazards (e.g., `num_iterations` and `num_neighbours` both being `int` and adjacent).
 
-**Error detection sites (v0.1):** `RegistrationError` is a real enum, not aspirational. Current code writes `std::cerr` on failure and continues with garbage; the rewrite converts these into `std::expected` returns at four call sites:
+**Error detection sites (v0.1):** `RegistrationError` is a real enum, not aspirational. Current code writes `std::cerr` on failure and continues with garbage; the rewrite converts these into expected-style returns at four call sites:
 
 | Error | Detected at | Criterion |
 |---|---|---|
@@ -227,7 +239,9 @@ namespace meshmonk {
 | `DecompositionFailed` | internal (boundary-converted) | `RigidTransformer` SVD or `EigenVectorDecomposer` fails to converge on valid-shaped input |
 | `NonConvergence` | wrapper loop (v0.2+ only) | convergence criterion (TBD) not met within `num_iterations`; **not raised in v0.1** since convergence tracking is deferred |
 
-**Split between boundary and internal detection:** `DegenerateInput` is raised by an explicit pre-check at the top of each public API function (`rigid_registration()`, `nonrigid_registration()`, `pyramid_registration()`) — so shape / rank / dim errors never reach the algorithmic core. Internal algorithmic classes (`ViscoElasticTransformer`, `InlierDetector`, `RigidTransformer`) are **NOT** rewritten to return `std::expected`; they retain their existing control flow and signal failure via the log sink plus a thread-local status slot that the public wrapper reads and converts to `expected` before returning. This preserves the "load-bearing code untouched" constraint while still giving callers typed errors.
+**Split between boundary and internal detection:** `DegenerateInput` is raised by an explicit pre-check at the top of each public API function (`rigid_registration()`, `nonrigid_registration()`, `pyramid_registration()`) — so shape / rank / dim errors never reach the algorithmic core. Internal algorithmic classes (`ViscoElasticTransformer`, `InlierDetector`, `RigidTransformer`) are **NOT** rewritten to return an expected type; they retain their existing control flow and signal failure via the log sink plus an internal failure-status bridge that the public wrapper converts before returning. This preserves the "load-bearing code untouched" constraint while still giving callers typed errors.
+
+**Portability note:** v0.1 uses `tl::expected` unconditionally (header-only, single file, API-compatible for our use) to sidestep MSVC/libstdc++/libc++ `<expected>` gaps. `std::expected` remains the medium-term target once the compiler matrix is proven.
 
 All internal `std::cerr` writes are routed through a logger sink (configurable via `meshmonk.set_log_level()` in Python) so consumers can suppress stderr noise. The log sink is thread-safe (atomic level read) but its effect is global to the process.
 
@@ -294,7 +308,7 @@ Adding two fields with the same prefixed name across different sub-structs is a 
 
 **Normals handling:** precedence is (a) explicit `normals=V_normals` kwarg if passed; else (b) `mesh.vertex_normals` if the mesh object exposes the attribute and its L2 norm per row is non-zero; else (c) recomputed via `meshmonk.compute_normals(V, F)`. Pass `compute_normals=True` to force recomputation even when `.vertex_normals` is available. For the raw-array path, if `floating_features` columns 3–5 are all-zero (as current MATLAB demos pass — `single(zeros(size(floatingPoints)))`), the wrapper auto-recomputes normals and emits a one-line warning via the log sink, matching current C++ behavior while surfacing the smell for the migration. `meshmonk.features_from_vertices(V, F)` is the recommended helper to avoid the warning.
 
-Errors bubble as Python exceptions (nanobind translates `std::expected` unexpected values via a registered translator). Type stubs (`.pyi`) shipped with the wheel from v0.2 onward.
+Errors bubble as Python exceptions (nanobind translates unexpected return values via a registered translator). Type stubs (`.pyi`) shipped with the wheel from v0.2 onward.
 
 ### Python package dependencies
 
@@ -309,9 +323,9 @@ The CLI (`meshmonk demo`, `meshmonk rigid`, etc.) depends on the `io` extra sinc
 
 ### Staged roadmap
 
-**v0.0 — Reality capture (~1–2 days):** establish trust anchors before refactoring. Create `overhaul/v0.0-prep` branch from `cli`. Cherry-pick the 8-vertex cube fixture from `origin/add-compute-rigid-transform-cli:cli/test_data/rigid_transform/` to `tests/fixtures/cube_rigid/` before that branch is retired. Move `demo/Template.obj`, `demo/demoFace.obj`, `demo/rigid_transform.txt`, `demo/{Demo,Template}FaceLandmarks.csv` to `data/`. **Capture legacy baseline:** build the current `cli` branch C++ library + CLI, run it on `Template.obj ↔ demoFace.obj`, save `rigid_output.obj`, `pyramid_output.obj`, and `rigid_transform.txt` under `tests/golden/legacy_baseline/` (scientific-equivalence reference — see Tier 3.5). Write the mesh-compare helper. Set up pytest scaffolding. Commit this design doc + ADR. No library changes.
+**v0.0 — Reality capture (~1–2 days):** establish trust anchors before refactoring. Create `overhaul/v0.0-prep` from `origin/cli`. Cherry-pick the 8-vertex cube fixture from `origin/add-compute-rigid-transform-cli:cli/test_data/rigid_transform/` to `tests/fixtures/cube_rigid/` before that branch is retired. Move current demo assets (`demo/Template.obj`, `demo/demoFace.obj`, `demo/{Demo,Template}FaceLandmarks.csv`) to `data/`; if `origin/cli` or another legacy branch contains a committed rigid-transform reference, carry that over too, but do not assume the filename exists in this checkout. **Capture legacy baseline:** build the current `origin/cli` C++ library + CLI, run it on `Template.obj ↔ demoFace.obj`, save `rigid_output.obj`, `pyramid_output.obj`, and any captured rigid-transform reference under `tests/golden/legacy_baseline/` (scientific-equivalence reference — see Tier 3.5). Write the mesh-compare helper. Set up pytest scaffolding. Commit this design doc + ADR. No library changes.
 
-**v0.1 — Foundation (~1–2 focused weeks):** C++20 overhaul + nanobind bindings + Python package + typer CLI + scikit-build-core + GitHub Actions CI. `uv pip install .` (non-editable) works on the owner's Mac; editable installs tracked via [astral-sh/uv#14383](https://github.com/astral-sh/uv/issues/14383) — fallback is `pip install -e . --no-build-isolation`. All Tier 1–5 harness tests passing, including **owner runs one Blender/MeshLab visual sign-off session for rigid / nonrigid / pyramid outputs** to freeze Tier 3 goldens. No `meshmonk::legacy::` hedge — the current public API has no external consumers to preserve (MATLAB/C++-CLI/pybind11 all being dropped).
+**v0.1 — Foundation (~1–2 focused weeks):** C++20 overhaul + nanobind bindings + Python package + typer CLI + scikit-build-core + GitHub Actions CI. `uv pip install .` (non-editable) works on the owner's Mac; editable installs tracked via [astral-sh/uv#14383](https://github.com/astral-sh/uv/issues/14383) — fallback is `pip install -e . --no-build-isolation`. All required harness tiers passing, including **owner runs one Blender/MeshLab visual sign-off session for rigid / nonrigid / pyramid outputs** to freeze Tier 3 goldens. No `meshmonk::legacy::` hedge — the current public API has no external consumers to preserve (MATLAB/C++-CLI/pybind11 all being dropped).
 
 - **CI matrix (v0.1):** Ubuntu 22.04 + Ubuntu 24.04; macOS 14 (arm64) + macOS 13 (x86_64); Python 3.10, 3.11, 3.12, 3.13; CMake 3.26+ installed via `lukka/get-cmake@latest` at a pinned version; gcc 11+, clang 15+, AppleClang 15+. Matrix is explicit in `.github/workflows/ci.yml` and mirrored in a CI-matrix table in the README.
 - **Developer tooling (v0.1):** ships `.pre-commit-config.yaml` (ruff for Python lint+format, `clang-format-16` with LLVM style for C++, `cmake-format` for CMakeLists, `check-yaml`, `end-of-file-fixer`), `.editorconfig` (4-space Python, 4-space C++, LF line endings), and `CONTRIBUTING.md` stub. CI runs `pre-commit run --all-files` as a first-check job.
@@ -323,6 +337,8 @@ The CLI (`meshmonk demo`, `meshmonk rigid`, etc.) depends on the `io` extra sinc
 **v0.4+ — Future:** OpenMesh → meshoptimizer; reconsider Meson; MCP server; benchmarks.
 
 ### Branch strategy
+
+This section refers to **remote branches under `origin/*` plus proposed new branches**. It is not a statement about what already exists locally in this checkout.
 
 ```
 master (2021, stale)
@@ -339,13 +355,15 @@ Branches to retire: all remote branches except `master`, `cli`, and the new `ove
 
 ### Canonical parameter defaults
 
-Use the MATLAB-demo-tuned values as the Python API defaults (not the C++ header defaults, which were a scratchpad developer's guesses). Full table in [ADR-001, D6 Rationale](../docs/decisions/ADR-001-meshmonk-modernization.md#d6-redesign-the-public-api). Key differences from current C++ defaults:
+Use the MATLAB demo-script values as the Python API defaults. These are grounded in the current repo's `demo/test_rigid_registration.m`, `demo/test_nonrigid_registration.m`, and `demo/test_pyramid_registration.m`, and they differ materially from the current C++ header defaults. Key differences:
 
 | Param | Current C++ | MATLAB (adopted) |
 |---|---|---|
+| `rigid.num_iterations` | 20 | **80** |
 | `inlier_kappa` | 4.0 | **12.0** |
 | `correspondences_num_neighbours` | 5 | **3** |
 | `correspondences_flag_threshold` (rigid/nonrigid) | 0.99 | **0.9** |
+| `nonrigid.num_iterations` | 60 | **200** |
 | `correspondences_flag_threshold` (pyramid) | 0.99 | **0.999** |
 | `pyramid.num_iterations` | 60 | **90** |
 
@@ -355,13 +373,13 @@ Use the MATLAB-demo-tuned values as the Python API defaults (not the C++ header 
 
 ### Harness strategy
 
-Five tiers, ordered fast → slow:
+Tiered harness, ordered fast → slow:
 
 - **Tier 1 — Analytical** (deterministic, math-grounded, <5 s total): synthetic rigid recovery (apply known SE(3) to a mesh, run `rigid_registration` from identity, verify recovery), self-consistency, round-trip, correspondence sanity, inlier-weight sanity. This is where end-to-end ICP gets covered.
-- **Tier 2 — Primitive fixture** (deterministic, <1 s): 8-vertex cube + known correspondences + inlier weights. Exercises `compute_rigid_transform` as a least-squares primitive, **not** end-to-end ICP. Ported from `cli/test_data/rigid_transform/`.
+- **Tier 2 — Primitive fixture** (deterministic, <1 s): 8-vertex cube + known correspondences + inlier weights. Exercises `compute_rigid_transform` as a least-squares primitive, **not** end-to-end ICP. Ported from `origin/add-compute-rigid-transform-cli:cli/test_data/rigid_transform/`.
 - **Tier 3 — Human-approved visual golden** (captured once per registration type in v0.1): owner inspects output in Blender or MeshLab, approves, we freeze as `.npz`. Future runs compare with Hausdorff/RMSE via `tests/utils/mesh_compare.py` (~20 lines of numpy).
 - **Tier 3.5 — Legacy scientific-equivalence gate**: reference outputs captured in v0.0 on `Template.obj ↔ demoFace.obj` become the "did the rewrite preserve the current library's numerical behavior?" baseline. New-code output must match within calibrated tolerance. Trust comes from the *library* (research-validated per ADR D1), not from whatever plumbing wraps it. **Capture source, in priority order:** (a) the `cli`-branch C++ CLI binary if it builds cleanly on the owner's toolchain; (b) the MATLAB demos (`test_rigid_registration.m`, `test_pyramid_registration.m`) which drive the same research-validated library via MEX — equally valid as a baseline; (c) if neither is feasible in v0.0, Tier 3.5 becomes optional and the rewrite leans harder on Tier 1 + Tier 3 human sign-off. Not circular with ADR D7's rejection of untrusted pybind11 output — the baseline is either the raw library (a) or MEX into the raw library (b), not the abandoned binding layer.
-- **Tier 4 — Soft anchor**: `data/rigid_transform.txt` (committed real-face rigid transform) — loose-tolerance sanity
+- **Tier 4 — Soft anchor**: a committed real-face rigid-transform reference captured during v0.0 (filename TBD) — loose-tolerance sanity
 - **Tier 5 — E2E smoke**: CLI commands exit 0, output file exists and is valid OBJ
 
 **Tolerance calibration (v0.1 task):** Measure run-to-run noise across platforms (owner's Mac + Linux CI + macOS CI), run each registration 10× per platform, set Tier 3 / 3.5 tolerance at 2× the measured cross-platform max RMSE. Apply a **floor of 1e-4 mm absolute** — if the cross-platform max RMSE is below ~1e-5 mm (i.e., the code is deterministic within double rounding), the floor prevents tolerance collapse to zero and accommodates future compiler / libm / platform drift.
@@ -390,8 +408,8 @@ All decisions captured in [ADR-001](../docs/decisions/ADR-001-meshmonk-moderniza
 - **D3 (FIRM):** Drop MATLAB support — redirect to university fork
 - **D4 (FIRM):** Delete C++ CLI — replace with Python typer CLI
 - **D5 (FIRM):** CMake + scikit-build-core — not Meson
-- **D6 (FIRM):** Params structs + result structs + `std::expected`
-- **D7 (FLEXIBLE):** 5-tier harness, analytical first, no circular baselining
+- **D6 (FIRM):** Params structs + result structs + expected-style typed failure
+- **D7 (FLEXIBLE):** Tiered harness, analytical first, no circular baselining
 - **D8 (FLEXIBLE):** Keep OpenMesh for v0.1; v0.4+ migration requires a half-edge-lite module, not just meshoptimizer
 - **D9 (FIRM):** Transfer repo to `jsnyde0/meshmonk`; claim PyPI `meshmonk`
 
@@ -479,9 +497,9 @@ When execution starts:
 - [ ] Verify `cli` builds on macOS with current Xcode + CMake — document state only, don't fix regressions
 - [ ] **Capture legacy baseline (Tier 3.5)**: preferred path — build the `cli`-branch C++ library + `meshmonk_cli`, run `rigid_reg` and `pyramid_reg` on `Template.obj ↔ demoFace.obj`, save outputs under `tests/golden/legacy_baseline/` as `.npz` (via `tests/utils/obj_to_npz.py`). **Fallback**: if `cli` doesn't build on current Xcode/CMake, run MATLAB demos (`test_rigid_registration.m`, `test_pyramid_registration.m`) instead — same research-validated library via MEX. Document which path was taken.
 - [ ] Cherry-pick `cli/test_data/rigid_transform/` from `origin/add-compute-rigid-transform-cli` into `tests/fixtures/cube_rigid/` — **only these files**: `input_vertices.txt`, `input_mesh.obj`, `corresponding_features.txt`, `inlier_weights.txt`, `expected_vertices.txt`, `expected_transform.txt`. Exclude `output_mesh_generated.obj` and `output_transform_generated.txt` (runtime artifacts from the old CLI, not fixture inputs).
-- [ ] Move `demo/Template.obj`, `demo/demoFace.obj`, `demo/rigid_transform.txt`, `demo/{Demo,Template}FaceLandmarks.csv` → `data/`
+- [ ] Move `demo/Template.obj`, `demo/demoFace.obj`, `demo/{Demo,Template}FaceLandmarks.csv` → `data/`; if a committed rigid-transform reference exists only on `origin/cli`, bring it over explicitly instead of assuming a local `demo/rigid_transform.txt`
 - [ ] **Clean up `tutorial/` (99 MB)**: (a) retire `tutorial/TutorialScripts/*.m` alongside `demo/*.m` and `matlab/` under D3 (tag `pre-modernization` before deletion); (b) move `tutorial/TutorialData/SimulatedMappedFaces/SIMPOP_*.obj` → `data/simulated_faces/` (drop the 45 `.mtl` files — unused by the algorithm); (c) delete `tutorial/TutorialData/Template_Rigidly_Aligned.*` and `tutorial/TutorialData/Targets/demoFace.*` (duplicates of demo/ assets); (d) defer `TutorialSlides.pptx` until a licensed-clean alternative or owner-held slides exist. Target: ≥80 MB removed from working tree.
-- [ ] Delete `library/examples/example.cpp` and the `library/examples/` directory (Python CLI is the canonical reference; C++ consumers link against the installed library).
+- [ ] Delete root `example.cpp` and any branch-local example scratchpads (Python CLI is the canonical reference; C++ consumers link against the installed library).
 - [ ] Set up `tests/` root with pytest scaffolding (`conftest.py`, empty `__init__.py`, minimal `pyproject.toml` or `pytest.ini`)
 - [ ] Write `tests/utils/mesh_compare.py` — Hausdorff / RMSE / per-vertex distance helpers (~20 lines, numpy only)
 - [ ] Write `tests/utils/obj_to_npz.py` — OBJ → npz converter for Tier 3.5 legacy-baseline ingestion
@@ -490,4 +508,3 @@ When execution starts:
 - [ ] Commit this design doc and ADR-001
 - [ ] Open PR for v0.0 skeleton — review, merge to `cli`
 - [ ] **Repo transfer**: initiate GitHub repo transfer `TheWebMonks/meshmonk` → `jsnyde0/meshmonk` (owner-controlled; preserves stars, forks, issues; old URL auto-redirects via GitHub)
-
