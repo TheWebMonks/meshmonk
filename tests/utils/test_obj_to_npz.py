@@ -2,7 +2,6 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
-import pytest
 from tests.utils.obj_to_npz import convert
 
 

@@ -8,7 +8,6 @@ v0.0 contract: pytest exits with code 1 (exactly this test errors).
 """
 
 import numpy as np
-import pytest
 from tests.stubs.rigid import recover_rigid
 
 
@@ -31,11 +30,13 @@ def test_synthetic_rigid_recovery():
 
     # Known SE(3): 30-degree rotation around Z + translation (1, 2, 3)
     theta = np.radians(30.0)
-    R_known = np.array([
-        [np.cos(theta), -np.sin(theta), 0.0],
-        [np.sin(theta),  np.cos(theta), 0.0],
-        [0.0,            0.0,           1.0],
-    ])
+    R_known = np.array(
+        [
+            [np.cos(theta), -np.sin(theta), 0.0],
+            [np.sin(theta), np.cos(theta), 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )
     t_known = np.array([1.0, 2.0, 3.0])
     tgt = _apply_rigid(src, R_known, t_known)
 

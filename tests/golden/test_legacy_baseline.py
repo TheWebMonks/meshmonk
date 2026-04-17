@@ -34,38 +34,38 @@ class TestLegacyBaselineSchema:
     """Verify pinned schema: vertices (N,3) float64, faces (M,3) int32."""
 
     def test_rigid_npz_exists(self):
-        assert (GOLDEN_DIR / "rigid_output.npz").exists(), (
-            "rigid_output.npz not found — run conversion step"
-        )
+        assert (
+            GOLDEN_DIR / "rigid_output.npz"
+        ).exists(), "rigid_output.npz not found — run conversion step"
 
     def test_pyramid_npz_exists(self):
-        assert (GOLDEN_DIR / "pyramid_output.npz").exists(), (
-            "pyramid_output.npz not found — run conversion step"
-        )
+        assert (
+            GOLDEN_DIR / "pyramid_output.npz"
+        ).exists(), "pyramid_output.npz not found — run conversion step"
 
     def test_rigid_vertices_shape(self, rigid_npz):
         assert "vertices" in rigid_npz, "rigid_output.npz missing 'vertices' key"
         assert rigid_npz["vertices"].ndim == 2
-        assert rigid_npz["vertices"].shape[1] == 3, (
-            f"Expected (N,3) vertices, got {rigid_npz['vertices'].shape}"
-        )
+        assert (
+            rigid_npz["vertices"].shape[1] == 3
+        ), f"Expected (N,3) vertices, got {rigid_npz['vertices'].shape}"
 
     def test_rigid_vertices_dtype(self, rigid_npz):
-        assert rigid_npz["vertices"].dtype == np.float64, (
-            f"Expected float64 vertices, got {rigid_npz['vertices'].dtype}"
-        )
+        assert (
+            rigid_npz["vertices"].dtype == np.float64
+        ), f"Expected float64 vertices, got {rigid_npz['vertices'].dtype}"
 
     def test_rigid_faces_shape(self, rigid_npz):
         assert "faces" in rigid_npz, "rigid_output.npz missing 'faces' key"
         assert rigid_npz["faces"].ndim == 2
-        assert rigid_npz["faces"].shape[1] == 3, (
-            f"Expected (M,3) faces, got {rigid_npz['faces'].shape}"
-        )
+        assert (
+            rigid_npz["faces"].shape[1] == 3
+        ), f"Expected (M,3) faces, got {rigid_npz['faces'].shape}"
 
     def test_rigid_faces_dtype(self, rigid_npz):
-        assert rigid_npz["faces"].dtype == np.int32, (
-            f"Expected int32 faces, got {rigid_npz['faces'].dtype}"
-        )
+        assert (
+            rigid_npz["faces"].dtype == np.int32
+        ), f"Expected int32 faces, got {rigid_npz['faces'].dtype}"
 
     def test_pyramid_vertices_shape(self, pyramid_npz):
         assert "vertices" in pyramid_npz
@@ -91,9 +91,9 @@ class TestLegacyBaselineDistinct:
         """Both outputs should map the same source mesh — vertex count must match."""
         n_rigid = rigid_npz["vertices"].shape[0]
         n_pyramid = pyramid_npz["vertices"].shape[0]
-        assert n_rigid == n_pyramid, (
-            f"Vertex count mismatch: rigid={n_rigid}, pyramid={n_pyramid}"
-        )
+        assert (
+            n_rigid == n_pyramid
+        ), f"Vertex count mismatch: rigid={n_rigid}, pyramid={n_pyramid}"
 
     def test_mean_displacement_exceeds_threshold(self, rigid_npz, pyramid_npz):
         """Mean per-vertex displacement between rigid and pyramid must exceed 0.1 mm.
@@ -114,15 +114,13 @@ class TestLegacyBaselineTransform:
     """Verify the rigid_transform.txt was copied into the golden dir."""
 
     def test_rigid_transform_exists(self):
-        assert (GOLDEN_DIR / "rigid_transform.txt").exists(), (
-            "rigid_transform.txt not found in legacy_baseline dir"
-        )
+        assert (
+            GOLDEN_DIR / "rigid_transform.txt"
+        ).exists(), "rigid_transform.txt not found in legacy_baseline dir"
 
     def test_rigid_transform_is_4x4(self):
         txt_path = GOLDEN_DIR / "rigid_transform.txt"
         if not txt_path.exists():
             pytest.skip("rigid_transform.txt not yet copied")
         matrix = np.loadtxt(str(txt_path))
-        assert matrix.shape == (4, 4), (
-            f"Expected 4x4 transform, got {matrix.shape}"
-        )
+        assert matrix.shape == (4, 4), f"Expected 4x4 transform, got {matrix.shape}"
