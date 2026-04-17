@@ -1,0 +1,19 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: "^(data/|tests/|docs/|history/|\\.pre-commit-config\\.yaml|pyproject\\.toml|NOTICE|\\.editorconfig|README\\.md|CLAUDE\\.md|AGENTS\\.md)"
+      - id: ruff-format
+        files: "^(data/|tests/|docs/|history/|\\.pre-commit-config\\.yaml|pyproject\\.toml|NOTICE|\\.editorconfig|README\\.md|CLAUDE\\.md|AGENTS\\.md)"
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+        files: "^(data/|tests/|docs/|history/|\\.pre-commit-config\\.yaml|pyproject\\.toml|NOTICE|\\.editorconfig|README\\.md|CLAUDE\\.md|AGENTS\\.md)"
+      - id: end-of-file-fixer
+        files: "^(data/|tests/|docs/|history/|\\.pre-commit-config\\.yaml|pyproject\\.toml|NOTICE|\\.editorconfig|README\\.md|CLAUDE\\.md|AGENTS\\.md)"
+      - id: trailing-whitespace
+        files: "^(data/|tests/|docs/|history/|\\.pre-commit-config\\.yaml|pyproject\\.toml|NOTICE|\\.editorconfig|README\\.md|CLAUDE\\.md|AGENTS\\.md)"
