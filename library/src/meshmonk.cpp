@@ -294,8 +294,14 @@ pyramid_registration(
         floating_features.col(1).maxCoeff() == floating_features.col(1).minCoeff() &&
         floating_features.col(2).maxCoeff() == floating_features.col(2).minCoeff())
         return tl::unexpected{RegistrationError::DegenerateInput};
-    if (params.num_iterations < 2)
+    if (params.num_pyramid_layers < 1)
         return tl::unexpected{RegistrationError::DegenerateInput};
+    {
+        int iters_per_layer = (int)std::round(
+            (float)params.num_iterations / (float)params.num_pyramid_layers);
+        if (iters_per_layer < 2)
+            return tl::unexpected{RegistrationError::DegenerateInput};
+    }
 
     //-------------------------------------------------------------------------
     // Make mutable copies

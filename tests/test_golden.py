@@ -1,7 +1,7 @@
 """
 Tier 3 and Tier 3.5 golden tests.
 
-Tier 3 (stubs marked xfail): human-approved visual goldens not yet captured.
+Tier 3: human-approved visual goldens (captured 2026-04-18).
   - test_rigid_golden
   - test_nonrigid_golden
   - test_pyramid_golden
@@ -41,10 +41,7 @@ DEMOFACE_OBJ = DATA_DIR / "demoFace.obj"
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(
-    reason="Tier 3 golden not yet captured — run visual sign-off session first",
-    strict=False,
-)
+@pytest.mark.slow
 def test_rigid_golden():
     """Compare rigid registration output against frozen human-approved golden.
 
@@ -54,7 +51,7 @@ def test_rigid_golden():
 
     golden_path = GOLDEN_DIR / "rigid.npz"
     if not golden_path.exists():
-        pytest.xfail(f"Golden file not yet captured: {golden_path}")
+        pytest.skip(f"Golden file not found: {golden_path}")
 
     pytest.importorskip("trimesh")
     if not TEMPLATE_OBJ.exists():
@@ -72,10 +69,7 @@ def test_rigid_golden():
     )
 
 
-@pytest.mark.xfail(
-    reason="Tier 3 golden not yet captured — run visual sign-off session first",
-    strict=False,
-)
+@pytest.mark.slow
 def test_nonrigid_golden():
     """Compare nonrigid registration output against frozen human-approved golden.
 
@@ -85,7 +79,7 @@ def test_nonrigid_golden():
 
     golden_path = GOLDEN_DIR / "nonrigid.npz"
     if not golden_path.exists():
-        pytest.xfail(f"Golden file not yet captured: {golden_path}")
+        pytest.skip(f"Golden file not found: {golden_path}")
 
     pytest.importorskip("trimesh")
     if not TEMPLATE_OBJ.exists():
@@ -103,10 +97,7 @@ def test_nonrigid_golden():
     )
 
 
-@pytest.mark.xfail(
-    reason="Tier 3 golden not yet captured — run visual sign-off session first",
-    strict=False,
-)
+@pytest.mark.slow
 def test_pyramid_golden():
     """Compare pyramid registration output against frozen human-approved golden.
 
@@ -116,7 +107,7 @@ def test_pyramid_golden():
 
     golden_path = GOLDEN_DIR / "pyramid.npz"
     if not golden_path.exists():
-        pytest.xfail(f"Golden file not yet captured: {golden_path}")
+        pytest.skip(f"Golden file not found: {golden_path}")
 
     pytest.importorskip("trimesh")
     if not TEMPLATE_OBJ.exists():

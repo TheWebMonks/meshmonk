@@ -36,18 +36,19 @@ struct RigidTransform {
         return result;
     }
 
-    // Inverse of [sR|t] is [(1/s)R^T | -(1/s)R^T * t]
-    // For pure rotation (s=1), this is simply [R^T | -R^T*t]
+    // Inverse of [sR|t] is [(1/s)R^T_pure | -(1/s)R^T_pure * t]
+    // R in code = sR_pure, so R^T = s*R_pure^T.
+    // Dividing by s^2 gives (1/s)*R_pure^T — the correct inverse rotation+scale.
+    // For pure rotation (s=1), s^2=1, so this simplifies to [R^T | -R^T*t].
     RigidTransform inverse() const {
         Eigen::Matrix3f R = matrix.topLeftCorner<3, 3>();
         Eigen::Vector3f t = matrix.topRightCorner<3, 1>();
-        // Compute scale as norm of first column of R (for similarity transforms)
-        float s = R.col(0).norm();  // s
+        float s2 = R.col(0).squaredNorm();
         Eigen::Matrix3f Rt = R.transpose();
 
         Eigen::Matrix4f inv = Eigen::Matrix4f::Identity();
-        inv.topLeftCorner<3, 3>() = Rt / s;
-        inv.topRightCorner<3, 1>() = -(Rt * t) / s;
+        inv.topLeftCorner<3, 3>() = Rt / s2;
+        inv.topRightCorner<3, 1>() = -(Rt * t) / s2;
         return RigidTransform{inv};
     }
 };
