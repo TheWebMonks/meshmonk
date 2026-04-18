@@ -244,6 +244,12 @@ def _mesh_to_arrays(mesh_or_path, normals_override=None, force_recompute=False):
     # trimesh returns int64 faces — silently cast to int32 at Python boundary
     F = np.asarray(mesh.faces, dtype=np.int32)
     flags = np.ones(V.shape[0], dtype=np.float32)
+    if hasattr(mesh, 'flags') and mesh.flags is not None:
+        flags = np.asarray(mesh.flags, dtype=np.float32)
+        if flags.shape != (V.shape[0],):
+            raise ValueError(
+                f"mesh.flags shape {flags.shape} does not match vertex count ({V.shape[0]},)"
+            )
 
     if normals_override is not None:
         N = np.asarray(normals_override, dtype=np.float32)
