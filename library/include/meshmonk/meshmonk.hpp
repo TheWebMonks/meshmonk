@@ -4,6 +4,8 @@
 #include <utility>
 #include <tuple>
 #include <tl/expected.hpp>
+#include <stdexcept>
+#include <string>
 
 #include "types.hpp"
 #include "transform.hpp"
@@ -12,6 +14,15 @@
 #include "logger.hpp"
 
 namespace meshmonk {
+
+class MeshMonkError : public std::runtime_error {
+public:
+    explicit MeshMonkError(RegistrationError code, const std::string& msg)
+        : std::runtime_error(msg), code_(code) {}
+    RegistrationError code() const noexcept { return code_; }
+private:
+    RegistrationError code_;
+};
 
 //=============================================================================
 // High-level registration pipelines

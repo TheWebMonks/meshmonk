@@ -36,7 +36,7 @@ namespace nb = nanobind;
 using namespace nb::literals;
 
 // ---------------------------------------------------------------------------
-// Error-unwrap helper: convert tl::expected failure to std::runtime_error
+// Error-unwrap helper: convert tl::expected failure to MeshMonkError
 // Called inside the function body (after GIL is released) — only throws,
 // does not interact with Python runtime.
 // ---------------------------------------------------------------------------
@@ -45,8 +45,9 @@ T unwrap_expected(tl::expected<T, meshmonk::RegistrationError> result) {
     if (result.has_value()) {
         return std::move(result.value());
     }
+    meshmonk::RegistrationError code = result.error();
     std::string msg;
-    switch (result.error()) {
+    switch (code) {
         case meshmonk::RegistrationError::DegenerateInput:
             msg = "DegenerateInput: empty inputs, shape mismatch, zero-range bounding box, or all-zero inlier flags";
             break;
@@ -60,7 +61,7 @@ T unwrap_expected(tl::expected<T, meshmonk::RegistrationError> result) {
             msg = "NonConvergence: registration did not converge within the allowed iterations";
             break;
     }
-    throw std::runtime_error(msg);
+    throw meshmonk::MeshMonkError(code, msg);
 }
 
 NB_MODULE(_meshmonk_core, m) {
@@ -70,7 +71,7 @@ NB_MODULE(_meshmonk_core, m) {
     // Exception translation: std::runtime_error -> Python RuntimeError
     // nanobind uses nb::exception<T>(scope, name, base) — NOT register_exception
     // -----------------------------------------------------------------------
-    nb::exception<std::runtime_error>(m, "MeshMonkError", PyExc_RuntimeError);
+    nb::exception<meshmonk::MeshMonkError>(m, "MeshMonkError", PyExc_RuntimeError);
 
     // -----------------------------------------------------------------------
     // RegistrationError enum
