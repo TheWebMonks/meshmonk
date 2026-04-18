@@ -1,4 +1,5 @@
 #include "Downsampler.hpp"
+#include "meshmonk/logger.hpp"
 #include <stdexcept>
 
 
@@ -84,14 +85,14 @@ void Downsampler::update(){
     DecimaterType decimater(mesh);  // a decimater object, connected to a mesh
     HModQuadric hModQuadric;      // use a quadric module
     bool addSucces = decimater.add( hModQuadric ); // register module at the decimater
-    if (!addSucces){std::cerr << "registering quadric module to decimater failed!" << std::endl;}
+    if (!addSucces){ meshmonk::log(meshmonk::LogLevel::Warning, "registering quadric module to decimater failed!"); }
     decimater.module(hModQuadric).unset_max_err();
 
     //## Initialize the decimater
     bool rc = decimater.initialize();
     if (!rc){
-        std::cerr << "  initializing failed!" << std::endl;
-        std::cerr << "  maybe no priority module or more than one were defined!" << std::endl;
+        meshmonk::log(meshmonk::LogLevel::Warning, "  initializing failed!");
+        meshmonk::log(meshmonk::LogLevel::Warning, "  maybe no priority module or more than one were defined!");
         return;
     }
 
@@ -113,7 +114,7 @@ void Downsampler::update(){
 //    const size_t numEdges = mesh.n_edges();
 //    const size_t numFaces = mesh.n_faces();
     if (!rc){
-        std::cerr << "DOWNSAMPLING FAILED !" << std::endl;
+        meshmonk::log(meshmonk::LogLevel::Warning, "DOWNSAMPLING FAILED !");
     }
 
     //# Convert the downsampled result to the output matrices

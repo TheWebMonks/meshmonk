@@ -1,4 +1,5 @@
 #include "ScaleShifter.hpp"
+#include "meshmonk/logger.hpp"
 
 namespace registration {
 
@@ -108,7 +109,7 @@ void ScaleShifter::_find_matching_and_new_indices(){
             }
             else if (lowOriginalIndex < highOriginalIndex) {
                 //## (!) This should never occur, it means that a node was found in the low sampled mesh that doesn't exist in the high sampled mesh.
-                std::cerr << "the original indices in the low sampled mesh should be a subset of those of the high sampled mesh. Something went wrong?" << std::endl;
+                meshmonk::log(meshmonk::LogLevel::Warning, "the original indices in the low sampled mesh should be a subset of those of the high sampled mesh. Something went wrong?");
                 counterLow++;
                 continue;
             }
@@ -121,7 +122,7 @@ void ScaleShifter::_find_matching_and_new_indices(){
     _numNewNodes = _newIndices.size();
     //## safety check
     if((_numMatchingNodes + _numNewNodes) != _numHighNodes){
-        std::cerr << "Some nodes were missed as being new or matching nodes in ScaleShifter." << std::endl;
+        meshmonk::log(meshmonk::LogLevel::Warning, "Some nodes were missed as being new or matching nodes in ScaleShifter.");
     }
 }//end find_matching_and_new_indices()
 

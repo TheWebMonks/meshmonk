@@ -1,5 +1,6 @@
 
 #include "helper_functions.hpp"
+#include "meshmonk/logger.hpp"
 #include <fstream>
 #include <stdexcept>
 
@@ -32,10 +33,15 @@ void fuse_affinities(SparseMat &ioAffinity1,
     const size_t numCols2 = inAffinity2.cols();
     //## Safety check for input sizes
     if((numRows1 != numCols2) || (numCols1 != numRows2)) {
-        std::cerr << "The sizes of the inputted matrices in fuse_affinities are wrong. "
-        << "Their sizes should be the transpose of each other!" << std::endl;
-        std::cerr << " Affinity 1 : num rows - " << numRows1 << " | num cols - " << numCols1 << std::endl;
-        std::cerr << " Affinity 2 : num rows - " << numRows2 << " | num cols - " << numCols2 << std::endl;
+        meshmonk::log(meshmonk::LogLevel::Warning,
+            "The sizes of the inputted matrices in fuse_affinities are wrong. "
+            "Their sizes should be the transpose of each other!");
+        meshmonk::log(meshmonk::LogLevel::Warning,
+            " Affinity 1 : num rows - " + std::to_string(numRows1) +
+            " | num cols - " + std::to_string(numCols1));
+        meshmonk::log(meshmonk::LogLevel::Warning,
+            " Affinity 2 : num rows - " + std::to_string(numRows2) +
+            " | num cols - " + std::to_string(numCols2));
     }
 
     //# Fusing is done by simple averaging
@@ -413,7 +419,7 @@ void convert_matrices_to_mesh(const FeatureMat &inFeatures,
     //# Info and Initialization
     const size_t numVertices = inFeatures.rows();
     const size_t numFaces = inFaces.rows();
-    if (outMesh.n_vertices() > 0) { std::cerr<< "convert_eigen_to_openmesh expects an empty mesh as input!" << std::endl; }
+    if (outMesh.n_vertices() > 0) { meshmonk::log(meshmonk::LogLevel::Warning, "convert_eigen_to_openmesh expects an empty mesh as input!"); }
 
     //# Add each vertex and save the vertex handles for adding the faces later
     TriMesh::VertexHandle vertexHandle;
@@ -591,8 +597,8 @@ void convert_eigen_to_openmesh(const FeatureMat &inFeatures,
     const int numRows = inFeatures.rows();
     const int numVertices = outMesh.n_vertices();
      if (numRows != numVertices) {
-    std::cerr << "Number of rows does not correspond with number of vertices when"
-    << " calling eigen_features_to_openmesh()" << std::endl;
+        meshmonk::log(meshmonk::LogLevel::Warning,
+            "Number of rows does not correspond with number of vertices when calling eigen_features_to_openmesh()");
     }
 
     //# Put positions and normals back into mesh
@@ -710,14 +716,14 @@ bool import_data(const std::string inFloatingMeshPath,
     std::ifstream infile(inFloatingMeshPath);
     if (infile.good() != true){
         inputfilesExist = false;
-        std::cerr << "Floating mesh file does not exist" << std::endl;
+        meshmonk::log(meshmonk::LogLevel::Warning, "Floating mesh file does not exist");
     }
     infile.close();
     //## Target Mesh
     infile.open(inTargetMeshPath);
     if (infile.good() != true){
         inputfilesExist = false;
-        std::cerr << "Target mesh file does not exist" << std::endl;
+        meshmonk::log(meshmonk::LogLevel::Warning, "Target mesh file does not exist");
     }
     infile.close();
     if (!inputfilesExist){
@@ -808,8 +814,8 @@ void update_normals_for_altered_positions(TriMesh &ioMesh,
     const int numVertices = ioMesh.n_vertices();
     const int numRows = ioFeatures.rows();
     if (numRows != numVertices) {
-    std::cerr << "Number of rows does not correspond with number of vertices when"
-    << " calling eigen_features_to_openmesh()" << std::endl;
+        meshmonk::log(meshmonk::LogLevel::Warning,
+            "Number of rows does not correspond with number of vertices when calling eigen_features_to_openmesh()");
     }
 
     //# Insert positions from 'ioFeatures' into 'ioMesh'

@@ -1,4 +1,6 @@
 #include "RigidTransformer.hpp"
+#include "meshmonk/logger.hpp"
+#include <sstream>
 
 
 
@@ -32,7 +34,7 @@ void RigidTransformer::_update_transformation() {
         correspondingPositions = _inCorrespondingFeatures->leftCols(3).transpose();
     }
     else {
-        std::cerr << "Warning: input of rigid transformation expects rows to correspond with elements, not features, and to have more elements than features per element." << std::endl;
+        meshmonk::log(meshmonk::LogLevel::Warning, "input of rigid transformation expects rows to correspond with elements, not features, and to have more elements than features per element.");
     }
 
     //# Compute the tranformation in 10 steps.
@@ -79,8 +81,10 @@ void RigidTransformer::_update_transformation() {
     Vec4Float rotQuat = Vec4Float::Zero();
     EigenVectorDecomposer decomposer(Q);
     if (decomposer.info() != Eigen::Success) {
-        std::cerr << "eigenvector decomposer on Q failed!" << std::endl;
-        std::cerr << "Q : " << Q << std::endl;
+        meshmonk::log(meshmonk::LogLevel::Warning, "eigenvector decomposer on Q failed!");
+        std::ostringstream oss;
+        oss << "Q : " << Q;
+        meshmonk::log(meshmonk::LogLevel::Warning, oss.str());
     }
     size_t indexMaxVal = 0;
     float maxEigenValue = 0.0;

@@ -1,4 +1,5 @@
 #include "ViscoElasticTransformer.hpp"
+#include "meshmonk/logger.hpp"
 
 namespace registration {
 
@@ -107,7 +108,7 @@ void ViscoElasticTransformer::_update_smoothing_weights(){
             _smoothingWeights.row(i) /= sumWeight;
         }
         else if (!printedWarning) {
-            std::cerr << "Sum of smoothing weights in ViscoElastic Transformer should never be smaller than epsilon." << std::endl;
+            meshmonk::log(meshmonk::LogLevel::Warning, "Sum of smoothing weights in ViscoElastic Transformer should never be smaller than epsilon.");
             printedWarning = true;
         }
     }

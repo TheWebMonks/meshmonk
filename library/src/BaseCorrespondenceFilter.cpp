@@ -1,4 +1,5 @@
 #include "BaseCorrespondenceFilter.hpp"
+#include "meshmonk/logger.hpp"
 
 namespace registration {
 
@@ -46,7 +47,9 @@ void BaseCorrespondenceFilter::_affinity_to_correspondences(){
     //# Flag correction.
     //## Flags are binary. We will round them down if lower than the flag
     //## rounding limit (see explanation in parameter description).
-    if (_flagThreshold >= 1.0f) {std::cerr << "corresponding flag threshold equals " << _flagThreshold << " but has to be between 0.0 and 1.0!" <<std::endl;}
+    if (_flagThreshold >= 1.0f) { meshmonk::log(meshmonk::LogLevel::Warning,
+        "corresponding flag threshold equals " + std::to_string(_flagThreshold) +
+        " but has to be between 0.0 and 1.0!"); }
     for (size_t i = 0 ; i < _numFloatingElements ; i++) {
         if ((*_ioCorrespondingFlags)[i] > _flagThreshold){
             (*_ioCorrespondingFlags)[i] = 1.0;

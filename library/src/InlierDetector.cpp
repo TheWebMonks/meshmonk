@@ -1,4 +1,5 @@
 #include "InlierDetector.hpp"
+#include "meshmonk/logger.hpp"
 
 namespace registration {
 
@@ -72,7 +73,7 @@ void InlierDetector::_update_smoothing_weights(){
             _smoothingWeights.row(i) /= sumWeight;
         }
         else if (!printedWarning) {
-            std::cerr << "Sum of smoothing weights in ViscoElastic Transformer should never be smaller than epsilon." << std::endl;
+            meshmonk::log(meshmonk::LogLevel::Warning, "Sum of smoothing weights in ViscoElastic Transformer should never be smaller than epsilon.");
             printedWarning = true;
         }
     }
@@ -194,7 +195,7 @@ void InlierDetector::update() {
 
         averageOrientationInlierWeight /= _numElements;
         if (averageOrientationInlierWeight < 0.5f) {
-            std::cerr << "Warning: very low inlier weights due to surface normals. Are you sure one of the surfaces doesn't have its vertex normals flipped?" <<std::endl;
+            meshmonk::log(meshmonk::LogLevel::Warning, "very low inlier weights due to surface normals. Are you sure one of the surfaces doesn't have its vertex normals flipped?");
         }
     }
 
