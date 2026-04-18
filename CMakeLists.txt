@@ -47,3 +47,13 @@ target_include_directories(_meshmonk_core PRIVATE
     ${CMAKE_SOURCE_DIR}/vendor
     ${CMAKE_SOURCE_DIR}/vendor/tl)
 install(TARGETS _meshmonk_core LIBRARY DESTINATION meshmonk)
+
+# --- Type stubs (PEP 561) ---
+nanobind_add_stub(
+    _meshmonk_core_stub
+    MODULE _meshmonk_core
+    OUTPUT meshmonk/_meshmonk_core.pyi
+    PYTHON_PATH $<TARGET_FILE_DIR:_meshmonk_core>
+    DEPENDS _meshmonk_core
+    MARKER_FILE meshmonk/py.typed
+)

@@ -126,6 +126,12 @@ jobs:
             cc: clang
             cxx: clang++
 
+          # Windows latest + MSVC
+          - os: windows-latest
+            python-version: "3.12"
+            cc: cl
+            cxx: cl
+
     env:
       CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
@@ -139,11 +145,19 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Activate MSVC developer command prompt
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install uv
         run: pip install uv
 
       - name: Install package with dev and io extras
         run: uv pip install --system ".[dev,io]"
+
+      - name: Verify type stub exists
+        run: |
+          python -c "import pathlib; p = pathlib.Path('meshmonk/_meshmonk_core.pyi'); assert p.exists(), 'missing _meshmonk_core.pyi'"
 
       - name: Run tests (excluding golden tests)
         run: pytest tests/ -q --ignore=tests/test_golden.py
@@ -180,3 +194,26 @@ jobs:
         run: |
           meshmonk pyramid data/Template.obj data/demoFace.obj --out /tmp/pyramid.obj
           test -s /tmp/pyramid.obj || (echo "pyramid.obj is missing or empty"; exit 1)
+
+  # ---------------------------------------------------------------------------
+  # Job 4: cibuildwheel dry-run (one manylinux wheel, no PyPI upload)
+  # ---------------------------------------------------------------------------
+  cibuildwheel:
+    name: cibuildwheel dry-run (manylinux x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build one manylinux wheel
+        uses: pypa/cibuildwheel@v2
+        env:
+          CIBW_BUILD: cp312-manylinux_x86_64
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+          CIBW_TEST_REQUIRES: pytest scipy trimesh
+          CIBW_TEST_COMMAND: pytest {project}/tests -q --ignore={project}/tests/test_golden.py
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-manylinux-x86_64
+          path: wheelhouse/*.whl
