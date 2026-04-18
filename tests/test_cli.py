@@ -165,6 +165,23 @@ def test_demo_download_flag_present(runner, app):
     assert "--download" in result.output
 
 
+def test_demo_download_exits_code_1(runner, app):
+    """demo --download exits with code 1 (not implemented) and message goes to stderr."""
+    result = runner.invoke(app, ["demo", "--download"])
+    assert result.exit_code == 1, (
+        f"Expected exit code 1, got {result.exit_code}. Output: {result.output}"
+    )
+
+
+def test_demo_download_message_is_user_friendly(runner, app):
+    """demo --download prints a user-friendly message (not 'TODO')."""
+    result = runner.invoke(app, ["demo", "--download"])
+    # Should NOT contain bare 'TODO'
+    assert "TODO" not in result.output
+    # Should mention bundled meshes
+    assert "bundled" in result.output.lower() or "meshmonk/data" in result.output
+
+
 @pytest.mark.skipif(
     not MESHES_AVAILABLE,
     reason="Test meshes not available at /workspace/data/",

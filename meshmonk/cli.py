@@ -210,8 +210,13 @@ def demo(
 def _demo_download() -> None:
     """Fetch demo meshes to the cache directory."""
     if _TEMPLATE_URL is None or _DEMO_FACE_URL is None:
-        typer.echo("TODO: set download URLs")
-        raise typer.Exit(code=0)
+        typer.echo(
+            "Demo meshes are bundled in the package at meshmonk/data/. "
+            "Download URLs not yet configured. "
+            "Use the bundled meshes with: meshmonk demo rigid",
+            err=True,
+        )
+        raise typer.Exit(code=1)
 
     _CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
