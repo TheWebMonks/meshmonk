@@ -107,7 +107,7 @@ void ViscoElasticTransformer::_update_smoothing_weights(){
             _smoothingWeights.row(i) /= sumWeight;
         }
         else if (!printedWarning) {
-            std::cout << "Sum of smoothing weights in ViscoElastic Transformer should never be smaller than epsilon." << std::endl;
+            std::cerr << "Sum of smoothing weights in ViscoElastic Transformer should never be smaller than epsilon." << std::endl;
             printedWarning = true;
         }
     }

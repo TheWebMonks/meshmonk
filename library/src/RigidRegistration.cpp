@@ -67,11 +67,7 @@ void RigidRegistration::update(){
     rigidTransformer.set_parameters(_useScaling);
 
     //# Perform ICP
-    time_t timeStart, timePreIteration, timePostIteration, timeEnd;
-    timeStart = time(0);
-    std::cout << "Starting Rigid Registration process..." << std::endl;
     for (size_t iteration = 0 ; iteration < _numIterations ; iteration++) {
-        timePreIteration = time(0);
         //# Correspondences
         correspondenceFilter->set_floating_input(_ioFloatingFeatures, _inFloatingFlags);
         correspondenceFilter->set_target_input(_inTargetFeatures, _inTargetFlags);
@@ -87,12 +83,7 @@ void RigidRegistration::update(){
         Mat4Float currentTransform = rigidTransformer.get_transformation();
         _transformationMatrix = currentTransform * _transformationMatrix;
 
-        //# Print info
-        timePostIteration = time(0);
-        std::cout << "Iteration " << iteration << "/" << _numIterations << " took "<< difftime(timePostIteration, timePreIteration) <<" second(s)."<< std::endl;
     }
-    timeEnd = time(0);
-    std::cout << "Rigid Registration Completed in " << difftime(timeEnd, timeStart) <<" second(s)."<< std::endl;
 
     // correspondenceFilter is automatically deleted by unique_ptr
 

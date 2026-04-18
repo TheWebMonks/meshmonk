@@ -259,3 +259,118 @@ class TestPyramidValidation:
                 "pyramid_registration with 2 iterations / 1 layer (2 per layer) "
                 "must not raise DegenerateInput from the new validation"
             )
+
+
+# ---------------------------------------------------------------------------
+# Bug 4: PyramidNonrigidRegistration downsample target guard copy-paste bug
+# ---------------------------------------------------------------------------
+
+
+class TestPyramidDownsampleTargetGuard:
+    """Bug 4: line 54 of PyramidNonrigidRegistration.cpp had a copy-paste bug.
+
+    The guard for _downsampleTargetStart checked _downsampleFloatStart instead:
+
+        WRONG (bug):
+            if ((_downsampleTargetStart < 0.0f) || (_downsampleFloatStart >= 100.0f))
+
+        CORRECT (fix):
+            if ((_downsampleTargetStart < 0.0f) || (_downsampleTargetStart >= 100.0f))
+
+    This means an out-of-range _downsampleTargetStart (>= 100) would not be
+    clamped to 90.0f when _downsampleFloatStart is valid (< 100).
+
+    The clamping is internal state — not directly observable from Python (C++
+    stdout is not capturable through nanobind with gil_scoped_release, and the
+    downsampler silently falls back to keeping all vertices with an invalid ratio).
+
+    We therefore verify the fix via source-code inspection, which directly
+    captures the exact bug and its correction.
+    """
+
+    _SOURCE_FILE = "/workspace/library/src/PyramidNonrigidRegistration.cpp"
+
+    def test_target_guard_checks_target_variable(self):
+        """Line 54: both conditions in the _downsampleTargetStart guard must
+        reference _downsampleTargetStart, not _downsampleFloatStart.
+
+        Fails before the fix (bug present) and passes after the fix.
+        """
+        with open(self._SOURCE_FILE) as f:
+            source = f.read()
+
+        # The fixed line: both conditions must check _downsampleTargetStart
+        correct_guard = (
+            "if ((_downsampleTargetStart < 0.0f) || (_downsampleTargetStart >= 100.0f))"
+        )
+        # The buggy line: second condition incorrectly checks _downsampleFloatStart
+        buggy_guard = (
+            "if ((_downsampleTargetStart < 0.0f) || (_downsampleFloatStart >= 100.0f))"
+        )
+
+        assert buggy_guard not in source, (
+            "Copy-paste bug found in PyramidNonrigidRegistration.cpp line 54: "
+            "the _downsampleTargetStart guard checks _downsampleFloatStart instead "
+            "of _downsampleTargetStart in its second condition. "
+            f"Remove: {buggy_guard!r}"
+        )
+        assert correct_guard in source, (
+            "Expected the corrected _downsampleTargetStart guard to be present. "
+            f"Expected: {correct_guard!r}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Target bounding box degeneracy validation
+# ---------------------------------------------------------------------------
+
+
+class TestTargetBboxValidation:
+    """Verify target mesh with degenerate bounding box raises MeshMonkError."""
+
+    def _make_degenerate_target(self):
+        """Target where all vertices are at the same point."""
+        n = 10
+        # Normal floating mesh
+        float_verts = np.random.randn(n, 3).astype(np.float32) * 10
+        float_normals = np.random.randn(n, 3).astype(np.float32)
+        float_feat = np.hstack([float_verts, float_normals])
+        float_faces = np.array([[0, 1, 2]], dtype=np.int32)
+        float_flags = np.ones(n, dtype=np.float32)
+
+        # Degenerate target: all vertices at same point
+        target_verts = np.ones((n, 3), dtype=np.float32) * 5.0
+        target_normals = np.random.randn(n, 3).astype(np.float32)
+        target_feat = np.hstack([target_verts, target_normals])
+        target_faces = np.array([[0, 1, 2]], dtype=np.int32)
+        target_flags = np.ones(n, dtype=np.float32)
+
+        return (float_feat, target_feat, float_faces, target_faces,
+                float_flags, target_flags)
+
+    def test_rigid_degenerate_target_raises(self):
+        args = self._make_degenerate_target()
+        with pytest.raises(meshmonk.MeshMonkError):
+            meshmonk.rigid_register(
+                floating_features=args[0], target_features=args[1],
+                floating_faces=args[2], target_faces=args[3],
+                floating_flags=args[4], target_flags=args[5],
+            )
+
+    def test_nonrigid_degenerate_target_raises(self):
+        args = self._make_degenerate_target()
+        with pytest.raises(meshmonk.MeshMonkError):
+            meshmonk.nonrigid_register(
+                floating_features=args[0], target_features=args[1],
+                floating_faces=args[2], target_faces=args[3],
+                floating_flags=args[4], target_flags=args[5],
+            )
+
+    def test_pyramid_degenerate_target_raises(self):
+        args = self._make_degenerate_target()
+        with pytest.raises(meshmonk.MeshMonkError):
+            meshmonk.pyramid_register(
+                floating_features=args[0], target_features=args[1],
+                floating_faces=args[2], target_faces=args[3],
+                floating_flags=args[4], target_flags=args[5],
+            )

@@ -72,7 +72,7 @@ void InlierDetector::_update_smoothing_weights(){
             _smoothingWeights.row(i) /= sumWeight;
         }
         else if (!printedWarning) {
-            std::cout << "Sum of smoothing weights in ViscoElastic Transformer should never be smaller than epsilon." << std::endl;
+            std::cerr << "Sum of smoothing weights in ViscoElastic Transformer should never be smaller than epsilon." << std::endl;
             printedWarning = true;
         }
     }
@@ -194,7 +194,7 @@ void InlierDetector::update() {
 
         averageOrientationInlierWeight /= _numElements;
         if (averageOrientationInlierWeight < 0.5f) {
-            std::cout << "Warning: very low inlier weights due to surface normals. Are you sure one of the surfaces doesn't have its vertex normals flipped?" <<std::endl;
+            std::cerr << "Warning: very low inlier weights due to surface normals. Are you sure one of the surfaces doesn't have its vertex normals flipped?" <<std::endl;
         }
     }
 

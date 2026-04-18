@@ -1,4 +1,5 @@
 #include "Downsampler.hpp"
+#include <stdexcept>
 
 
 namespace registration {
@@ -111,11 +112,7 @@ void Downsampler::update(){
     numVertices = mesh.n_vertices();
 //    const size_t numEdges = mesh.n_edges();
 //    const size_t numFaces = mesh.n_faces();
-    if (rc){
-        std::cout << "Downsampled mesh " << _downsampleRatio*100.0f << "\% from " << numOriginalVertices << " vertices to " <<
-        numVertices << " vertices." << std::endl;
-    }
-    else{
+    if (!rc){
         std::cerr << "DOWNSAMPLING FAILED !" << std::endl;
     }
 
@@ -129,8 +126,7 @@ void Downsampler::update(){
         bool propertyExist = mesh.get_property_handle(originalIndices, "originalIndices");
         if (!propertyExist)
         {
-            std::cerr << "Tried to access the 'originalIndices' property of the mesh after downsampling - couldn't find handle\n";
-            exit(1);
+            throw std::runtime_error("Downsampler: mesh decimation failed - could not find 'originalIndices' property handle after downsampling");
         }
 
         //## Loop over the vertices and save its original index

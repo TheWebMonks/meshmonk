@@ -38,22 +38,18 @@ void PyramidNonrigidRegistration::set_parameters(size_t numIterations /*= 60*/,
         _numIterations = numIterations;
         if (_numIterations <= 0) {
             _numIterations = 1;
-            std::cout << "Number of iterations has to be a positive integer larger than 0!" <<std::endl;
         }
         _numPyramidLayers = numPyramidLayers;
         if (_numPyramidLayers <= 0) {
             _numPyramidLayers = 1;
-            std::cout << "Number of pyramid layers has to be a positive integer larger than 0!" <<std::endl;
         }
         _downsampleFloatStart = downsampleFloatStart; //percentage
         if ((_downsampleFloatStart < 0.0f) || (_downsampleFloatStart >= 100.0f)) {
             _downsampleFloatStart = 90.0f;
-            std::cout << "Downsample percentages have to be larger or equal to 0.0 and smaller than 100.0" <<std::endl;
         }
         _downsampleTargetStart = downsampleTargetStart; //percentage
-        if ((_downsampleTargetStart < 0.0f) || (_downsampleFloatStart >= 100.0f)) {
+        if ((_downsampleTargetStart < 0.0f) || (_downsampleTargetStart >= 100.0f)) {
             _downsampleTargetStart = 90.0f;
-            std::cout << "Downsample percentages have to be larger or equal to 0.0 and smaller than 100.0" <<std::endl;
         }
         _downsampleFloatEnd = downsampleFloatEnd; //percentage
         _downsampleTargetEnd = downsampleTargetEnd; //percentage
@@ -84,18 +80,12 @@ void PyramidNonrigidRegistration::set_parameters(size_t numIterations /*= 60*/,
         //## Determine smoothing iterations for each pyramid layer
         _viscousIterationsIntervals.resize(_numPyramidLayers + 1);
         _elasticIterationsIntervals.resize(_numPyramidLayers + 1);
-        std::cout << "viscous / elastic annealing rate : " << _viscousAnnealingRate << " / " << _elasticAnnealingRate << std::endl;
-        std::cout << "num viscous / elastic iterations : " << std::endl;
         for (size_t i = 0 ; i < _numPyramidLayers ; i++) {
             _viscousIterationsIntervals[i] = std::round(_transformNumViscousIterationsStart * pow(_viscousAnnealingRate, i * _iterationsPerLayer));
             _elasticIterationsIntervals[i] = std::round(_transformNumElasticIterationsStart * pow(_elasticAnnealingRate, i * _iterationsPerLayer));
-            std::cout << "num viscous iterations : " << _viscousIterationsIntervals[i] << std::endl;
-            std::cout << "num elastic iterations : " << _elasticIterationsIntervals[i] << std::endl;
         }
         _viscousIterationsIntervals[_numPyramidLayers] = _transformNumViscousIterationsEnd;
         _elasticIterationsIntervals[_numPyramidLayers] = _transformNumElasticIterationsEnd;
-        std::cout << "num viscous iterations : " << _viscousIterationsIntervals[_numPyramidLayers] << std::endl;
-        std::cout << "num elastic iterations : " << _elasticIterationsIntervals[_numPyramidLayers] << std::endl;
 }//end set_parameters()
 
 
@@ -125,7 +115,6 @@ void PyramidNonrigidRegistration::update(){
             downsampleRatio = float(std::round(_downsampleFloatStart - i * std::round((_downsampleFloatStart-_downsampleFloatEnd)/(_numPyramidLayers-1.0))));
         }
         downsampleRatio /= 100.0f;
-        std::cout<< " DOWNSAMPLE RATIO       : " << downsampleRatio << std::endl;
         //## Set up Downsampler
         Downsampler downsampler;
         VecDynFloat floatingFlags;

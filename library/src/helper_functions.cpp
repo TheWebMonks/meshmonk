@@ -1,6 +1,7 @@
 
 #include "helper_functions.hpp"
 #include <fstream>
+#include <stdexcept>
 
 namespace registration {
 
@@ -33,8 +34,8 @@ void fuse_affinities(SparseMat &ioAffinity1,
     if((numRows1 != numCols2) || (numCols1 != numRows2)) {
         std::cerr << "The sizes of the inputted matrices in fuse_affinities are wrong. "
         << "Their sizes should be the transpose of each other!" << std::endl;
-        std::cout << " Affinity 1 : num rows - " << numRows1 << " | num cols - " << numCols1 << std::endl;
-        std::cout << " Affinity 2 : num rows - " << numRows2 << " | num cols - " << numCols2 << std::endl;
+        std::cerr << " Affinity 1 : num rows - " << numRows1 << " | num cols - " << numCols1 << std::endl;
+        std::cerr << " Affinity 2 : num rows - " << numRows2 << " | num cols - " << numCols2 << std::endl;
     }
 
     //# Fusing is done by simple averaging
@@ -155,7 +156,6 @@ void radius_nearest_neighbours(const VecMatType &inQueriedPoints,
         std::vector<std::pair<size_t, float> > resultIndexAndDistancePairs;
         nanoflann::RadiusResultSet<float,size_t> resultSet(paramRadius,resultIndexAndDistancePairs);
         const size_t nMatches = kdTree.index->radiusSearchCustomCallback(&queriedFeature[0],resultSet,searchParams);
-        std::cout << "Number of matches: " << nMatches << std::endl;
 
         //### Copy the result into neighbourIndices and neighbourSquaredDistances
         //### by first copying it into single std::vector<float/int> and then
@@ -332,8 +332,7 @@ void convert_mesh_to_matrices(const TriMesh &inMesh,
     bool flagsExist = inMesh.get_property_handle(flags, "flags");
     if (!flagsExist)
     {
-        std::cerr << "Tried to access the 'flags' property of input mesh - couldn't find handle\n";
-        exit(1);
+        throw std::runtime_error("convert_mesh_to_matrices: could not find 'flags' property handle on input mesh");
     }
 
     //# Convert to features and faces
@@ -704,7 +703,6 @@ bool import_data(const std::string inFloatingMeshPath,
                  FeatureMat &outTargetFeatures,
                  FacesMat &outFloatingFaces,
                  FacesMat &outTargetFaces){
-    std::cout << "Importing Data..." << std::endl;
 
     //# Safety check (do the input files exist?)
     bool inputfilesExist = true;
@@ -723,7 +721,6 @@ bool import_data(const std::string inFloatingMeshPath,
     }
     infile.close();
     if (!inputfilesExist){
-        std::cout<< "DataImporter can't update - input files not found!" << std::endl;
         return inputfilesExist;
     }
 
@@ -732,14 +729,12 @@ bool import_data(const std::string inFloatingMeshPath,
     TriMesh floatingMesh;
     // OpenMesh::IO::_OBJReader_(); // This line might be problematic for static linking or modern OpenMesh
     if (!OpenMesh::IO::read_mesh(floatingMesh,inFloatingMeshPath)){
-        std::cerr << "Read error \n";
-        exit(1);
+        throw std::runtime_error("import_data: failed to read floating mesh from: " + inFloatingMeshPath);
     };
     //## Target Mesh
     TriMesh targetMesh;
     if (!OpenMesh::IO::read_mesh(targetMesh,inTargetMeshPath)){
-        std::cerr << "Read error \n";
-        exit(1);
+        throw std::runtime_error("import_data: failed to read target mesh from: " + inTargetMeshPath);
     };
 
     //# Update the mesh vertex normals
@@ -756,9 +751,6 @@ bool import_data(const std::string inFloatingMeshPath,
     convert_mesh_to_matrices(floatingMesh, outFloatingFeatures, outFloatingFaces);
     convert_mesh_to_matrices(targetMesh, outTargetFeatures, outTargetFaces);
 
-
-    std::cout << "Imported Data" << std::endl;
-
     return true;
 }//end import_data()
 
@@ -766,7 +758,6 @@ bool import_data(const std::string inFloatingMeshPath,
 bool export_data(FeatureMat &inResultFeatures,
                  FacesMat &inResultFaces,
                  const std::string inResultMeshPath) {
-    std::cout << "Exporting Data..." << std::endl;
 
     //# Convert the matrices to a mesh
     TriMesh resultMesh;
@@ -775,10 +766,8 @@ bool export_data(FeatureMat &inResultFeatures,
     // OpenMesh::IO::_OBJWriter_(); // This line might be problematic for static linking or modern OpenMesh
     if (!OpenMesh::IO::write_mesh(resultMesh, inResultMeshPath))
     {
-        std::cerr << "write error\n";
-        exit(1);
+        throw std::runtime_error("export_data: failed to write result mesh to: " + inResultMeshPath);
     }
-    else {std::cout << "Data Exported." << std::endl;}
 
     return true;
 }

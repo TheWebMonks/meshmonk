@@ -118,6 +118,11 @@ rigid_registration(
         floating_features.col(1).maxCoeff() == floating_features.col(1).minCoeff() &&
         floating_features.col(2).maxCoeff() == floating_features.col(2).minCoeff())
         return tl::unexpected{RegistrationError::DegenerateInput};
+    // Target bounding box degeneracy check
+    if (target_features.col(0).maxCoeff() == target_features.col(0).minCoeff() &&
+        target_features.col(1).maxCoeff() == target_features.col(1).minCoeff() &&
+        target_features.col(2).maxCoeff() == target_features.col(2).minCoeff())
+        return tl::unexpected{RegistrationError::DegenerateInput};
 
     //-------------------------------------------------------------------------
     // Make mutable copies (set_input takes raw pointers to non-const)
@@ -201,6 +206,11 @@ nonrigid_registration(
     if (floating_features.col(0).maxCoeff() == floating_features.col(0).minCoeff() &&
         floating_features.col(1).maxCoeff() == floating_features.col(1).minCoeff() &&
         floating_features.col(2).maxCoeff() == floating_features.col(2).minCoeff())
+        return tl::unexpected{RegistrationError::DegenerateInput};
+    // Target bounding box degeneracy check
+    if (target_features.col(0).maxCoeff() == target_features.col(0).minCoeff() &&
+        target_features.col(1).maxCoeff() == target_features.col(1).minCoeff() &&
+        target_features.col(2).maxCoeff() == target_features.col(2).minCoeff())
         return tl::unexpected{RegistrationError::DegenerateInput};
     if (params.num_iterations < 2)
         return tl::unexpected{RegistrationError::DegenerateInput};
@@ -293,6 +303,11 @@ pyramid_registration(
     if (floating_features.col(0).maxCoeff() == floating_features.col(0).minCoeff() &&
         floating_features.col(1).maxCoeff() == floating_features.col(1).minCoeff() &&
         floating_features.col(2).maxCoeff() == floating_features.col(2).minCoeff())
+        return tl::unexpected{RegistrationError::DegenerateInput};
+    // Target bounding box degeneracy check
+    if (target_features.col(0).maxCoeff() == target_features.col(0).minCoeff() &&
+        target_features.col(1).maxCoeff() == target_features.col(1).minCoeff() &&
+        target_features.col(2).maxCoeff() == target_features.col(2).minCoeff())
         return tl::unexpected{RegistrationError::DegenerateInput};
     if (params.num_pyramid_layers < 1)
         return tl::unexpected{RegistrationError::DegenerateInput};
