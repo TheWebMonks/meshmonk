@@ -42,8 +42,16 @@ void NonrigidRegistration::set_parameters(bool symmetric,
     _numViscousIterations = _numViscousIterationsStart;
     _numElasticIterations = _numElasticIterationsStart;
 
-    _viscousAnnealingRate = exp(log(float(_numViscousIterationsEnd)/float(_numViscousIterationsStart))/(_numIterations-1));
-    _elasticAnnealingRate = exp(log(float(_numElasticIterationsEnd)/float(_numElasticIterationsStart))/(_numIterations-1));
+    if (_numViscousIterationsStart > 0) {
+        _viscousAnnealingRate = exp(log(float(_numViscousIterationsEnd)/float(_numViscousIterationsStart))/(_numIterations-1));
+    } else {
+        _viscousAnnealingRate = 1.0f;
+    }
+    if (_numElasticIterationsStart > 0) {
+        _elasticAnnealingRate = exp(log(float(_numElasticIterationsEnd)/float(_numElasticIterationsStart))/(_numIterations-1));
+    } else {
+        _elasticAnnealingRate = 1.0f;
+    }
 }//end set_parameters()
 
 

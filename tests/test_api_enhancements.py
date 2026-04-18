@@ -1,4 +1,5 @@
-"""Tests for v0.2 API enhancements (bead workspace-hqz.6)."""
+"""Tests for API enhancements (bead workspace-hqz.6)."""
+import os
 import subprocess
 import sys
 
@@ -9,10 +10,11 @@ import pytest
 class TestMainModule:
     def test_python_m_meshmonk_help(self):
         """python -m meshmonk --help should print CLI help."""
+        env = dict(os.environ)  # inherit current environment (includes LD_LIBRARY_PATH)
         result = subprocess.run(
             [sys.executable, "-m", "meshmonk", "--help"],
             capture_output=True, text=True, timeout=30,
-            env={**__import__('os').environ, "LD_LIBRARY_PATH": "/workspace/.venv/lib/python3.11/site-packages/lib"},
+            env=env,
         )
         assert result.returncode == 0
         assert "meshmonk" in result.stdout.lower()

@@ -109,6 +109,8 @@ rigid_registration(
         return tl::unexpected{RegistrationError::DegenerateInput};
     if (floating_faces.cols() != 3 || target_faces.cols() != 3)
         return tl::unexpected{RegistrationError::DegenerateInput};
+    if (floating_faces.rows() == 0 || target_faces.rows() == 0)
+        return tl::unexpected{RegistrationError::DegenerateInput};
     if (floating_flags.maxCoeff() == 0.0f)
         return tl::unexpected{RegistrationError::DegenerateInput};
     if (target_flags.maxCoeff() == 0.0f)

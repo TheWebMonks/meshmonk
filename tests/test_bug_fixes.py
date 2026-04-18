@@ -15,6 +15,7 @@ Notes on test strategy:
 
 from __future__ import annotations
 
+from pathlib import Path
 import numpy as np
 import pytest
 
@@ -288,7 +289,7 @@ class TestPyramidDownsampleTargetGuard:
     captures the exact bug and its correction.
     """
 
-    _SOURCE_FILE = "/workspace/library/src/PyramidNonrigidRegistration.cpp"
+    _SOURCE_FILE = str(Path(__file__).parent.parent / "library" / "src" / "PyramidNonrigidRegistration.cpp")
 
     def test_target_guard_checks_target_variable(self):
         """Line 54: both conditions in the _downsampleTargetStart guard must

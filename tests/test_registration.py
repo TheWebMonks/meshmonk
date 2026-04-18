@@ -154,6 +154,7 @@ class TestPyramidSelfRegistration:
         # Both should be small (self-registration)
         assert nr_rmse < 1.0
         assert pyr_rmse < 1.0
+        assert abs(nr_rmse - pyr_rmse) < 0.5
 
 
 class TestNonrigidWithTranslation:
@@ -182,5 +183,10 @@ class TestNonrigidWithTranslation:
         aligned_dist = np.sqrt(np.mean((result.aligned_vertices - features[:, :3]) ** 2))
         assert aligned_dist < original_dist, (
             f"Nonrigid registration should reduce distance to target. "
+            f"Original RMSE: {original_dist:.4f}, Aligned RMSE: {aligned_dist:.4f}"
+        )
+        assert aligned_dist < 0.5 * original_dist, (
+            f"Nonrigid registration should substantially reduce distance to target "
+            f"(expected < 50% of original). "
             f"Original RMSE: {original_dist:.4f}, Aligned RMSE: {aligned_dist:.4f}"
         )
