@@ -434,6 +434,87 @@ def _apply_pyramid_kwargs(params: PyramidParams, kwargs: dict, explicit_kwargs: 
 
 
 # ---------------------------------------------------------------------------
+# Shared array-preparation helper
+# ---------------------------------------------------------------------------
+
+def _prepare_arrays(
+    floating=None,
+    target=None,
+    *,
+    floating_features=None,
+    target_features=None,
+    floating_faces=None,
+    target_faces=None,
+    floating_normals_override=None,
+    force_recompute_normals=False,
+    floating_flags=None,
+    target_flags=None,
+):
+    """Validate inputs and convert to (feat_float, feat_target, faces_float, faces_target, flags_float, flags_target).
+
+    Supports both Pattern A (duck-typed mesh objects / file paths) and
+    Pattern B (raw numpy arrays).  In Pattern B, flags default to all-ones
+    when not provided.
+    """
+    import warnings as _warnings
+    from meshmonk._meshmonk_core import compute_normals as _compute_normals
+
+    pattern_a = floating is not None
+    if pattern_a:
+        feat_float, faces_float, flags_float = _mesh_to_arrays(
+            floating, normals_override=floating_normals_override, force_recompute=force_recompute_normals
+        )
+        feat_target, faces_target, flags_target = _mesh_to_arrays(
+            target, force_recompute=force_recompute_normals
+        )
+        if floating_flags is not None:
+            flags_float = np.asarray(floating_flags, dtype=np.float32)
+        if target_flags is not None:
+            flags_target = np.asarray(target_flags, dtype=np.float32)
+    else:
+        required = {
+            'floating_features': floating_features,
+            'target_features': target_features,
+            'floating_faces': floating_faces,
+            'target_faces': target_faces,
+        }
+        missing = [k for k, v in required.items() if v is None]
+        if missing:
+            raise ValueError(
+                'Pattern B requires all array arguments. Missing: ' + ', '.join(missing)
+            )
+        feat_float  = np.asarray(floating_features, dtype=np.float32)
+        feat_target = np.asarray(target_features, dtype=np.float32)
+        faces_float  = np.asarray(floating_faces, dtype=np.int32)
+        faces_target = np.asarray(target_faces, dtype=np.int32)
+        n_float  = feat_float.shape[0]
+        n_target = feat_target.shape[0]
+        flags_float = (
+            np.asarray(floating_flags, dtype=np.float32)
+            if floating_flags is not None
+            else np.ones(n_float, dtype=np.float32)
+        )
+        flags_target = (
+            np.asarray(target_flags, dtype=np.float32)
+            if target_flags is not None
+            else np.ones(n_target, dtype=np.float32)
+        )
+        # Auto-recompute normals if all-zero
+        if feat_float.shape[1] == 6 and np.all(feat_float[:, 3:] == 0.0):
+            _warnings.warn('floating_features normals are all-zero; recomputing.', stacklevel=3)
+            normals_r = np.asarray(_compute_normals(feat_float[:, :3], faces_float), dtype=np.float32)
+            feat_float = feat_float.copy()
+            feat_float[:, 3:] = normals_r
+        if feat_target.shape[1] == 6 and np.all(feat_target[:, 3:] == 0.0):
+            _warnings.warn('target_features normals are all-zero; recomputing.', stacklevel=3)
+            normals_r = np.asarray(_compute_normals(feat_target[:, :3], faces_target), dtype=np.float32)
+            feat_target = feat_target.copy()
+            feat_target[:, 3:] = normals_r
+
+    return feat_float, feat_target, faces_float, faces_target, flags_float, flags_target
+
+
+# ---------------------------------------------------------------------------
 # High-level registration functions
 # ---------------------------------------------------------------------------
 
@@ -495,63 +576,26 @@ def rigid_register(
         raise ValueError("both floating and target must be provided, or neither")
     # Reject mixed Pattern A + Pattern B
     pattern_a = floating is not None  # (already checked target matches)
-    pattern_b = any(x is not None for x in [floating_features, target_features, floating_faces, target_faces, floating_flags, target_flags])
-    if pattern_a and pattern_b:
+    pattern_b_args = any(x is not None for x in [
+        floating_features, target_features, floating_faces, target_faces,
+        floating_flags, target_flags
+    ])
+    if pattern_a and pattern_b_args:
         raise TypeError(
             "Cannot mix Pattern A (floating/target) with Pattern B "
             "(floating_features/target_features) arguments"
         )
-    if floating is not None or target is not None:
-        # Pattern A: duck-typed mesh objects
-        feat_float, faces_float, flags_float = _mesh_to_arrays(
-            floating, normals_override=normals, force_recompute=compute_normals_flag
-        )
-        feat_target, faces_target, flags_target = _mesh_to_arrays(
-            target, force_recompute=compute_normals_flag
-        )
-    else:
-        # Pattern B: raw numpy arrays
-        required = {
-            "floating_features": floating_features,
-            "target_features": target_features,
-            "floating_faces": floating_faces,
-            "target_faces": target_faces,
-            "floating_flags": floating_flags,
-            "target_flags": target_flags,
-        }
-        missing = [k for k, v in required.items() if v is None]
-        if missing:
-            raise ValueError(
-                f"Pattern B requires all array arguments. Missing: {', '.join(missing)}"
-            )
-        feat_float  = np.asarray(floating_features, dtype=np.float32)
-        feat_target = np.asarray(target_features, dtype=np.float32)
-        faces_float  = np.asarray(floating_faces, dtype=np.int32)
-        faces_target = np.asarray(target_faces, dtype=np.int32)
-        flags_float  = np.asarray(floating_flags, dtype=np.float32)
-        flags_target = np.asarray(target_flags, dtype=np.float32)
-
-        # Auto-recompute normals if all-zero
-        if np.all(feat_float[:, 3:] == 0.0):
-            warnings.warn(
-                "floating_features normals are all-zero; recomputing.",
-                stacklevel=2,
-            )
-            normals_recomputed = np.asarray(
-                compute_normals(feat_float[:, :3], faces_float), dtype=np.float32
-            )
-            feat_float = feat_float.copy()
-            feat_float[:, 3:] = normals_recomputed
-        if np.all(feat_target[:, 3:] == 0.0):
-            warnings.warn(
-                "target_features normals are all-zero; recomputing.",
-                stacklevel=2,
-            )
-            normals_recomputed = np.asarray(
-                compute_normals(feat_target[:, :3], faces_target), dtype=np.float32
-            )
-            feat_target = feat_target.copy()
-            feat_target[:, 3:] = normals_recomputed
+    feat_float, feat_target, faces_float, faces_target, flags_float, flags_target = _prepare_arrays(
+        floating, target,
+        floating_features=floating_features,
+        target_features=target_features,
+        floating_faces=floating_faces,
+        target_faces=target_faces,
+        floating_normals_override=normals,
+        force_recompute_normals=compute_normals_flag,
+        floating_flags=floating_flags,
+        target_flags=target_flags,
+    )
 
     params = RigidParams()
     params = _apply_rigid_kwargs(params, kwargs)
@@ -581,11 +625,19 @@ def nonrigid_register(
     target_flags=None,
     normals=None,
     compute_normals_flag=False,
+    rigid_params=None,
     **kwargs,
 ) -> NonrigidRegResult:
     """Run nonrigid (viscoelastic) mesh registration.
 
     Accepts the same two call patterns as rigid_register().
+
+    Parameters
+    ----------
+    rigid_params:
+        Optional dict of kwargs passed to rigid_register() for rigid pre-alignment.
+        Pass ``{}`` to run rigid pre-alignment with defaults, or a dict with overrides
+        such as ``{'num_iterations': 40}``.  ``None`` (default) skips pre-alignment.
 
     Returns
     -------
@@ -595,60 +647,39 @@ def nonrigid_register(
         raise ValueError("both floating and target must be provided, or neither")
     # Reject mixed Pattern A + Pattern B
     pattern_a = floating is not None  # (already checked target matches)
-    pattern_b = any(x is not None for x in [floating_features, target_features, floating_faces, target_faces, floating_flags, target_flags])
-    if pattern_a and pattern_b:
+    pattern_b_args = any(x is not None for x in [
+        floating_features, target_features, floating_faces, target_faces,
+        floating_flags, target_flags
+    ])
+    if pattern_a and pattern_b_args:
         raise TypeError(
             "Cannot mix Pattern A (floating/target) with Pattern B "
             "(floating_features/target_features) arguments"
         )
-    if floating is not None or target is not None:
-        feat_float, faces_float, flags_float = _mesh_to_arrays(
-            floating, normals_override=normals, force_recompute=compute_normals_flag
-        )
-        feat_target, faces_target, flags_target = _mesh_to_arrays(
-            target, force_recompute=compute_normals_flag
-        )
-    else:
-        required = {
-            "floating_features": floating_features,
-            "target_features": target_features,
-            "floating_faces": floating_faces,
-            "target_faces": target_faces,
-            "floating_flags": floating_flags,
-            "target_flags": target_flags,
-        }
-        missing = [k for k, v in required.items() if v is None]
-        if missing:
-            raise ValueError(
-                f"Pattern B requires all array arguments. Missing: {', '.join(missing)}"
-            )
-        feat_float  = np.asarray(floating_features, dtype=np.float32)
-        feat_target = np.asarray(target_features, dtype=np.float32)
-        faces_float  = np.asarray(floating_faces, dtype=np.int32)
-        faces_target = np.asarray(target_faces, dtype=np.int32)
-        flags_float  = np.asarray(floating_flags, dtype=np.float32)
-        flags_target = np.asarray(target_flags, dtype=np.float32)
+    feat_float, feat_target, faces_float, faces_target, flags_float, flags_target = _prepare_arrays(
+        floating, target,
+        floating_features=floating_features,
+        target_features=target_features,
+        floating_faces=floating_faces,
+        target_faces=target_faces,
+        floating_normals_override=normals,
+        force_recompute_normals=compute_normals_flag,
+        floating_flags=floating_flags,
+        target_flags=target_flags,
+    )
 
-        if np.all(feat_float[:, 3:] == 0.0):
-            warnings.warn(
-                "floating_features normals are all-zero; recomputing.",
-                stacklevel=2,
-            )
-            normals_recomputed = np.asarray(
-                compute_normals(feat_float[:, :3], faces_float), dtype=np.float32
-            )
-            feat_float = feat_float.copy()
-            feat_float[:, 3:] = normals_recomputed
-        if np.all(feat_target[:, 3:] == 0.0):
-            warnings.warn(
-                "target_features normals are all-zero; recomputing.",
-                stacklevel=2,
-            )
-            normals_recomputed = np.asarray(
-                compute_normals(feat_target[:, :3], faces_target), dtype=np.float32
-            )
-            feat_target = feat_target.copy()
-            feat_target[:, 3:] = normals_recomputed
+    if rigid_params is not None:
+        _rigid_kw = rigid_params if isinstance(rigid_params, dict) else {}
+        rigid_result = rigid_register(
+            floating_features=feat_float,
+            target_features=feat_target,
+            floating_faces=faces_float,
+            target_faces=faces_target,
+            floating_flags=flags_float,
+            target_flags=flags_target,
+            **_rigid_kw,
+        )
+        feat_float = rigid_result.aligned_features
 
     params = NonrigidParams()
     params = _apply_nonrigid_kwargs(params, kwargs)
@@ -679,6 +710,7 @@ def pyramid_register(
     target_flags=None,
     normals=None,
     compute_normals_flag=False,
+    rigid_params=None,
     **kwargs,
 ) -> PyramidRegResult:
     """Run pyramid (multi-resolution) nonrigid mesh registration.
@@ -688,6 +720,13 @@ def pyramid_register(
     Special behaviour: viscous/elastic start iterations are auto-set to
     num_iterations when not explicitly passed (matching MATLAB convention).
 
+    Parameters
+    ----------
+    rigid_params:
+        Optional dict of kwargs passed to rigid_register() for rigid pre-alignment.
+        Pass ``{}`` to run rigid pre-alignment with defaults, or a dict with overrides
+        such as ``{'num_iterations': 40}``.  ``None`` (default) skips pre-alignment.
+
     Returns
     -------
     PyramidRegResult
@@ -696,60 +735,39 @@ def pyramid_register(
         raise ValueError("both floating and target must be provided, or neither")
     # Reject mixed Pattern A + Pattern B
     pattern_a = floating is not None  # (already checked target matches)
-    pattern_b = any(x is not None for x in [floating_features, target_features, floating_faces, target_faces, floating_flags, target_flags])
-    if pattern_a and pattern_b:
+    pattern_b_args = any(x is not None for x in [
+        floating_features, target_features, floating_faces, target_faces,
+        floating_flags, target_flags
+    ])
+    if pattern_a and pattern_b_args:
         raise TypeError(
             "Cannot mix Pattern A (floating/target) with Pattern B "
             "(floating_features/target_features) arguments"
         )
-    if floating is not None or target is not None:
-        feat_float, faces_float, flags_float = _mesh_to_arrays(
-            floating, normals_override=normals, force_recompute=compute_normals_flag
-        )
-        feat_target, faces_target, flags_target = _mesh_to_arrays(
-            target, force_recompute=compute_normals_flag
-        )
-    else:
-        required = {
-            "floating_features": floating_features,
-            "target_features": target_features,
-            "floating_faces": floating_faces,
-            "target_faces": target_faces,
-            "floating_flags": floating_flags,
-            "target_flags": target_flags,
-        }
-        missing = [k for k, v in required.items() if v is None]
-        if missing:
-            raise ValueError(
-                f"Pattern B requires all array arguments. Missing: {', '.join(missing)}"
-            )
-        feat_float  = np.asarray(floating_features, dtype=np.float32)
-        feat_target = np.asarray(target_features, dtype=np.float32)
-        faces_float  = np.asarray(floating_faces, dtype=np.int32)
-        faces_target = np.asarray(target_faces, dtype=np.int32)
-        flags_float  = np.asarray(floating_flags, dtype=np.float32)
-        flags_target = np.asarray(target_flags, dtype=np.float32)
+    feat_float, feat_target, faces_float, faces_target, flags_float, flags_target = _prepare_arrays(
+        floating, target,
+        floating_features=floating_features,
+        target_features=target_features,
+        floating_faces=floating_faces,
+        target_faces=target_faces,
+        floating_normals_override=normals,
+        force_recompute_normals=compute_normals_flag,
+        floating_flags=floating_flags,
+        target_flags=target_flags,
+    )
 
-        if np.all(feat_float[:, 3:] == 0.0):
-            warnings.warn(
-                "floating_features normals are all-zero; recomputing.",
-                stacklevel=2,
-            )
-            normals_recomputed = np.asarray(
-                compute_normals(feat_float[:, :3], faces_float), dtype=np.float32
-            )
-            feat_float = feat_float.copy()
-            feat_float[:, 3:] = normals_recomputed
-        if np.all(feat_target[:, 3:] == 0.0):
-            warnings.warn(
-                "target_features normals are all-zero; recomputing.",
-                stacklevel=2,
-            )
-            normals_recomputed = np.asarray(
-                compute_normals(feat_target[:, :3], faces_target), dtype=np.float32
-            )
-            feat_target = feat_target.copy()
-            feat_target[:, 3:] = normals_recomputed
+    if rigid_params is not None:
+        _rigid_kw = rigid_params if isinstance(rigid_params, dict) else {}
+        rigid_result = rigid_register(
+            floating_features=feat_float,
+            target_features=feat_target,
+            floating_faces=faces_float,
+            target_faces=faces_target,
+            floating_flags=flags_float,
+            target_flags=flags_target,
+            **_rigid_kw,
+        )
+        feat_float = rigid_result.aligned_features
 
     # Pass the set of explicitly provided kwargs so _apply_pyramid_kwargs
     # knows which viscous/elastic start values to auto-populate

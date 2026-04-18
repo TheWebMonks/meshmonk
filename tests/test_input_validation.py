@@ -41,17 +41,15 @@ class TestPatternBNoneGuard:
                 target_flags=flags,
             )
 
-    def test_pyramid_none_flags_raises(self):
-        feat, faces, flags = _make_features()
-        with pytest.raises(ValueError, match="Pattern B requires"):
-            meshmonk.pyramid_register(
-                floating_features=feat,
-                target_features=feat,
-                floating_faces=faces,
-                target_faces=faces,
-                floating_flags=None,
-                target_flags=flags,
-            )
+    def test_pattern_b_none_flags_defaults_to_ones(self):
+        feat, faces, _ = _make_features()
+        result = meshmonk.rigid_register(
+            floating_features=feat, target_features=feat,
+            floating_faces=faces, target_faces=faces,
+            floating_flags=None,
+            target_flags=None,
+        )
+        assert result is not None
 
 
 class TestMixedPatternRejection:
