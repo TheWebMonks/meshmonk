@@ -71,10 +71,42 @@ NB_MODULE(_meshmonk_core, m) {
     m.doc() = "MeshMonk C++ extension module (nanobind)";
 
     // -----------------------------------------------------------------------
-    // Exception translation: std::runtime_error -> Python RuntimeError
-    // nanobind uses nb::exception<T>(scope, name, base) — NOT register_exception
+    // Exception translation: MeshMonkError -> Python MeshMonkError (RuntimeError)
+    // We create the Python exception type manually so we can attach _code as
+    // an integer attribute, enabling programmatic dispatch on error type.
     // -----------------------------------------------------------------------
-    nb::exception<meshmonk::MeshMonkError>(m, "MeshMonkError", PyExc_RuntimeError);
+    // exception_new returns a new reference; steal it into the module attr
+    // so the refcount stays at 1 (owned by the module dict).
+    // s_MeshMonkError is a borrowed raw pointer valid for the module lifetime.
+    static PyObject* s_MeshMonkError =
+        nb::detail::exception_new(m.ptr(), "MeshMonkError", PyExc_RuntimeError);
+
+    // Export MeshMonkError on the module (steals the new reference)
+    m.attr("MeshMonkError") = nb::steal(nb::handle(s_MeshMonkError));
+
+    // Register custom translator that sets _code attribute on exception
+    nb::register_exception_translator(
+        [](const std::exception_ptr &p, void *payload) {
+            try {
+                std::rethrow_exception(p);
+            } catch (const meshmonk::MeshMonkError &e) {
+                auto *type = static_cast<PyObject*>(payload);
+                PyObject *args = Py_BuildValue("(s)", e.what());
+                if (!args) return;
+                PyObject *exc = PyObject_Call(type, args, nullptr);
+                Py_DECREF(args);
+                if (exc) {
+                    PyObject *code_int = PyLong_FromLong(
+                        static_cast<long>(e.code()));
+                    PyObject_SetAttrString(exc, "_code", code_int);
+                    Py_XDECREF(code_int);
+                    PyErr_SetObject(type, exc);
+                    Py_DECREF(exc);
+                }
+            }
+        },
+        static_cast<void*>(s_MeshMonkError)
+    );
 
     // -----------------------------------------------------------------------
     // RegistrationError enum

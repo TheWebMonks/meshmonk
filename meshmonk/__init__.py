@@ -47,6 +47,19 @@ from meshmonk._meshmonk_core import (  # noqa: E402
     set_log_level as _set_log_level_core,
 )
 
+# ---------------------------------------------------------------------------
+# Add .code property to MeshMonkError for programmatic error dispatch
+# ---------------------------------------------------------------------------
+
+def _meshmonk_error_code(self):
+    """The RegistrationError code for this error, or None."""
+    raw = getattr(self, '_code', None)
+    if raw is not None:
+        return RegistrationError(raw)
+    return None
+
+MeshMonkError.code = property(_meshmonk_error_code)
+
 if TYPE_CHECKING:
     from pathlib import Path
 
