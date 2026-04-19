@@ -35,11 +35,18 @@ target_include_directories(
           ${CMAKE_CURRENT_SOURCE_DIR}/../vendor)
 
 # --- Link Dependencies ---
-target_link_libraries(
-  meshmonk_lib
-  PRIVATE # Link against the static OpenMesh libraries built as part of this
-          # project
-          OpenMeshCore OpenMeshTools)
+# OpenMesh's CMake builds SHAREDANDSTATIC on non-Windows platforms regardless
+# of BUILD_SHARED_LIBS, exposing `OpenMeshCore`/`OpenMeshTools` as shared and
+# `OpenMeshCoreStatic`/`OpenMeshToolsStatic` as static. We link the static
+# variants so the wheel has no runtime dependency on libOpenMeshTools.so. On
+# Windows only the single `OpenMeshCore`/`OpenMeshTools` target exists (built
+# STATIC since OpenMesh has no DLL exports).
+if(WIN32)
+  target_link_libraries(meshmonk_lib PRIVATE OpenMeshCore OpenMeshTools)
+else()
+  target_link_libraries(meshmonk_lib PRIVATE OpenMeshCoreStatic
+                                             OpenMeshToolsStatic)
+endif()
 
 # Optional: Set properties if needed, e.g., C++ standard (already set at root,
 # but can be target-specific) set_target_properties(meshmonk_shared PROPERTIES
