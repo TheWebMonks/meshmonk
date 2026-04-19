@@ -10,10 +10,18 @@ Tests verify:
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+
+
+def _strip_ansi(s: str) -> str:
+    """Strip ANSI escape sequences so substring checks survive Rich styling."""
+    return _ANSI_RE.sub("", s)
 
 DATA_DIR = Path("/workspace/data")
 TEMPLATE_OBJ = DATA_DIR / "Template.obj"
@@ -99,7 +107,7 @@ def test_rigid_help_shows_iterations(runner, app):
 def test_rigid_help_shows_out(runner, app):
     result = runner.invoke(app, ["rigid", "--help"])
     assert result.exit_code == 0
-    assert "--out" in result.output
+    assert "--out" in _strip_ansi(result.output)
 
 
 def test_nonrigid_help_shows_iterations(runner, app):
