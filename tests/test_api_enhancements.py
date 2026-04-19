@@ -21,6 +21,8 @@ class TestMainModule:
             [sys.executable, "-m", "meshmonk", "--help"],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=30,
             env=env,
             cwd=tempfile.gettempdir(),

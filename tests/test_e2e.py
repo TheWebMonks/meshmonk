@@ -21,6 +21,7 @@ def _utf8_env() -> dict:
     env["PYTHONIOENCODING"] = "utf-8"
     return env
 
+
 DATA_DIR = Path(__file__).parent.parent / "data"
 TEMPLATE_OBJ = DATA_DIR / "Template.obj"
 DEMOFACE_OBJ = DATA_DIR / "demoFace.obj"
@@ -51,7 +52,14 @@ def _meshmonk_cmd() -> list:
 def test_cli_help_exits_zero():
     """Assert 'meshmonk --help' exits with code 0."""
     cmd = _meshmonk_cmd() + ["--help"]
-    result = subprocess.run(cmd, capture_output=True, text=True, env=_utf8_env())
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=_utf8_env(),
+    )
     assert result.returncode == 0, (
         f"'meshmonk --help' exited with code {result.returncode}.\n"
         f"stdout: {result.stdout[:500]}\n"
@@ -85,6 +93,8 @@ def test_cli_rigid_exits_zero(tmp_path):
         cmd,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=300,  # rigid registration can take up to 180 s in CI
         env=_utf8_env(),
     )
