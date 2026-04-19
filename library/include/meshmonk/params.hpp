@@ -55,13 +55,9 @@ struct PyramidParams {
     DownsampleSchedule   downsample;
     int                  num_iterations    = 90;  // MATLAB: 90, NOT legacy C++ default of 60
     int                  num_pyramid_layers = 3;
-
-    // Override flag_threshold to MATLAB pyramid default (0.999).
-    // CorrespondenceParams defaults to 0.9 which is correct for rigid/nonrigid,
-    // but pyramid uses 0.999 (matching MATLAB demo).
-    PyramidParams() {
-        correspondences.flag_threshold = 0.999f;
-    }
+    // Note: correspondences.flag_threshold is overridden to 0.999f at the Python
+    // binding level (pyramid_register) to match the MATLAB pyramid default.
+    // PyramidParams is kept aggregate (no user-defined constructor) per ADR D6.
 };
 
 } // namespace meshmonk

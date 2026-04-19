@@ -60,6 +60,9 @@ T unwrap_expected(tl::expected<T, meshmonk::RegistrationError> result) {
         case meshmonk::RegistrationError::NonConvergence:
             msg = "NonConvergence: registration did not converge within the allowed iterations";
             break;
+        default:
+            msg = "Unknown RegistrationError";
+            break;
     }
     throw meshmonk::MeshMonkError(code, msg);
 }

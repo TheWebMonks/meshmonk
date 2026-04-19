@@ -89,6 +89,15 @@ def test_nonrigid_register_with_rigid_params():
     )
     assert result.aligned_features.shape[1] == 6
 
+# ---- rigid_params TypeError validation ----
+
+def test_rigid_params_type_error():
+    pytest.importorskip("trimesh")
+    import trimesh
+    m = trimesh.creation.icosphere(subdivisions=0)
+    with pytest.raises(TypeError, match="rigid_params must be a dict"):
+        meshmonk.nonrigid_register(floating=m, target=m, rigid_params=True)
+
 # ---- Bead 4: CLI demo --download exits 1 ----
 
 def test_demo_download_exits_nonzero():

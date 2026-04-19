@@ -15,7 +15,7 @@ class TestSilentMode:
         # Ensure the shared libraries are findable in the subprocess
         site_lib = os.path.join(
             os.path.dirname(sys.executable),
-            "..", "lib", "python3.11", "site-packages", "lib"
+            "..", "lib", f"python{sys.version_info.major}.{sys.version_info.minor}", "site-packages", "lib"
         )
         existing = env.get("LD_LIBRARY_PATH", "")
         env["LD_LIBRARY_PATH"] = f"{os.path.realpath(site_lib)}:{existing}" if existing else os.path.realpath(site_lib)

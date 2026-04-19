@@ -64,12 +64,13 @@ The test suite runs across the following platforms on every pull request:
 | Ubuntu 24.04 | 3.10, 3.11, 3.12, 3.13 | gcc-13 |
 | macOS 13 (x86_64) | 3.10, 3.11, 3.12, 3.13 | AppleClang |
 | macOS 14 (arm64) | 3.10, 3.11, 3.12, 3.13 | AppleClang |
+| Windows latest | 3.12 | MSVC |
 
 ## Repository Structure
 
 - `CMakeLists.txt`: Root CMake file for the project.
 - `library/`: Core MeshMonk C++ library (`libmeshmonk_shared`).
-- `bindings/`: pybind11 Python bindings.
+- `bindings/`: nanobind Python bindings.
 - `meshmonk/`: Python package (`import meshmonk`).
 - `vendor/`: Third-party dependencies (OpenMesh, nanoflann, Eigen).
 - `tests/`: Python test suite.

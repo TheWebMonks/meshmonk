@@ -25,6 +25,10 @@
 #include <cmath>
 #include <memory>
 
+// Compile-time guard: both headers must agree on the feature count.
+static_assert(meshmonk::NUM_FEATURES == registration::NUM_FEATURES,
+              "NUM_FEATURES mismatch between meshmonk::types.hpp and global.hpp");
+
 namespace meshmonk {
 
 //=============================================================================
@@ -158,8 +162,7 @@ rigid_registration(
     if (!mat.allFinite())
         return tl::unexpected{RegistrationError::DecompositionFailed};
 
-    // v0.2: add convergence criterion
-    // TODO (v0.2): add convergence criterion (NonConvergence error)
+    // TODO (v0.3): add convergence criterion (NonConvergence error)
 
     //-------------------------------------------------------------------------
     // InsufficientInliers check (consistent with nonrigid/pyramid)
@@ -251,7 +254,7 @@ nonrigid_registration(
         (size_t)params.transform.num_elastic_iterations_end);
     registrator.update();  // modifies floating_copy in place
 
-    // TODO (v0.2): add convergence criterion (NonConvergence error)
+    // TODO (v0.3): add convergence criterion (NonConvergence error)
 
     //-------------------------------------------------------------------------
     // Compute final_inlier_weights via one additional correspondence+inlier pass
@@ -360,7 +363,7 @@ pyramid_registration(
         (size_t)params.transform.num_elastic_iterations_end);
     registrator.update();  // modifies floating_copy in place
 
-    // TODO (v0.2): add convergence criterion (NonConvergence error)
+    // TODO (v0.3): add convergence criterion (NonConvergence error)
 
     //-------------------------------------------------------------------------
     // Compute per_layer_iterations

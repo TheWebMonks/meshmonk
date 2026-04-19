@@ -262,7 +262,7 @@ def _mesh_to_arrays(mesh_or_path, normals_override=None, force_recompute=False):
           and mesh.vertex_normals is not None):
         vn = np.asarray(mesh.vertex_normals, dtype=np.float32)
         norms = np.linalg.norm(vn, axis=1)
-        if np.any(norms > 0):
+        if np.all(norms > 0):
             N = vn
         else:
             N = np.asarray(compute_normals(V, F), dtype=np.float32)
@@ -669,7 +669,9 @@ def nonrigid_register(
     )
 
     if rigid_params is not None:
-        _rigid_kw = rigid_params if isinstance(rigid_params, dict) else {}
+        if not isinstance(rigid_params, dict):
+            raise TypeError(f"rigid_params must be a dict or None, got {type(rigid_params).__name__}")
+        _rigid_kw = rigid_params
         rigid_result = rigid_register(
             floating_features=feat_float,
             target_features=feat_target,
@@ -757,7 +759,9 @@ def pyramid_register(
     )
 
     if rigid_params is not None:
-        _rigid_kw = rigid_params if isinstance(rigid_params, dict) else {}
+        if not isinstance(rigid_params, dict):
+            raise TypeError(f"rigid_params must be a dict or None, got {type(rigid_params).__name__}")
+        _rigid_kw = rigid_params
         rigid_result = rigid_register(
             floating_features=feat_float,
             target_features=feat_target,
@@ -772,6 +776,11 @@ def pyramid_register(
     # Pass the set of explicitly provided kwargs so _apply_pyramid_kwargs
     # knows which viscous/elastic start values to auto-populate
     params = PyramidParams()
+    # Set pyramid-specific flag_threshold default (0.999 per MATLAB demo).
+    # This is done here rather than in the C++ struct to keep PyramidParams
+    # aggregate (no user-defined constructor), per ADR D6.
+    if "correspondences_flag_threshold" not in kwargs:
+        params.correspondences.flag_threshold = 0.999
     params = _apply_pyramid_kwargs(params, kwargs, explicit_kwargs=set(kwargs.keys()))
 
     raw = _pyramid_registration(
