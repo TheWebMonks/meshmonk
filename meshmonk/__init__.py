@@ -62,7 +62,7 @@ def _meshmonk_error_code(self):
         return RegistrationError(raw)
     return None
 
-MeshMonkError.code = property(_meshmonk_error_code)
+MeshMonkError.code = property(_meshmonk_error_code)  # pyright: ignore[reportAttributeAccessIssue]
 
 if TYPE_CHECKING:
     from pathlib import Path

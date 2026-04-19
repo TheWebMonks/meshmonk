@@ -59,12 +59,12 @@ def _require_trimesh():
         raise typer.Exit(code=1)
 
 
-def _load_mesh(trimesh_mod, path: str):
+def _load_mesh(trimesh_mod, path: str | Path):
     """Load an OBJ (or any trimesh-supported format) from *path*."""
     return trimesh_mod.load(str(path))
 
 
-def _save_mesh(trimesh_mod, vertices, faces, out_path: str) -> None:
+def _save_mesh(trimesh_mod, vertices, faces, out_path: str | Path) -> None:
     """Save a mesh defined by *vertices* + *faces* to *out_path*."""
     import numpy as np  # noqa: PLC0415
     mesh = trimesh_mod.Trimesh(
