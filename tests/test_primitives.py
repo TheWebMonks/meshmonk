@@ -63,7 +63,7 @@ def test_compute_rigid_transform_cube():
     )
     assert expected_transform.shape == (4, 4)
     R_expected = expected_transform[:3, :3]
-    t_expected = expected_transform[:3, 3]
+    expected_transform[:3, 3]
 
     # Load unit cube as floating features (the source to be registered)
     floating_features = np.loadtxt(
@@ -94,19 +94,25 @@ def test_compute_rigid_transform_cube():
     T = result.matrix
     assert T.shape == (4, 4), f"Expected (4,4) matrix, got {T.shape}"
     np.testing.assert_allclose(
-        T[3, :], [0.0, 0.0, 0.0, 1.0], atol=1e-5,
+        T[3, :],
+        [0.0, 0.0, 0.0, 1.0],
+        atol=1e-5,
         err_msg="Last row of transform matrix must be [0,0,0,1]",
     )
     R_result = T[:3, :3]
     det_R = float(np.linalg.det(R_result))
     assert abs(det_R - 1.0) < 1e-4, f"Rotation determinant must be 1.0, got {det_R}"
     np.testing.assert_allclose(
-        R_result @ R_result.T, np.eye(3, dtype="float32"), atol=1e-4,
+        R_result @ R_result.T,
+        np.eye(3, dtype="float32"),
+        atol=1e-4,
         err_msg="Rotation R must be orthogonal: R @ R.T ~ I",
     )
 
     # --- Verify 2: rotation part matches expected_transform ---
     np.testing.assert_allclose(
-        R_result, R_expected, atol=1e-4,
+        R_result,
+        R_expected,
+        atol=1e-4,
         err_msg="Rotation part of result does not match expected_transform.txt rotation",
     )

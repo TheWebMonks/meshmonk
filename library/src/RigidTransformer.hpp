@@ -1,77 +1,79 @@
 #ifndef RIGIDTRANSFORMER_HPP
 #define RIGIDTRANSFORMER_HPP
 
+#include "meshmonk/global.hpp"
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
-#include <stdio.h>
 #include <iostream>
-#include "meshmonk/global.hpp"
+#include <stdio.h>
 
 typedef Eigen::VectorXf VecDynFloat;
-typedef Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat; //matrix MxN of type float
-typedef Eigen::Matrix< float, Eigen::Dynamic, registration::NUM_FEATURES> FeatureMat; //matrix Mx6 of type float
+typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>
+    MatDynFloat; // matrix MxN of type float
+typedef Eigen::Matrix<float, Eigen::Dynamic, registration::NUM_FEATURES>
+    FeatureMat; // matrix Mx6 of type float
 typedef Eigen::Vector3f Vec3Float;
 typedef Eigen::Vector4f Vec4Float;
 typedef Eigen::Matrix3f Mat3Float;
 typedef Eigen::Matrix4f Mat4Float;
 typedef Eigen::SelfAdjointEigenSolver<Mat4Float> EigenVectorDecomposer;
 
-namespace registration{
+namespace registration {
 
-class RigidTransformer
-{
-    /*
-    # GOAL
-    This class computes the rigid transformation between a set a features and
-    a set of corresponding features. Each correspondence can be weighed between
-    0.0 and 1.0.
+class RigidTransformer {
+  /*
+  # GOAL
+  This class computes the rigid transformation between a set a features and
+  a set of corresponding features. Each correspondence can be weighed between
+  0.0 and 1.0.
 
-    # INPUTS
-    -ioFeatures
-    -inCorrespondingFeatures
-    -inWeights
+  # INPUTS
+  -ioFeatures
+  -inCorrespondingFeatures
+  -inWeights
 
-    # PARAMETERS
-    -scaling:
-    Whether or not to allow scaling.
+  # PARAMETERS
+  -scaling:
+  Whether or not to allow scaling.
 
-    # OUTPUTS
-    -ioFeatures
-    */
-    public:
+  # OUTPUTS
+  -ioFeatures
+  */
+public:
+  void set_input(const FeatureMat *const inCorrespondingFeatures,
+                 const VecDynFloat *const inWeights);
+  void set_output(FeatureMat *const ioFeatures);
+  void set_parameters(bool scaling);
+  Mat4Float get_transformation() const { return _transformationMatrix; }
+  void update();
 
-        void set_input(const FeatureMat * const inCorrespondingFeatures, const VecDynFloat * const inWeights);
-        void set_output(FeatureMat * const ioFeatures);
-        void set_parameters(bool scaling);
-        Mat4Float get_transformation() const {return _transformationMatrix;}
-        void update();
+protected:
+private:
+  // # Inputs
+  FeatureMat *_ioFeatures = NULL;
+  const FeatureMat *_inCorrespondingFeatures = NULL;
+  const VecDynFloat *_inWeights = NULL;
 
-    protected:
+  // # Outputs
+  //_ioFeatures is used as both an input (to compute the transformation) and
+  // output
 
-    private:
-        //# Inputs
-        FeatureMat * _ioFeatures = NULL;
-        const FeatureMat * _inCorrespondingFeatures = NULL;
-        const VecDynFloat * _inWeights = NULL;
+  // # User Parameters
+  bool _scaling = false;
 
-        //# Outputs
-        //_ioFeatures is used as both an input (to compute the transformation) and output
+  // # Internal Data structures
+  Mat4Float _transformationMatrix = Mat4Float::Identity();
 
-        //# User Parameters
-        bool _scaling = false;
+  // # Internal Parameters
+  size_t _numElements = 0;
+  size_t _numFeatures = 0;
 
-        //# Internal Data structures
-        Mat4Float _transformationMatrix = Mat4Float::Identity();
-
-        //# Internal Parameters
-        size_t _numElements = 0;
-        size_t _numFeatures = 0;
-
-        //# Internal functions
-        //## Function to update the transformation matrix and apply it to the floating positions
-        void _update_transformation();
+  // # Internal functions
+  // ## Function to update the transformation matrix and apply it to the
+  // floating positions
+  void _update_transformation();
 };
 
-}//namespace registration
+} // namespace registration
 
 #endif // RIGIDTRANSFORMER_HPP

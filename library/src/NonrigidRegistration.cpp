@@ -3,124 +3,130 @@
 
 namespace registration {
 
-void NonrigidRegistration::set_input(FeatureMat * const ioFloatingFeatures,
-                            const FeatureMat * const inTargetFeatures,
-                            const FacesMat * const inFloatingFaces,
-                            const VecDynFloat * const inFloatingFlags,
-                            const VecDynFloat * const inTargetFlags){
-    _ioFloatingFeatures = ioFloatingFeatures;
-    _inTargetFeatures = inTargetFeatures;
-    _inFloatingFaces = inFloatingFaces;
-    _inFloatingFlags = inFloatingFlags;
-    _inTargetFlags = inTargetFlags;
-}//end set_input()
+void NonrigidRegistration::set_input(FeatureMat *const ioFloatingFeatures,
+                                     const FeatureMat *const inTargetFeatures,
+                                     const FacesMat *const inFloatingFaces,
+                                     const VecDynFloat *const inFloatingFlags,
+                                     const VecDynFloat *const inTargetFlags) {
+  _ioFloatingFeatures = ioFloatingFeatures;
+  _inTargetFeatures = inTargetFeatures;
+  _inFloatingFaces = inFloatingFaces;
+  _inFloatingFlags = inFloatingFlags;
+  _inTargetFlags = inTargetFlags;
+} // end set_input()
 
-void NonrigidRegistration::set_parameters(bool symmetric,
-                            size_t numNeighbours,
-                            float flagThreshold,
-                            bool equalizePushPull,
-                            float kappaa,
-                            bool inlierUseOrientation,
-                            size_t numIterations,
-                            float sigmaSmoothing,
-                            size_t numViscousIterationsStart,
-                            size_t numViscousIterationsEnd,
-                            size_t numElasticIterationsStart,
-                            size_t numElasticIterationsEnd){
-    _symmetric = symmetric;
-    _numNeighbours = numNeighbours;
-    _flagThreshold = flagThreshold;
-    _equalizePushPull = equalizePushPull;
-    _kappaa = kappaa;
-    _inlierUseOrientation = inlierUseOrientation;
-    _numIterations = numIterations;
-    _sigmaSmoothing = sigmaSmoothing;
-    _numViscousIterationsStart = numViscousIterationsStart;
-    _numViscousIterationsEnd = numViscousIterationsEnd;
-    _numElasticIterationsStart = numElasticIterationsStart;
-    _numElasticIterationsEnd = numElasticIterationsEnd;
-    _numViscousIterations = _numViscousIterationsStart;
-    _numElasticIterations = _numElasticIterationsStart;
+void NonrigidRegistration::set_parameters(
+    bool symmetric, size_t numNeighbours, float flagThreshold,
+    bool equalizePushPull, float kappaa, bool inlierUseOrientation,
+    size_t numIterations, float sigmaSmoothing,
+    size_t numViscousIterationsStart, size_t numViscousIterationsEnd,
+    size_t numElasticIterationsStart, size_t numElasticIterationsEnd) {
+  _symmetric = symmetric;
+  _numNeighbours = numNeighbours;
+  _flagThreshold = flagThreshold;
+  _equalizePushPull = equalizePushPull;
+  _kappaa = kappaa;
+  _inlierUseOrientation = inlierUseOrientation;
+  _numIterations = numIterations;
+  _sigmaSmoothing = sigmaSmoothing;
+  _numViscousIterationsStart = numViscousIterationsStart;
+  _numViscousIterationsEnd = numViscousIterationsEnd;
+  _numElasticIterationsStart = numElasticIterationsStart;
+  _numElasticIterationsEnd = numElasticIterationsEnd;
+  _numViscousIterations = _numViscousIterationsStart;
+  _numElasticIterations = _numElasticIterationsStart;
 
-    if (_numViscousIterationsStart > 0) {
-        _viscousAnnealingRate = exp(log(float(_numViscousIterationsEnd)/float(_numViscousIterationsStart))/(_numIterations-1));
-    } else {
-        _viscousAnnealingRate = 1.0f;
+  if (_numViscousIterationsStart > 0) {
+    _viscousAnnealingRate = exp(log(float(_numViscousIterationsEnd) /
+                                    float(_numViscousIterationsStart)) /
+                                (_numIterations - 1));
+  } else {
+    _viscousAnnealingRate = 1.0f;
+  }
+  if (_numElasticIterationsStart > 0) {
+    _elasticAnnealingRate = exp(log(float(_numElasticIterationsEnd) /
+                                    float(_numElasticIterationsStart)) /
+                                (_numIterations - 1));
+  } else {
+    _elasticAnnealingRate = 1.0f;
+  }
+} // end set_parameters()
+
+void NonrigidRegistration::update() {
+
+  // # Initializes
+  size_t numFloatingVertices = _ioFloatingFeatures->rows();
+  FeatureMat correspondingFeatures =
+      FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
+  VecDynFloat correspondingFlags = VecDynFloat::Zero(numFloatingVertices);
+
+  // # Set up the filters
+  // ## Correspondence Filter
+  std::unique_ptr<BaseCorrespondenceFilter> correspondenceFilter;
+
+  if (_symmetric) {
+    auto *f = new SymmetricCorrespondenceFilter();
+    f->set_parameters(_numNeighbours, _flagThreshold, _equalizePushPull);
+    correspondenceFilter.reset(f);
+  } else {
+    auto *f = new CorrespondenceFilter();
+    f->set_parameters(_numNeighbours, _flagThreshold);
+    correspondenceFilter.reset(f);
+  }
+  correspondenceFilter->set_floating_input(_ioFloatingFeatures,
+                                           _inFloatingFlags);
+  correspondenceFilter->set_target_input(_inTargetFeatures, _inTargetFlags);
+  correspondenceFilter->set_output(&correspondingFeatures, &correspondingFlags);
+
+  // ## Inlier Filter
+  VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
+  InlierDetector inlierDetector;
+  inlierDetector.set_input(_ioFloatingFeatures, &correspondingFeatures,
+                           &correspondingFlags);
+  inlierDetector.set_output(&floatingWeights);
+  inlierDetector.set_parameters(_kappaa, _inlierUseOrientation);
+  // ## Transformation Filter
+  _numViscousIterations = _numViscousIterationsStart;
+  _numElasticIterations = _numElasticIterationsStart;
+  ViscoElasticTransformer transformer;
+  transformer.set_input(&correspondingFeatures, &floatingWeights,
+                        _inFloatingFlags, _inFloatingFaces);
+  transformer.set_output(_ioFloatingFeatures);
+
+  // # Perform ICP
+  for (size_t iteration = 0; iteration < _numIterations; iteration++) {
+
+    // # Anneal parameters
+    _numViscousIterations =
+        int(std::round(_numViscousIterationsStart *
+                       std::pow(_viscousAnnealingRate, iteration)));
+    if (_numViscousIterations < _numViscousIterationsEnd) {
+      _numViscousIterations = _numViscousIterationsEnd;
     }
-    if (_numElasticIterationsStart > 0) {
-        _elasticAnnealingRate = exp(log(float(_numElasticIterationsEnd)/float(_numElasticIterationsStart))/(_numIterations-1));
-    } else {
-        _elasticAnnealingRate = 1.0f;
+    _numElasticIterations =
+        int(std::round(_numElasticIterationsStart *
+                       std::pow(_elasticAnnealingRate, iteration)));
+    if (_numElasticIterations < _numElasticIterationsEnd) {
+      _numElasticIterations = _numElasticIterationsEnd;
     }
-}//end set_parameters()
 
-
-void NonrigidRegistration::update(){
-
-    //# Initializes
-    size_t numFloatingVertices = _ioFloatingFeatures->rows();
-    FeatureMat correspondingFeatures = FeatureMat::Zero(numFloatingVertices, registration::NUM_FEATURES);
-    VecDynFloat correspondingFlags = VecDynFloat::Zero(numFloatingVertices);
-
-    //# Set up the filters
-    //## Correspondence Filter
-    std::unique_ptr<BaseCorrespondenceFilter> correspondenceFilter;
-
-    if (_symmetric) {
-        auto* f = new SymmetricCorrespondenceFilter();
-        f->set_parameters(_numNeighbours, _flagThreshold, _equalizePushPull);
-        correspondenceFilter.reset(f);
-    }
-    else {
-        auto* f = new CorrespondenceFilter();
-        f->set_parameters(_numNeighbours, _flagThreshold);
-        correspondenceFilter.reset(f);
-    }
-    correspondenceFilter->set_floating_input(_ioFloatingFeatures, _inFloatingFlags);
+    // # Correspondences
+    correspondenceFilter->set_floating_input(_ioFloatingFeatures,
+                                             _inFloatingFlags);
     correspondenceFilter->set_target_input(_inTargetFeatures, _inTargetFlags);
-    correspondenceFilter->set_output(&correspondingFeatures, &correspondingFlags);
+    correspondenceFilter->update();
 
+    // # Inlier Detection
+    inlierDetector.update();
 
-    //## Inlier Filter
-    VecDynFloat floatingWeights = VecDynFloat::Ones(numFloatingVertices);
-    InlierDetector inlierDetector;
-    inlierDetector.set_input(_ioFloatingFeatures, &correspondingFeatures,
-                                &correspondingFlags);
-    inlierDetector.set_output(&floatingWeights);
-    inlierDetector.set_parameters(_kappaa, _inlierUseOrientation);
-    //## Transformation Filter
-    _numViscousIterations = _numViscousIterationsStart;
-    _numElasticIterations = _numElasticIterationsStart;
-    ViscoElasticTransformer transformer;
-    transformer.set_input(&correspondingFeatures, &floatingWeights, _inFloatingFlags, _inFloatingFaces);
-    transformer.set_output(_ioFloatingFeatures);
+    // # Transformation
+    transformer.set_parameters(10, _sigmaSmoothing, _numViscousIterations,
+                               _numElasticIterations);
+    transformer.update();
+  }
 
-    //# Perform ICP
-    for (size_t iteration = 0 ; iteration < _numIterations ; iteration++) {
+  // correspondenceFilter is automatically deleted by unique_ptr
 
-        //# Anneal parameters
-        _numViscousIterations = int(std::round(_numViscousIterationsStart * std::pow(_viscousAnnealingRate, iteration)));
-        if (_numViscousIterations < _numViscousIterationsEnd) { _numViscousIterations = _numViscousIterationsEnd;}
-        _numElasticIterations = int(std::round(_numElasticIterationsStart * std::pow(_elasticAnnealingRate, iteration)));
-        if (_numElasticIterations < _numElasticIterationsEnd) { _numElasticIterations = _numElasticIterationsEnd;}
+} // end update()
 
-
-        //# Correspondences
-        correspondenceFilter->set_floating_input(_ioFloatingFeatures, _inFloatingFlags);
-        correspondenceFilter->set_target_input(_inTargetFeatures, _inTargetFlags);
-        correspondenceFilter->update();
-
-        //# Inlier Detection
-        inlierDetector.update();
-
-        //# Transformation
-        transformer.set_parameters(10, _sigmaSmoothing, _numViscousIterations,_numElasticIterations);
-        transformer.update();
-
-    }
-
-    // correspondenceFilter is automatically deleted by unique_ptr
-
-}//end update()
-
-}//namespace registration
+} // namespace registration

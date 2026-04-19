@@ -1,7 +1,9 @@
 """Tests for Python input validation (bead workspace-hqz.1)."""
+
 import numpy as np
 import pytest
 import meshmonk
+
 
 # Small synthetic data for validation tests
 def _make_features(n=10):
@@ -44,8 +46,10 @@ class TestPatternBNoneGuard:
     def test_pattern_b_none_flags_defaults_to_ones(self):
         feat, faces, _ = _make_features()
         result = meshmonk.rigid_register(
-            floating_features=feat, target_features=feat,
-            floating_faces=faces, target_faces=faces,
+            floating_features=feat,
+            target_features=feat,
+            floating_faces=faces,
+            target_faces=faces,
             floating_flags=None,
             target_flags=None,
         )
@@ -77,6 +81,7 @@ class TestNormalsOverrideValidation:
         """normals_override with wrong shape should raise ValueError."""
         pytest.importorskip("trimesh")
         from pathlib import Path
+
         template = Path("/workspace/data/Template.obj")
         if not template.exists():
             pytest.skip("Template.obj not available")
@@ -187,6 +192,7 @@ class TestNonrigidAnnealingGuard:
     def test_viscous_annealing_guard_present(self):
         """NonrigidRegistration.cpp must have a guard for zero viscous start value."""
         from pathlib import Path
+
         source = Path(self._SOURCE_FILE).read_text()
         # The fixed code must check _numViscousIterationsStart > 0 before computing rate
         assert "_numViscousIterationsStart > 0" in source, (
@@ -199,6 +205,7 @@ class TestNonrigidAnnealingGuard:
     def test_elastic_annealing_guard_present(self):
         """NonrigidRegistration.cpp must have a guard for zero elastic start value."""
         from pathlib import Path
+
         source = Path(self._SOURCE_FILE).read_text()
         # The fixed code must check _numElasticIterationsStart > 0 before computing rate
         assert "_numElasticIterationsStart > 0" in source, (

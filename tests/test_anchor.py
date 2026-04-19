@@ -9,7 +9,6 @@ committed and do not require any build or registration to run.
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 
@@ -28,12 +27,15 @@ def test_rigid_transform_file_exists():
     )
 
     matrix = np.loadtxt(str(rigid_transform_path))
-    assert matrix.shape == (4, 4), (
-        f"Expected 4x4 transform matrix, got shape {matrix.shape}"
-    )
+    assert matrix.shape == (
+        4,
+        4,
+    ), f"Expected 4x4 transform matrix, got shape {matrix.shape}"
 
     # Sanity check: last row must be close to [0, 0, 0, 1]
     np.testing.assert_allclose(
-        matrix[3, :], [0.0, 0.0, 0.0, 1.0], atol=1e-6,
+        matrix[3, :],
+        [0.0, 0.0, 0.0, 1.0],
+        atol=1e-6,
         err_msg="Last row of rigid_transform.txt must be [0, 0, 0, 1]",
     )

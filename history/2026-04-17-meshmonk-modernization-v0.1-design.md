@@ -290,4 +290,3 @@ Tiered harness, ordered fast → slow:
 5. Old goldens are preserved via git history — no LFS needed at v0.1 scale (~MB-level npz)
 
 **Visualization tooling:** outsourced to third-party (Blender, MeshLab). No in-repo viewer. Only the numpy compare helper is in-repo.
-

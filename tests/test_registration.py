@@ -1,4 +1,5 @@
 """Tier 1/2 analytical tests for nonrigid and pyramid registration."""
+
 import numpy as np
 import meshmonk
 
@@ -9,26 +10,42 @@ def _make_test_features():
     Returns (features, faces, flags) ready for Pattern B registration.
     """
     # 8 vertices of a unit cube
-    vertices = np.array([
-        [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],
-        [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1],
-    ], dtype=np.float32)
+    vertices = np.array(
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [1, 1, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [1, 0, 1],
+            [1, 1, 1],
+            [0, 1, 1],
+        ],
+        dtype=np.float32,
+    )
 
-    faces = np.array([
-        [0, 1, 2], [0, 2, 3],  # bottom
-        [4, 6, 5], [4, 7, 6],  # top
-        [0, 4, 5], [0, 5, 1],  # front
-        [2, 6, 7], [2, 7, 3],  # back
-        [0, 3, 7], [0, 7, 4],  # left
-        [1, 5, 6], [1, 6, 2],  # right
-    ], dtype=np.int32)
+    faces = np.array(
+        [
+            [0, 1, 2],
+            [0, 2, 3],  # bottom
+            [4, 6, 5],
+            [4, 7, 6],  # top
+            [0, 4, 5],
+            [0, 5, 1],  # front
+            [2, 6, 7],
+            [2, 7, 3],  # back
+            [0, 3, 7],
+            [0, 7, 4],  # left
+            [1, 5, 6],
+            [1, 6, 2],  # right
+        ],
+        dtype=np.int32,
+    )
 
     flags = np.ones(8, dtype=np.float32)
 
     # Compute proper normals via meshmonk
-    normals = np.asarray(
-        meshmonk.compute_normals(vertices, faces), dtype=np.float32
-    )
+    normals = np.asarray(meshmonk.compute_normals(vertices, faces), dtype=np.float32)
     features = np.empty((8, 6), dtype=np.float32)
     features[:, :3] = vertices
     features[:, 3:] = normals
@@ -56,7 +73,7 @@ class TestNonrigidSelfRegistration:
         # Displacement should be very small for self-registration
         disp = result.displacement_field
         assert disp.shape == (8, 3)
-        rmse = np.sqrt(np.mean(disp ** 2))
+        rmse = np.sqrt(np.mean(disp**2))
         assert rmse < 1.0, f"Self-registration displacement RMSE {rmse:.4f} exceeds 1.0"
 
     def test_result_shapes(self):
@@ -99,7 +116,7 @@ class TestPyramidSelfRegistration:
 
         disp = result.displacement_field
         assert disp.shape == (8, 3)
-        rmse = np.sqrt(np.mean(disp ** 2))
+        rmse = np.sqrt(np.mean(disp**2))
         assert rmse < 1.0, f"Self-registration displacement RMSE {rmse:.4f} exceeds 1.0"
 
     def test_result_shapes_and_layers(self):
@@ -149,8 +166,8 @@ class TestPyramidSelfRegistration:
         )
 
         # Both should produce small displacements for self-registration
-        nr_rmse = np.sqrt(np.mean(nr_result.displacement_field ** 2))
-        pyr_rmse = np.sqrt(np.mean(pyr_result.displacement_field ** 2))
+        nr_rmse = np.sqrt(np.mean(nr_result.displacement_field**2))
+        pyr_rmse = np.sqrt(np.mean(pyr_result.displacement_field**2))
         # Both should be small (self-registration)
         assert nr_rmse < 1.0
         assert pyr_rmse < 1.0
@@ -180,7 +197,9 @@ class TestNonrigidWithTranslation:
 
         # The aligned vertices should be closer to the target than the original
         original_dist = np.sqrt(np.mean((translated[:, :3] - features[:, :3]) ** 2))
-        aligned_dist = np.sqrt(np.mean((result.aligned_vertices - features[:, :3]) ** 2))
+        aligned_dist = np.sqrt(
+            np.mean((result.aligned_vertices - features[:, :3]) ** 2)
+        )
         assert aligned_dist < original_dist, (
             f"Nonrigid registration should reduce distance to target. "
             f"Original RMSE: {original_dist:.4f}, Aligned RMSE: {aligned_dist:.4f}"

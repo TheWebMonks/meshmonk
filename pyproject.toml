@@ -17,7 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 io = ["trimesh>=4.0"]
-dev = ["pytest", "pre-commit", "ruff", "pyright", "scipy>=1.11", "pyyaml", "tomli>=2.0; python_version < '3.11'"]
+dev = ["pytest", "pre-commit", "ruff", "pyright", "meshio", "scipy>=1.11", "pyyaml", "tomli>=2.0; python_version < '3.11'"]
 docs = ["mkdocs-material", "mkdocstrings[python]"]
 
 [project.scripts]
@@ -25,7 +25,7 @@ meshmonk = "meshmonk.cli:app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q --import-mode=importlib"
 
 [tool.scikit-build]
 sdist.exclude = ["tests/", "data/", "history/"]

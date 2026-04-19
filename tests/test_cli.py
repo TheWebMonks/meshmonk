@@ -25,9 +25,11 @@ MESHES_AVAILABLE = TEMPLATE_OBJ.exists() and DEMO_FACE_OBJ.exists()
 # Import guard — app must be importable even if trimesh is not installed
 # ---------------------------------------------------------------------------
 
+
 def test_cli_module_importable():
     """cli.py is importable without triggering a trimesh import."""
     import meshmonk.cli  # noqa: F401
+
     assert True
 
 
@@ -35,12 +37,14 @@ def test_app_object_exists():
     """The module must expose a typer.Typer() object named `app`."""
     from meshmonk.cli import app
     import typer
+
     assert isinstance(app, typer.Typer)
 
 
 # ---------------------------------------------------------------------------
 # --help exits 0 for all subcommands
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def runner():
@@ -50,6 +54,7 @@ def runner():
 @pytest.fixture()
 def app():
     from meshmonk.cli import app as _app
+
     return _app
 
 
@@ -84,6 +89,7 @@ def test_demo_help(runner, app):
 # --help shows expected options
 # ---------------------------------------------------------------------------
 
+
 def test_rigid_help_shows_iterations(runner, app):
     result = runner.invoke(app, ["rigid", "--help"])
     assert result.exit_code == 0
@@ -112,6 +118,7 @@ def test_pyramid_help_shows_layers(runner, app):
 # E2E: rigid registration produces output file (requires io extra + data)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.skipif(
     not MESHES_AVAILABLE,
     reason="Test meshes not available at /workspace/data/",
@@ -124,7 +131,8 @@ def test_rigid_e2e_produces_output_file(runner, app, tmp_path):
             "rigid",
             str(TEMPLATE_OBJ),
             str(DEMO_FACE_OBJ),
-            "--out", str(out_path),
+            "--out",
+            str(out_path),
         ],
     )
     assert result.exit_code == 0, f"Exit {result.exit_code}:\n{result.output}"
@@ -144,7 +152,8 @@ def test_rigid_e2e_prints_saved_message(runner, app, tmp_path):
             "rigid",
             str(TEMPLATE_OBJ),
             str(DEMO_FACE_OBJ),
-            "--out", str(out_path),
+            "--out",
+            str(out_path),
         ],
     )
     assert result.exit_code == 0
@@ -154,6 +163,7 @@ def test_rigid_e2e_prints_saved_message(runner, app, tmp_path):
 # ---------------------------------------------------------------------------
 # Demo subcommand: dev-convenience path (uses /workspace/data/)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.skipif(
     not MESHES_AVAILABLE,
@@ -168,9 +178,9 @@ def test_demo_download_flag_present(runner, app):
 def test_demo_download_exits_code_1(runner, app):
     """demo --download exits with code 1 in environments where GitHub Releases are unreachable."""
     result = runner.invoke(app, ["demo", "--download"])
-    assert result.exit_code == 1, (
-        f"Expected exit code 1, got {result.exit_code}. Output: {result.output}"
-    )
+    assert (
+        result.exit_code == 1
+    ), f"Expected exit code 1, got {result.exit_code}. Output: {result.output}"
 
 
 def test_demo_download_message_is_user_friendly(runner, app):
@@ -192,4 +202,8 @@ def test_demo_runs_rigid_mode(runner, app, monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
     result = runner.invoke(app, ["demo", "rigid"])
     # Should either succeed or give clear instructions — never a raw traceback
-    assert result.exit_code == 0 or "meshmonk[io]" in result.output or "data/" in result.output
+    assert (
+        result.exit_code == 0
+        or "meshmonk[io]" in result.output
+        or "data/" in result.output
+    )

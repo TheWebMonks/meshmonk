@@ -2,6 +2,7 @@
 
 TDD for bead workspace-dyj.2: Route std::cerr through logger.
 """
+
 import os
 import subprocess
 import sys
@@ -15,10 +16,18 @@ class TestSilentMode:
         # Ensure the shared libraries are findable in the subprocess
         site_lib = os.path.join(
             os.path.dirname(sys.executable),
-            "..", "lib", f"python{sys.version_info.major}.{sys.version_info.minor}", "site-packages", "lib"
+            "..",
+            "lib",
+            f"python{sys.version_info.major}.{sys.version_info.minor}",
+            "site-packages",
+            "lib",
         )
         existing = env.get("LD_LIBRARY_PATH", "")
-        env["LD_LIBRARY_PATH"] = f"{os.path.realpath(site_lib)}:{existing}" if existing else os.path.realpath(site_lib)
+        env["LD_LIBRARY_PATH"] = (
+            f"{os.path.realpath(site_lib)}:{existing}"
+            if existing
+            else os.path.realpath(site_lib)
+        )
         return subprocess.run(
             [sys.executable, "-c", code],
             capture_output=True,
@@ -36,9 +45,9 @@ class TestSilentMode:
             "meshmonk.rigid_register(floating=m, target=m, num_iterations=2)"
         )
         assert result.returncode == 0, f"subprocess failed: {result.stderr!r}"
-        assert result.stderr == "", (
-            f"Expected no stderr output in silent mode, got: {result.stderr!r}"
-        )
+        assert (
+            result.stderr == ""
+        ), f"Expected no stderr output in silent mode, got: {result.stderr!r}"
 
     def test_nonrigid_register_silent_no_stderr(self):
         """nonrigid_register with log_level=silent must produce no stderr output."""
@@ -49,9 +58,9 @@ class TestSilentMode:
             "meshmonk.nonrigid_register(floating=m, target=m, num_iterations=2)"
         )
         assert result.returncode == 0, f"subprocess failed: {result.stderr!r}"
-        assert result.stderr == "", (
-            f"Expected no stderr output in silent mode, got: {result.stderr!r}"
-        )
+        assert (
+            result.stderr == ""
+        ), f"Expected no stderr output in silent mode, got: {result.stderr!r}"
 
     def test_warning_level_default_emits_output(self):
         """At default warning level, meshmonk registration should emit output (not silent)."""

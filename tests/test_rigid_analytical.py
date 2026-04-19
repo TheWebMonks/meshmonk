@@ -8,7 +8,6 @@ All tests call meshmonk.rigid_register() directly — not the v0.0 stubs module.
 """
 
 import numpy as np
-import pytest
 
 import meshmonk
 
@@ -34,12 +33,18 @@ _CUBE_V = np.array(
 # 12 triangles covering all 6 faces of the cube
 _CUBE_F = np.array(
     [
-        [0, 4, 1], [4, 5, 1],   # top  (y=+1)
-        [2, 3, 6], [3, 7, 6],   # bottom (y=-1)
-        [0, 2, 4], [2, 6, 4],   # front (z=+1)
-        [1, 5, 3], [5, 7, 3],   # back  (z=-1)
-        [0, 1, 2], [1, 3, 2],   # right (x=+1)
-        [4, 6, 5], [6, 7, 5],   # left  (x=-1)
+        [0, 4, 1],
+        [4, 5, 1],  # top  (y=+1)
+        [2, 3, 6],
+        [3, 7, 6],  # bottom (y=-1)
+        [0, 2, 4],
+        [2, 6, 4],  # front (z=+1)
+        [1, 5, 3],
+        [5, 7, 3],  # back  (z=-1)
+        [0, 1, 2],
+        [1, 3, 2],  # right (x=+1)
+        [4, 6, 5],
+        [6, 7, 5],  # left  (x=-1)
     ],
     dtype="int32",
 )
@@ -66,7 +71,9 @@ def _build_transform(R: np.ndarray, t: np.ndarray) -> np.ndarray:
     return T
 
 
-def _apply_transform_to_features(feat: np.ndarray, R: np.ndarray, t: np.ndarray) -> np.ndarray:
+def _apply_transform_to_features(
+    feat: np.ndarray, R: np.ndarray, t: np.ndarray
+) -> np.ndarray:
     """Apply SE(3) to (N,6) feature matrix: positions R*p+t, normals R*n."""
     out = feat.copy()
     out[:, :3] = (R @ feat[:, :3].T).T + t
@@ -112,15 +119,21 @@ def test_rigid_recovery_synthetic():
 
     T_expected = _build_transform(R, t)
     np.testing.assert_allclose(
-        result.transform.matrix, T_expected, atol=1e-3,
+        result.transform.matrix,
+        T_expected,
+        atol=1e-3,
         err_msg="Recovered transform does not match known SE(3)",
     )
     np.testing.assert_allclose(
-        result.aligned_features[:, :3], feat_target[:, :3], atol=1e-3,
+        result.aligned_features[:, :3],
+        feat_target[:, :3],
+        atol=1e-3,
         err_msg="Aligned positions do not match ground truth",
     )
     np.testing.assert_allclose(
-        result.aligned_features[:, 3:], feat_target[:, 3:], atol=1e-3,
+        result.aligned_features[:, 3:],
+        feat_target[:, 3:],
+        atol=1e-3,
         err_msg="Aligned normals do not match ground truth",
     )
 
@@ -138,7 +151,9 @@ def test_self_consistency():
 
     composed = res_ab.transform.compose(res_ba.transform)
     np.testing.assert_allclose(
-        composed.matrix, np.eye(4, dtype="float32"), atol=1e-3,
+        composed.matrix,
+        np.eye(4, dtype="float32"),
+        atol=1e-3,
         err_msg="T(A→B).compose(T(B→A)) is not close to Identity",
     )
 
@@ -153,8 +168,8 @@ def test_round_trip():
 
     result = _rigid_register_cube(feat_a, feat_b, num_iterations=80)
 
-    T_known = _build_transform(R, t)
-    T_known_rt = meshmonk.RigidTransform()
+    _build_transform(R, t)
+    meshmonk.RigidTransform()
     # Build inverse by direct matrix math (T_known^{-1})
     # For SE(3): [R|t]^{-1} = [R^T | -R^T*t]
     R_inv = R.T
@@ -166,7 +181,9 @@ def test_round_trip():
     # Since RigidTransform.matrix has no setter, we use matrix math:
     T_composed = result.transform.matrix @ T_inv
     np.testing.assert_allclose(
-        T_composed, np.eye(4, dtype="float32"), atol=1e-3,
+        T_composed,
+        np.eye(4, dtype="float32"),
+        atol=1e-3,
         err_msg="Recovered transform composed with known inverse is not close to Identity",
     )
 
@@ -179,7 +196,9 @@ def test_correspondence_sanity():
     corr_feat, corr_flags = meshmonk.compute_correspondences(feat, feat, flags, flags)
 
     np.testing.assert_allclose(
-        corr_feat, feat, atol=1e-4,
+        corr_feat,
+        feat,
+        atol=1e-4,
         err_msg="Correspondences on identical meshes should be identity",
     )
 
@@ -193,6 +212,8 @@ def test_inlier_weight_sanity():
     weights = meshmonk.compute_inlier_weights(feat, corr_feat, corr_flags)
 
     np.testing.assert_allclose(
-        weights, np.ones(feat.shape[0], dtype="float32"), atol=1e-4,
+        weights,
+        np.ones(feat.shape[0], dtype="float32"),
+        atol=1e-4,
         err_msg="Inlier weights on identical meshes should be near 1.0",
     )

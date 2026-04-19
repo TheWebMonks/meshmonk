@@ -1,15 +1,15 @@
 """MeshMonk — Python-first 3D mesh registration library."""
+
 from __future__ import annotations
 
 try:
     from importlib.metadata import version
+
     __version__ = version("meshmonk")
 except Exception:
     __version__ = "0.0.0.dev0"  # fallback for uninstalled dev runs
 
-import warnings
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -32,10 +32,6 @@ from meshmonk._meshmonk_core import (  # noqa: E402
     RigidTransform,
     # Exception
     MeshMonkError,
-    # Result structs (raw C++ objects, wrapped by Python dataclasses below)
-    RigidResult as _RigidResult,
-    NonrigidResult as _NonrigidResult,
-    PyramidResult as _PyramidResult,
     # High-level pipelines (raw)
     rigid_registration as _rigid_registration,
     nonrigid_registration as _nonrigid_registration,
@@ -55,17 +51,16 @@ from meshmonk._meshmonk_core import (  # noqa: E402
 # Add .code property to MeshMonkError for programmatic error dispatch
 # ---------------------------------------------------------------------------
 
+
 def _meshmonk_error_code(self):
     """The RegistrationError code for this error, or None."""
-    raw = getattr(self, '_code', None)
+    raw = getattr(self, "_code", None)
     if raw is not None:
         return RegistrationError(raw)
     return None
 
-MeshMonkError.code = property(_meshmonk_error_code)  # pyright: ignore[reportAttributeAccessIssue]
 
-if TYPE_CHECKING:
-    from pathlib import Path
+MeshMonkError.code = property(_meshmonk_error_code)  # pyright: ignore[reportAttributeAccessIssue]
 
 # ---------------------------------------------------------------------------
 # Public re-exports for primitives
@@ -113,11 +108,13 @@ __all__ = [
 # Python result dataclasses
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class RigidRegResult:
     """Result of rigid_register()."""
-    aligned_features: np.ndarray   # (N, 6) float32 — positions + normals
-    transform: RigidTransform       # 4x4 SE(3) rigid transform
+
+    aligned_features: np.ndarray  # (N, 6) float32 — positions + normals
+    transform: RigidTransform  # 4x4 SE(3) rigid transform
     iterations_run: int
 
     @property
@@ -129,9 +126,10 @@ class RigidRegResult:
 @dataclass
 class NonrigidRegResult:
     """Result of nonrigid_register()."""
-    aligned_features: np.ndarray      # (N, 6) float32
+
+    aligned_features: np.ndarray  # (N, 6) float32
     final_inlier_weights: np.ndarray  # (N,) float32
-    displacement_field: np.ndarray    # (N, 3) float32
+    displacement_field: np.ndarray  # (N, 3) float32
     iterations_run: int
 
     @property
@@ -143,9 +141,10 @@ class NonrigidRegResult:
 @dataclass
 class PyramidRegResult:
     """Result of pyramid_register()."""
-    aligned_features: np.ndarray      # (N, 6) float32
+
+    aligned_features: np.ndarray  # (N, 6) float32
     final_inlier_weights: np.ndarray  # (N,) float32
-    displacement_field: np.ndarray    # (N, 3) float32
+    displacement_field: np.ndarray  # (N, 3) float32
     per_layer_iterations: list[int]
 
     @property
@@ -159,11 +158,11 @@ class PyramidRegResult:
 # ---------------------------------------------------------------------------
 
 _LOG_LEVEL_MAP = {
-    "silent":  LogLevel.Silent,
-    "error":   LogLevel.Error,
+    "silent": LogLevel.Silent,
+    "error": LogLevel.Error,
     "warning": LogLevel.Warning,
-    "info":    LogLevel.Info,
-    "debug":   LogLevel.Debug,
+    "info": LogLevel.Info,
+    "debug": LogLevel.Debug,
 }
 
 
@@ -187,6 +186,7 @@ def set_log_level(level: str) -> None:
 # ---------------------------------------------------------------------------
 # features_from_vertices helper
 # ---------------------------------------------------------------------------
+
 
 def features_from_vertices(V: np.ndarray, F: np.ndarray) -> np.ndarray:
     """Build a (N, 6) feature matrix from positions and face topology.
@@ -218,6 +218,7 @@ def features_from_vertices(V: np.ndarray, F: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _load_trimesh(path):
     """Load a mesh using trimesh (requires meshmonk[io])."""
@@ -261,7 +262,7 @@ def _mesh_to_arrays(mesh_or_path, normals_override=None, force_recompute=False):
     # trimesh returns int64 faces — silently cast to int32 at Python boundary
     F = np.asarray(mesh.faces, dtype=np.int32)
     flags = np.ones(V.shape[0], dtype=np.float32)
-    if hasattr(mesh, 'flags') and mesh.flags is not None:
+    if hasattr(mesh, "flags") and mesh.flags is not None:
         flags = np.asarray(mesh.flags, dtype=np.float32)
         if flags.shape != (V.shape[0],):
             raise ValueError(
@@ -274,9 +275,11 @@ def _mesh_to_arrays(mesh_or_path, normals_override=None, force_recompute=False):
             raise ValueError(
                 f"normals_override shape {N.shape} does not match expected ({V.shape[0]}, 3)"
             )
-    elif (not force_recompute
-          and hasattr(mesh, "vertex_normals")
-          and mesh.vertex_normals is not None):
+    elif (
+        not force_recompute
+        and hasattr(mesh, "vertex_normals")
+        and mesh.vertex_normals is not None
+    ):
         vn = np.asarray(mesh.vertex_normals, dtype=np.float32)
         norms = np.linalg.norm(vn, axis=1)
         if np.all(norms > 0):
@@ -290,7 +293,6 @@ def _mesh_to_arrays(mesh_or_path, normals_override=None, force_recompute=False):
     features[:, :3] = V
     features[:, 3:] = N
     return features, F, flags
-
 
 
 _RIGID_KNOWN_KWARGS = {
@@ -349,7 +351,9 @@ def _apply_shared_kwargs(params, kwargs: dict) -> None:
     if "correspondences_flag_threshold" in kwargs:
         params.correspondences.flag_threshold = kwargs["correspondences_flag_threshold"]
     if "correspondences_equalize_push_pull" in kwargs:
-        params.correspondences.equalize_push_pull = kwargs["correspondences_equalize_push_pull"]
+        params.correspondences.equalize_push_pull = kwargs[
+            "correspondences_equalize_push_pull"
+        ]
     if "inlier_kappa" in kwargs:
         params.inliers.kappa = kwargs["inlier_kappa"]
     if "inlier_use_orientation" in kwargs:
@@ -361,20 +365,30 @@ def _apply_transform_kwargs(params, kwargs: dict) -> None:
     if "transform_sigma" in kwargs:
         params.transform.sigma = kwargs["transform_sigma"]
     if "transform_num_viscous_iterations_start" in kwargs:
-        params.transform.num_viscous_iterations_start = kwargs["transform_num_viscous_iterations_start"]
+        params.transform.num_viscous_iterations_start = kwargs[
+            "transform_num_viscous_iterations_start"
+        ]
     if "transform_num_viscous_iterations_end" in kwargs:
-        params.transform.num_viscous_iterations_end = kwargs["transform_num_viscous_iterations_end"]
+        params.transform.num_viscous_iterations_end = kwargs[
+            "transform_num_viscous_iterations_end"
+        ]
     if "transform_num_elastic_iterations_start" in kwargs:
-        params.transform.num_elastic_iterations_start = kwargs["transform_num_elastic_iterations_start"]
+        params.transform.num_elastic_iterations_start = kwargs[
+            "transform_num_elastic_iterations_start"
+        ]
     if "transform_num_elastic_iterations_end" in kwargs:
-        params.transform.num_elastic_iterations_end = kwargs["transform_num_elastic_iterations_end"]
+        params.transform.num_elastic_iterations_end = kwargs[
+            "transform_num_elastic_iterations_end"
+        ]
 
 
 def _apply_rigid_kwargs(params: RigidParams, kwargs: dict) -> RigidParams:
     """Apply kwarg overrides to a RigidParams struct."""
     unknown = set(kwargs) - _RIGID_KNOWN_KWARGS
     if unknown:
-        raise TypeError(f"rigid_register() got unexpected keyword arguments: {sorted(unknown)}")
+        raise TypeError(
+            f"rigid_register() got unexpected keyword arguments: {sorted(unknown)}"
+        )
     _apply_shared_kwargs(params, kwargs)
     if "num_iterations" in kwargs:
         params.num_iterations = kwargs["num_iterations"]
@@ -387,7 +401,9 @@ def _apply_nonrigid_kwargs(params: NonrigidParams, kwargs: dict) -> NonrigidPara
     """Apply kwarg overrides to a NonrigidParams struct."""
     unknown = set(kwargs) - _NONRIGID_KNOWN_KWARGS
     if unknown:
-        raise TypeError(f"nonrigid_register() got unexpected keyword arguments: {sorted(unknown)}")
+        raise TypeError(
+            f"nonrigid_register() got unexpected keyword arguments: {sorted(unknown)}"
+        )
     _apply_shared_kwargs(params, kwargs)
     _apply_transform_kwargs(params, kwargs)
     if "num_iterations" in kwargs:
@@ -395,7 +411,9 @@ def _apply_nonrigid_kwargs(params: NonrigidParams, kwargs: dict) -> NonrigidPara
     return params
 
 
-def _apply_pyramid_kwargs(params: PyramidParams, kwargs: dict, explicit_kwargs: set) -> PyramidParams:
+def _apply_pyramid_kwargs(
+    params: PyramidParams, kwargs: dict, explicit_kwargs: set
+) -> PyramidParams:
     """Apply kwarg overrides to a PyramidParams struct.
 
     Also applies the MATLAB convention: viscous/elastic start = num_iterations
@@ -403,7 +421,9 @@ def _apply_pyramid_kwargs(params: PyramidParams, kwargs: dict, explicit_kwargs: 
     """
     unknown = set(kwargs) - _PYRAMID_KNOWN_KWARGS
     if unknown:
-        raise TypeError(f"pyramid_register() got unexpected keyword arguments: {sorted(unknown)}")
+        raise TypeError(
+            f"pyramid_register() got unexpected keyword arguments: {sorted(unknown)}"
+        )
     _apply_shared_kwargs(params, kwargs)
     _apply_transform_kwargs(params, kwargs)
     if "downsample_float_start" in kwargs:
@@ -433,6 +453,7 @@ def _apply_pyramid_kwargs(params: PyramidParams, kwargs: dict, explicit_kwargs: 
 # Shared array-preparation helper
 # ---------------------------------------------------------------------------
 
+
 def _prepare_arrays(
     floating=None,
     target=None,
@@ -458,7 +479,9 @@ def _prepare_arrays(
     pattern_a = floating is not None
     if pattern_a:
         feat_float, faces_float, flags_float = _mesh_to_arrays(
-            floating, normals_override=floating_normals_override, force_recompute=force_recompute_normals
+            floating,
+            normals_override=floating_normals_override,
+            force_recompute=force_recompute_normals,
         )
         feat_target, faces_target, flags_target = _mesh_to_arrays(
             target, force_recompute=force_recompute_normals
@@ -469,21 +492,21 @@ def _prepare_arrays(
             flags_target = np.asarray(target_flags, dtype=np.float32)
     else:
         required = {
-            'floating_features': floating_features,
-            'target_features': target_features,
-            'floating_faces': floating_faces,
-            'target_faces': target_faces,
+            "floating_features": floating_features,
+            "target_features": target_features,
+            "floating_faces": floating_faces,
+            "target_faces": target_faces,
         }
         missing = [k for k, v in required.items() if v is None]
         if missing:
             raise ValueError(
-                'Pattern B requires all array arguments. Missing: ' + ', '.join(missing)
+                "Pattern B requires all array arguments. Missing: " + ", ".join(missing)
             )
-        feat_float  = np.asarray(floating_features, dtype=np.float32)
+        feat_float = np.asarray(floating_features, dtype=np.float32)
         feat_target = np.asarray(target_features, dtype=np.float32)
-        faces_float  = np.asarray(floating_faces, dtype=np.int32)
+        faces_float = np.asarray(floating_faces, dtype=np.int32)
         faces_target = np.asarray(target_faces, dtype=np.int32)
-        n_float  = feat_float.shape[0]
+        n_float = feat_float.shape[0]
         n_target = feat_target.shape[0]
         flags_float = (
             np.asarray(floating_flags, dtype=np.float32)
@@ -497,13 +520,21 @@ def _prepare_arrays(
         )
         # Auto-recompute normals if all-zero
         if feat_float.shape[1] == 6 and np.all(feat_float[:, 3:] == 0.0):
-            _warnings.warn('floating_features normals are all-zero; recomputing.', stacklevel=3)
-            normals_r = np.asarray(_compute_normals(feat_float[:, :3], faces_float), dtype=np.float32)
+            _warnings.warn(
+                "floating_features normals are all-zero; recomputing.", stacklevel=3
+            )
+            normals_r = np.asarray(
+                _compute_normals(feat_float[:, :3], faces_float), dtype=np.float32
+            )
             feat_float = feat_float.copy()
             feat_float[:, 3:] = normals_r
         if feat_target.shape[1] == 6 and np.all(feat_target[:, 3:] == 0.0):
-            _warnings.warn('target_features normals are all-zero; recomputing.', stacklevel=3)
-            normals_r = np.asarray(_compute_normals(feat_target[:, :3], faces_target), dtype=np.float32)
+            _warnings.warn(
+                "target_features normals are all-zero; recomputing.", stacklevel=3
+            )
+            normals_r = np.asarray(
+                _compute_normals(feat_target[:, :3], faces_target), dtype=np.float32
+            )
             feat_target = feat_target.copy()
             feat_target[:, 3:] = normals_r
 
@@ -513,6 +544,7 @@ def _prepare_arrays(
 # ---------------------------------------------------------------------------
 # High-level registration functions
 # ---------------------------------------------------------------------------
+
 
 def rigid_register(
     floating=None,
@@ -572,34 +604,47 @@ def rigid_register(
         raise ValueError("both floating and target must be provided, or neither")
     # Reject mixed Pattern A + Pattern B
     pattern_a = floating is not None  # (already checked target matches)
-    pattern_b_args = any(x is not None for x in [
-        floating_features, target_features, floating_faces, target_faces,
-        floating_flags, target_flags
-    ])
+    pattern_b_args = any(
+        x is not None
+        for x in [
+            floating_features,
+            target_features,
+            floating_faces,
+            target_faces,
+            floating_flags,
+            target_flags,
+        ]
+    )
     if pattern_a and pattern_b_args:
         raise TypeError(
             "Cannot mix Pattern A (floating/target) with Pattern B "
             "(floating_features/target_features) arguments"
         )
-    feat_float, feat_target, faces_float, faces_target, flags_float, flags_target = _prepare_arrays(
-        floating, target,
-        floating_features=floating_features,
-        target_features=target_features,
-        floating_faces=floating_faces,
-        target_faces=target_faces,
-        floating_normals_override=normals,
-        force_recompute_normals=compute_normals_flag,
-        floating_flags=floating_flags,
-        target_flags=target_flags,
+    feat_float, feat_target, faces_float, faces_target, flags_float, flags_target = (
+        _prepare_arrays(
+            floating,
+            target,
+            floating_features=floating_features,
+            target_features=target_features,
+            floating_faces=floating_faces,
+            target_faces=target_faces,
+            floating_normals_override=normals,
+            force_recompute_normals=compute_normals_flag,
+            floating_flags=floating_flags,
+            target_flags=target_flags,
+        )
     )
 
     params = RigidParams()
     params = _apply_rigid_kwargs(params, kwargs)
 
     raw = _rigid_registration(
-        feat_float, feat_target,
-        faces_float, faces_target,
-        flags_float, flags_target,
+        feat_float,
+        feat_target,
+        faces_float,
+        faces_target,
+        flags_float,
+        flags_target,
         params,
     )
     return RigidRegResult(
@@ -643,30 +688,42 @@ def nonrigid_register(
         raise ValueError("both floating and target must be provided, or neither")
     # Reject mixed Pattern A + Pattern B
     pattern_a = floating is not None  # (already checked target matches)
-    pattern_b_args = any(x is not None for x in [
-        floating_features, target_features, floating_faces, target_faces,
-        floating_flags, target_flags
-    ])
+    pattern_b_args = any(
+        x is not None
+        for x in [
+            floating_features,
+            target_features,
+            floating_faces,
+            target_faces,
+            floating_flags,
+            target_flags,
+        ]
+    )
     if pattern_a and pattern_b_args:
         raise TypeError(
             "Cannot mix Pattern A (floating/target) with Pattern B "
             "(floating_features/target_features) arguments"
         )
-    feat_float, feat_target, faces_float, faces_target, flags_float, flags_target = _prepare_arrays(
-        floating, target,
-        floating_features=floating_features,
-        target_features=target_features,
-        floating_faces=floating_faces,
-        target_faces=target_faces,
-        floating_normals_override=normals,
-        force_recompute_normals=compute_normals_flag,
-        floating_flags=floating_flags,
-        target_flags=target_flags,
+    feat_float, feat_target, faces_float, faces_target, flags_float, flags_target = (
+        _prepare_arrays(
+            floating,
+            target,
+            floating_features=floating_features,
+            target_features=target_features,
+            floating_faces=floating_faces,
+            target_faces=target_faces,
+            floating_normals_override=normals,
+            force_recompute_normals=compute_normals_flag,
+            floating_flags=floating_flags,
+            target_flags=target_flags,
+        )
     )
 
     if rigid_params is not None:
         if not isinstance(rigid_params, dict):
-            raise TypeError(f"rigid_params must be a dict or None, got {type(rigid_params).__name__}")
+            raise TypeError(
+                f"rigid_params must be a dict or None, got {type(rigid_params).__name__}"
+            )
         _rigid_kw = rigid_params
         rigid_result = rigid_register(
             floating_features=feat_float,
@@ -683,9 +740,12 @@ def nonrigid_register(
     params = _apply_nonrigid_kwargs(params, kwargs)
 
     raw = _nonrigid_registration(
-        feat_float, feat_target,
-        faces_float, faces_target,
-        flags_float, flags_target,
+        feat_float,
+        feat_target,
+        faces_float,
+        faces_target,
+        flags_float,
+        flags_target,
         params,
     )
     return NonrigidRegResult(
@@ -733,30 +793,42 @@ def pyramid_register(
         raise ValueError("both floating and target must be provided, or neither")
     # Reject mixed Pattern A + Pattern B
     pattern_a = floating is not None  # (already checked target matches)
-    pattern_b_args = any(x is not None for x in [
-        floating_features, target_features, floating_faces, target_faces,
-        floating_flags, target_flags
-    ])
+    pattern_b_args = any(
+        x is not None
+        for x in [
+            floating_features,
+            target_features,
+            floating_faces,
+            target_faces,
+            floating_flags,
+            target_flags,
+        ]
+    )
     if pattern_a and pattern_b_args:
         raise TypeError(
             "Cannot mix Pattern A (floating/target) with Pattern B "
             "(floating_features/target_features) arguments"
         )
-    feat_float, feat_target, faces_float, faces_target, flags_float, flags_target = _prepare_arrays(
-        floating, target,
-        floating_features=floating_features,
-        target_features=target_features,
-        floating_faces=floating_faces,
-        target_faces=target_faces,
-        floating_normals_override=normals,
-        force_recompute_normals=compute_normals_flag,
-        floating_flags=floating_flags,
-        target_flags=target_flags,
+    feat_float, feat_target, faces_float, faces_target, flags_float, flags_target = (
+        _prepare_arrays(
+            floating,
+            target,
+            floating_features=floating_features,
+            target_features=target_features,
+            floating_faces=floating_faces,
+            target_faces=target_faces,
+            floating_normals_override=normals,
+            force_recompute_normals=compute_normals_flag,
+            floating_flags=floating_flags,
+            target_flags=target_flags,
+        )
     )
 
     if rigid_params is not None:
         if not isinstance(rigid_params, dict):
-            raise TypeError(f"rigid_params must be a dict or None, got {type(rigid_params).__name__}")
+            raise TypeError(
+                f"rigid_params must be a dict or None, got {type(rigid_params).__name__}"
+            )
         _rigid_kw = rigid_params
         rigid_result = rigid_register(
             floating_features=feat_float,
@@ -780,9 +852,12 @@ def pyramid_register(
     params = _apply_pyramid_kwargs(params, kwargs, explicit_kwargs=set(kwargs.keys()))
 
     raw = _pyramid_registration(
-        feat_float, feat_target,
-        faces_float, faces_target,
-        flags_float, flags_target,
+        feat_float,
+        feat_target,
+        faces_float,
+        faces_target,
+        flags_float,
+        flags_target,
         params,
     )
     return PyramidRegResult(

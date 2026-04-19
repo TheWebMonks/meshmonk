@@ -44,12 +44,18 @@ _CUBE_V = np.array(
 
 _CUBE_F = np.array(
     [
-        [0, 4, 1], [4, 5, 1],
-        [2, 3, 6], [3, 7, 6],
-        [0, 2, 4], [2, 6, 4],
-        [1, 5, 3], [5, 7, 3],
-        [0, 1, 2], [1, 3, 2],
-        [4, 6, 5], [6, 7, 5],
+        [0, 4, 1],
+        [4, 5, 1],
+        [2, 3, 6],
+        [3, 7, 6],
+        [0, 2, 4],
+        [2, 6, 4],
+        [1, 5, 3],
+        [5, 7, 3],
+        [0, 1, 2],
+        [1, 3, 2],
+        [4, 6, 5],
+        [6, 7, 5],
     ],
     dtype="int32",
 )
@@ -77,8 +83,8 @@ def _get_rigid_transform_s1():
     R = np.array(
         [
             [np.cos(theta), -np.sin(theta), 0],
-            [np.sin(theta),  np.cos(theta), 0],
-            [0,              0,             1],
+            [np.sin(theta), np.cos(theta), 0],
+            [0, 0, 1],
         ],
         dtype="float32",
     )
@@ -105,8 +111,8 @@ def _get_rigid_transform_scaled(scale: float):
     R_pure = np.array(
         [
             [np.cos(theta), -np.sin(theta), 0],
-            [np.sin(theta),  np.cos(theta), 0],
-            [0,              0,             1],
+            [np.sin(theta), np.cos(theta), 0],
+            [0, 0, 1],
         ],
         dtype="float32",
     )
@@ -143,7 +149,9 @@ class TestTransformInverse:
         T_inv = T.inverse()
         product = T.matrix @ T_inv.matrix
         np.testing.assert_allclose(
-            product, np.eye(4, dtype="float32"), atol=1e-4,
+            product,
+            np.eye(4, dtype="float32"),
+            atol=1e-4,
             err_msg="T * T^-1 must be Identity for pure rotation (s=1)",
         )
 
@@ -160,13 +168,19 @@ class TestTransformInverse:
 
         # Verify the transform has the right scale embedded
         s_actual = float(np.linalg.norm(T.matrix[:3, 0]))  # col-0 norm = s
-        np.testing.assert_allclose(s_actual, scale, atol=0.05,
-            err_msg="compute_rigid_transform did not return expected scale")
+        np.testing.assert_allclose(
+            s_actual,
+            scale,
+            atol=0.05,
+            err_msg="compute_rigid_transform did not return expected scale",
+        )
 
         T_inv = T.inverse()
         product = T.matrix @ T_inv.matrix
         np.testing.assert_allclose(
-            product, np.eye(4, dtype="float32"), atol=1e-4,
+            product,
+            np.eye(4, dtype="float32"),
+            atol=1e-4,
             err_msg=(
                 "T * T^-1 must be Identity for similarity transform (scale=2). "
                 "Failure here means inverse() divides by s instead of s^2."
@@ -188,7 +202,9 @@ class TestTransformInverse:
         recovered = T.inverse().apply(transformed)
 
         np.testing.assert_allclose(
-            recovered[:, :3], features[:, :3], atol=1e-3,
+            recovered[:, :3],
+            features[:, :3],
+            atol=1e-3,
             err_msg=(
                 "Applying T then T^-1 must recover original positions. "
                 "Failure here means inverse() uses wrong scale factor."
@@ -217,9 +233,12 @@ class TestPyramidValidation:
         params.num_pyramid_layers = num_pyramid_layers
 
         return _pyramid_registration(
-            features, features,
-            faces, faces,
-            flags, flags,
+            features,
+            features,
+            faces,
+            faces,
+            flags,
+            flags,
             params,
         )
 
@@ -289,7 +308,12 @@ class TestPyramidDownsampleTargetGuard:
     captures the exact bug and its correction.
     """
 
-    _SOURCE_FILE = str(Path(__file__).parent.parent / "library" / "src" / "PyramidNonrigidRegistration.cpp")
+    _SOURCE_FILE = str(
+        Path(__file__).parent.parent
+        / "library"
+        / "src"
+        / "PyramidNonrigidRegistration.cpp"
+    )
 
     def test_target_guard_checks_target_variable(self):
         """Line 54: both conditions in the _downsampleTargetStart guard must
@@ -346,32 +370,47 @@ class TestTargetBboxValidation:
         target_faces = np.array([[0, 1, 2]], dtype=np.int32)
         target_flags = np.ones(n, dtype=np.float32)
 
-        return (float_feat, target_feat, float_faces, target_faces,
-                float_flags, target_flags)
+        return (
+            float_feat,
+            target_feat,
+            float_faces,
+            target_faces,
+            float_flags,
+            target_flags,
+        )
 
     def test_rigid_degenerate_target_raises(self):
         args = self._make_degenerate_target()
         with pytest.raises(meshmonk.MeshMonkError):
             meshmonk.rigid_register(
-                floating_features=args[0], target_features=args[1],
-                floating_faces=args[2], target_faces=args[3],
-                floating_flags=args[4], target_flags=args[5],
+                floating_features=args[0],
+                target_features=args[1],
+                floating_faces=args[2],
+                target_faces=args[3],
+                floating_flags=args[4],
+                target_flags=args[5],
             )
 
     def test_nonrigid_degenerate_target_raises(self):
         args = self._make_degenerate_target()
         with pytest.raises(meshmonk.MeshMonkError):
             meshmonk.nonrigid_register(
-                floating_features=args[0], target_features=args[1],
-                floating_faces=args[2], target_faces=args[3],
-                floating_flags=args[4], target_flags=args[5],
+                floating_features=args[0],
+                target_features=args[1],
+                floating_faces=args[2],
+                target_faces=args[3],
+                floating_flags=args[4],
+                target_flags=args[5],
             )
 
     def test_pyramid_degenerate_target_raises(self):
         args = self._make_degenerate_target()
         with pytest.raises(meshmonk.MeshMonkError):
             meshmonk.pyramid_register(
-                floating_features=args[0], target_features=args[1],
-                floating_faces=args[2], target_faces=args[3],
-                floating_flags=args[4], target_flags=args[5],
+                floating_features=args[0],
+                target_features=args[1],
+                floating_faces=args[2],
+                target_faces=args[3],
+                floating_flags=args[4],
+                target_flags=args[5],
             )

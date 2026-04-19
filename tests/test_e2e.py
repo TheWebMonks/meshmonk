@@ -70,7 +70,8 @@ def test_cli_rigid_exits_zero(tmp_path):
         "rigid",
         str(TEMPLATE_OBJ),
         str(DEMOFACE_OBJ),
-        "--out", str(out_file),
+        "--out",
+        str(out_file),
     ]
     result = subprocess.run(
         cmd,

@@ -64,9 +64,9 @@ def test_rigid_golden():
         target=str(DEMOFACE_OBJ),
     )
     aligned_vertices = result.aligned_vertices.astype("float64")
-    assert compare_to_golden(aligned_vertices, str(golden_path), atol=0.5), (
-        "Rigid registration output exceeds golden tolerance (RMSE > 0.5 mm)"
-    )
+    assert compare_to_golden(
+        aligned_vertices, str(golden_path), atol=0.5
+    ), "Rigid registration output exceeds golden tolerance (RMSE > 0.5 mm)"
 
 
 @pytest.mark.slow
@@ -92,9 +92,9 @@ def test_nonrigid_golden():
         target=str(DEMOFACE_OBJ),
     )
     aligned_vertices = result.aligned_vertices.astype("float64")
-    assert compare_to_golden(aligned_vertices, str(golden_path), atol=0.5), (
-        "Nonrigid registration output exceeds golden tolerance (RMSE > 0.5 mm)"
-    )
+    assert compare_to_golden(
+        aligned_vertices, str(golden_path), atol=0.5
+    ), "Nonrigid registration output exceeds golden tolerance (RMSE > 0.5 mm)"
 
 
 @pytest.mark.slow
@@ -120,9 +120,9 @@ def test_pyramid_golden():
         target=str(DEMOFACE_OBJ),
     )
     aligned_vertices = result.aligned_vertices.astype("float64")
-    assert compare_to_golden(aligned_vertices, str(golden_path), atol=0.5), (
-        "Pyramid registration output exceeds golden tolerance (RMSE > 0.5 mm)"
-    )
+    assert compare_to_golden(
+        aligned_vertices, str(golden_path), atol=0.5
+    ), "Pyramid registration output exceeds golden tolerance (RMSE > 0.5 mm)"
 
 
 # ---------------------------------------------------------------------------

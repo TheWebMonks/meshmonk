@@ -53,6 +53,7 @@ def _require_trimesh():
     """Import and return trimesh, or exit with a helpful message."""
     try:
         import trimesh  # noqa: PLC0415
+
         return trimesh
     except ImportError:
         typer.echo(_TRIMESH_IMPORT_ERROR, err=True)
@@ -67,6 +68,7 @@ def _load_mesh(trimesh_mod, path: str | Path):
 def _save_mesh(trimesh_mod, vertices, faces, out_path: str | Path) -> None:
     """Save a mesh defined by *vertices* + *faces* to *out_path*."""
     import numpy as np  # noqa: PLC0415
+
     mesh = trimesh_mod.Trimesh(
         vertices=np.asarray(vertices, dtype=np.float64),
         faces=np.asarray(faces, dtype=np.int32),
@@ -94,15 +96,22 @@ def _find_demo_meshes():
 # rigid subcommand
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def rigid(
     floating: str = typer.Argument(..., help="Path to floating (source) mesh OBJ."),
     target: str = typer.Argument(..., help="Path to target mesh OBJ."),
     out: str = typer.Option("result.obj", "--out", help="Output OBJ path."),
-    iterations: int = typer.Option(80, "--iterations", help="Number of ICP iterations."),
-    use_scaling: bool = typer.Option(False, "--use-scaling/--no-use-scaling", help="Allow uniform scaling."),
+    iterations: int = typer.Option(
+        80, "--iterations", help="Number of ICP iterations."
+    ),
+    use_scaling: bool = typer.Option(
+        False, "--use-scaling/--no-use-scaling", help="Allow uniform scaling."
+    ),
     kappa: float = typer.Option(12.0, "--kappa", help="Inlier detection kappa."),
-    num_neighbours: int = typer.Option(3, "--num-neighbours", help="Correspondence neighbours."),
+    num_neighbours: int = typer.Option(
+        3, "--num-neighbours", help="Correspondence neighbours."
+    ),
 ) -> None:
     """Run rigid (SE(3)) mesh registration on FLOATING → TARGET."""
     trimesh = _require_trimesh()
@@ -128,6 +137,7 @@ def rigid(
 # nonrigid subcommand
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def nonrigid(
     floating: str = typer.Argument(..., help="Path to floating (source) mesh OBJ."),
@@ -135,7 +145,9 @@ def nonrigid(
     out: str = typer.Option("result.obj", "--out", help="Output OBJ path."),
     iterations: int = typer.Option(200, "--iterations", help="Number of iterations."),
     kappa: float = typer.Option(12.0, "--kappa", help="Inlier detection kappa."),
-    num_neighbours: int = typer.Option(3, "--num-neighbours", help="Correspondence neighbours."),
+    num_neighbours: int = typer.Option(
+        3, "--num-neighbours", help="Correspondence neighbours."
+    ),
 ) -> None:
     """Run nonrigid (viscoelastic) mesh registration on FLOATING → TARGET."""
     trimesh = _require_trimesh()
@@ -160,15 +172,20 @@ def nonrigid(
 # pyramid subcommand
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def pyramid(
     floating: str = typer.Argument(..., help="Path to floating (source) mesh OBJ."),
     target: str = typer.Argument(..., help="Path to target mesh OBJ."),
     out: str = typer.Option("result.obj", "--out", help="Output OBJ path."),
-    iterations: int = typer.Option(90, "--iterations", help="Total iterations across all pyramid layers."),
+    iterations: int = typer.Option(
+        90, "--iterations", help="Total iterations across all pyramid layers."
+    ),
     layers: int = typer.Option(3, "--layers", help="Number of pyramid layers."),
     kappa: float = typer.Option(12.0, "--kappa", help="Inlier detection kappa."),
-    num_neighbours: int = typer.Option(3, "--num-neighbours", help="Correspondence neighbours."),
+    num_neighbours: int = typer.Option(
+        3, "--num-neighbours", help="Correspondence neighbours."
+    ),
 ) -> None:
     """Run pyramid (multi-resolution nonrigid) mesh registration on FLOATING → TARGET."""
     trimesh = _require_trimesh()
@@ -194,10 +211,15 @@ def pyramid(
 # demo subcommand
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def demo(
-    mode: str = typer.Argument("rigid", help="Registration mode: rigid, nonrigid, or pyramid."),
-    download: bool = typer.Option(False, "--download", help="Download demo meshes to ~/.cache/meshmonk/."),
+    mode: str = typer.Argument(
+        "rigid", help="Registration mode: rigid, nonrigid, or pyramid."
+    ),
+    download: bool = typer.Option(
+        False, "--download", help="Download demo meshes to ~/.cache/meshmonk/."
+    ),
 ) -> None:
     """Download demo meshes and/or run a demo registration.
 
@@ -276,7 +298,9 @@ def _demo_run(mode: str) -> None:
     elif mode == "pyramid":
         result = meshmonk.pyramid_register(floating=floating_mesh, target=target_mesh)
     else:
-        typer.echo(f"Unknown mode {mode!r}.  Choose: rigid, nonrigid, pyramid.", err=True)
+        typer.echo(
+            f"Unknown mode {mode!r}.  Choose: rigid, nonrigid, pyramid.", err=True
+        )
         raise typer.Exit(code=1)
 
     _save_mesh(trimesh, result.aligned_vertices, floating_mesh.faces, str(out_path))

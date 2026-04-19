@@ -11,6 +11,7 @@ Requires: pyyaml (pip install pyyaml or pip install ".[dev]")
 tomllib is stdlib in Python 3.11+; on Python 3.10 install tomli:
   pip install "tomli>=2.0"  or  pip install ".[dev]" (tomli is in dev extras)
 """
+
 from __future__ import annotations
 
 import re
@@ -98,7 +99,9 @@ def test_no_py_api_in_scikit_build_wheel():
     content = tomllib.loads((ROOT / "pyproject.toml").read_text())
     skbuild = content.get("tool", {}).get("scikit-build", {})
     wheel = skbuild.get("wheel", {})
-    assert "py-api" not in wheel, "py-api in scikit-build.wheel would break cp310/cp311 tagging"
+    assert (
+        "py-api" not in wheel
+    ), "py-api in scikit-build.wheel would break cp310/cp311 tagging"
 
 
 def test_docs_extra_in_pyproject():
@@ -127,22 +130,28 @@ def test_ci_yml_and_pyproject_agree_on_manylinux_image():
     """ci.yml and pyproject.toml must reference the same manylinux image version."""
     ci_content = (ROOT / ".github/workflows/ci.yml").read_text()
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
-    pyproject_image = pyproject["tool"]["cibuildwheel"]["linux"]["manylinux-x86_64-image"]
+    pyproject_image = pyproject["tool"]["cibuildwheel"]["linux"][
+        "manylinux-x86_64-image"
+    ]
     # ci.yml must reference the same image used in the release config
-    assert pyproject_image in ci_content, (
-        f"ci.yml does not reference pyproject.toml manylinux image '{pyproject_image}'"
-    )
+    assert (
+        pyproject_image in ci_content
+    ), f"ci.yml does not reference pyproject.toml manylinux image '{pyproject_image}'"
 
 
 def test_ci_yml_no_manylinux2014_while_pyproject_uses_2_28():
     """ci.yml must not use manylinux2014 when pyproject.toml specifies manylinux_2_28."""
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
-    manylinux_image = pyproject["tool"]["cibuildwheel"]["linux"]["manylinux-x86_64-image"]
-    assert manylinux_image == "manylinux_2_28", "pyproject.toml image is not manylinux_2_28"
+    manylinux_image = pyproject["tool"]["cibuildwheel"]["linux"][
+        "manylinux-x86_64-image"
+    ]
+    assert (
+        manylinux_image == "manylinux_2_28"
+    ), "pyproject.toml image is not manylinux_2_28"
     ci_content = (ROOT / ".github/workflows/ci.yml").read_text()
-    assert "manylinux2014" not in ci_content, (
-        "ci.yml still uses manylinux2014 — inconsistent with pyproject.toml"
-    )
+    assert (
+        "manylinux2014" not in ci_content
+    ), "ci.yml still uses manylinux2014 — inconsistent with pyproject.toml"
 
 
 # ---------------------------------------------------------------------------
@@ -197,8 +206,7 @@ def test_release_yml_actions_are_sha_pinned():
     for ref in uses_lines:
         sha_part = ref.split("@")[-1] if "@" in ref else ""
         assert (
-            len(sha_part) == 40
-            and re.fullmatch(r"[0-9a-f]{40}", sha_part) is not None
+            len(sha_part) == 40 and re.fullmatch(r"[0-9a-f]{40}", sha_part) is not None
         ), f"Action not SHA-pinned with 40-char lowercase hex: {ref}"
 
 
@@ -249,9 +257,9 @@ def test_pyproject_version_is_consistent_with_v03_branch():
     assert version.startswith("0.3."), f"pyproject.toml still at old version: {version}"
     # __init__.py fallback must NOT be the release version (that would be dual-maintenance)
     init_content = (ROOT / "meshmonk/__init__.py").read_text()
-    assert version not in init_content or "importlib.metadata" in init_content, (
-        "__init__.py hardcodes the pyproject version instead of using importlib.metadata"
-    )
+    assert (
+        version not in init_content or "importlib.metadata" in init_content
+    ), "__init__.py hardcodes the pyproject version instead of using importlib.metadata"
 
 
 # ---------------------------------------------------------------------------
@@ -312,18 +320,18 @@ def test_mkdocs_nav_references_existing_files():
         if not full_path.exists():
             missing.append(path_str)
 
-    assert not missing, (
-        f"mkdocs.yml nav references files that don't exist under docs/: {missing}"
-    )
+    assert (
+        not missing
+    ), f"mkdocs.yml nav references files that don't exist under docs/: {missing}"
 
 
 def test_mkdocs_nav_has_decisions_section():
     """mkdocs.yml nav must reference ADR decisions doc."""
     mkdocs = yaml.safe_load((ROOT / "mkdocs.yml").read_text())
     content_str = str(mkdocs)
-    assert "decisions" in content_str.lower() or "ADR" in content_str, (
-        "mkdocs.yml nav does not reference decisions/ADR docs"
-    )
+    assert (
+        "decisions" in content_str.lower() or "ADR" in content_str
+    ), "mkdocs.yml nav does not reference decisions/ADR docs"
 
 
 # ---------------------------------------------------------------------------
@@ -355,9 +363,9 @@ def test_cli_no_none_url_constants():
 def test_cli_demo_assets_urls_point_to_correct_repo():
     """DEMO_ASSETS URLs must reference the jsnyde0/meshmonk GitHub repo."""
     content = (ROOT / "meshmonk/cli.py").read_text()
-    assert "github.com/jsnyde0/meshmonk" in content, (
-        "DEMO_ASSETS URLs do not reference the expected GitHub repo"
-    )
+    assert (
+        "github.com/jsnyde0/meshmonk" in content
+    ), "DEMO_ASSETS URLs do not reference the expected GitHub repo"
 
 
 # ---------------------------------------------------------------------------
@@ -409,9 +417,9 @@ def test_displacement_field_has_docstring_in_bindings():
         content,
         re.DOTALL,
     )
-    assert match is not None, (
-        "displacement_field binding in bindings.cpp is missing a docstring argument"
-    )
+    assert (
+        match is not None
+    ), "displacement_field binding in bindings.cpp is missing a docstring argument"
 
 
 # ---------------------------------------------------------------------------
@@ -426,4 +434,6 @@ def test_adr001_d2_amendment_present():
     content = adr_path.read_text()
     assert "Amendment" in content, "ADR-001 D2 amendment is missing"
     assert "12 wheels" in content, "ADR-001 amendment must mention 12-wheel strategy"
-    assert "3.12" in content, "ADR-001 amendment must reference Python 3.12 as abi3 floor"
+    assert (
+        "3.12" in content
+    ), "ADR-001 amendment must reference Python 3.12 as abi3 floor"

@@ -65,6 +65,7 @@ def test_hausdorff_known_value():
 def test_rmse_empty_input_raises():
     """rmse raises ValueError for empty input arrays."""
     import pytest
+
     a = np.zeros((0, 3))
     b = np.zeros((0, 3))
     with pytest.raises(ValueError, match="empty input"):
@@ -74,6 +75,7 @@ def test_rmse_empty_input_raises():
 def test_max_vertex_distance_empty_input_raises():
     """max_vertex_distance raises ValueError for empty input arrays."""
     import pytest
+
     a = np.zeros((0, 3))
     b = np.zeros((0, 3))
     with pytest.raises(ValueError, match="empty input"):
@@ -83,6 +85,7 @@ def test_max_vertex_distance_empty_input_raises():
 def test_hausdorff_empty_input_raises():
     """hausdorff_symmetric raises ValueError for empty input arrays."""
     import pytest
+
     a = np.zeros((0, 3))
     b = np.zeros((0, 3))
     with pytest.raises(ValueError, match="empty input"):
@@ -92,6 +95,7 @@ def test_hausdorff_empty_input_raises():
 def test_rmse_wrong_ndim_raises():
     """rmse raises ValueError for non-(N,3) shaped input."""
     import pytest
+
     a = np.array([[0.0, 0.0], [1.0, 0.0]])  # (N, 2) — wrong
     b = np.array([[0.0, 0.0], [1.0, 0.0]])
     with pytest.raises(ValueError, match="shape"):

@@ -5,6 +5,6 @@ namespace registration {
 
 const int NUM_FEATURES = 6;
 
-}//namespace registration
+} // namespace registration
 
 #endif

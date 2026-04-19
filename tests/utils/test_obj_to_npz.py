@@ -98,6 +98,7 @@ f 1 2 3 4
         obj_path.write_text(quad_obj)
 
         import pytest
+
         with pytest.raises(ValueError, match="non-triangle cells"):
             convert(obj_path, npz_path)
 

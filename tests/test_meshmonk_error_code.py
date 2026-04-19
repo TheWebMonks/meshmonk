@@ -4,6 +4,7 @@ These tests verify that MeshMonkError instances have a programmatically
 accessible .code attribute returning a RegistrationError enum value.
 This replaces the previous approach of string-parsing error messages.
 """
+
 import pytest
 import numpy as np
 import meshmonk
@@ -14,6 +15,7 @@ from meshmonk import MeshMonkError, RegistrationError
 # Core: .code attribute exists and returns RegistrationError
 # ---------------------------------------------------------------------------
 
+
 def test_meshmonk_error_has_code_property():
     """MeshMonkError must have a .code attribute."""
     empty = np.zeros((0, 6), dtype=np.float32)
@@ -21,13 +23,16 @@ def test_meshmonk_error_has_code_property():
     flags = np.zeros((0,), dtype=np.float32)
     with pytest.raises(MeshMonkError) as exc_info:
         meshmonk.rigid_register(
-            floating_features=empty, target_features=empty,
-            floating_faces=faces, target_faces=faces,
-            floating_flags=flags, target_flags=flags,
+            floating_features=empty,
+            target_features=empty,
+            floating_faces=faces,
+            target_faces=faces,
+            floating_flags=flags,
+            target_flags=flags,
         )
-    assert hasattr(exc_info.value, 'code'), (
-        "MeshMonkError instance must have a .code attribute"
-    )
+    assert hasattr(
+        exc_info.value, "code"
+    ), "MeshMonkError instance must have a .code attribute"
 
 
 def test_degenerate_input_code_is_registration_error_enum():
@@ -37,14 +42,17 @@ def test_degenerate_input_code_is_registration_error_enum():
     flags = np.zeros((0,), dtype=np.float32)
     with pytest.raises(MeshMonkError) as exc_info:
         meshmonk.rigid_register(
-            floating_features=empty, target_features=empty,
-            floating_faces=faces, target_faces=faces,
-            floating_flags=flags, target_flags=flags,
+            floating_features=empty,
+            target_features=empty,
+            floating_faces=faces,
+            target_faces=faces,
+            floating_flags=flags,
+            target_flags=flags,
         )
     code = exc_info.value.code
-    assert isinstance(code, RegistrationError), (
-        f"Expected .code to be RegistrationError, got {type(code)}: {code!r}"
-    )
+    assert isinstance(
+        code, RegistrationError
+    ), f"Expected .code to be RegistrationError, got {type(code)}: {code!r}"
 
 
 def test_degenerate_input_code_value():
@@ -54,9 +62,12 @@ def test_degenerate_input_code_value():
     flags = np.zeros((0,), dtype=np.float32)
     with pytest.raises(MeshMonkError) as exc_info:
         meshmonk.rigid_register(
-            floating_features=empty, target_features=empty,
-            floating_faces=faces, target_faces=faces,
-            floating_flags=flags, target_flags=flags,
+            floating_features=empty,
+            target_features=empty,
+            floating_faces=faces,
+            target_faces=faces,
+            floating_flags=flags,
+            target_flags=flags,
         )
     assert exc_info.value.code == RegistrationError.DegenerateInput
 
@@ -65,6 +76,7 @@ def test_degenerate_input_code_value():
 # Programmatic error handling (the main use case)
 # ---------------------------------------------------------------------------
 
+
 def test_programmatic_error_dispatch():
     """Users must be able to switch on .code instead of parsing strings."""
     empty = np.zeros((0, 6), dtype=np.float32)
@@ -72,9 +84,12 @@ def test_programmatic_error_dispatch():
     flags = np.zeros((0,), dtype=np.float32)
     try:
         meshmonk.rigid_register(
-            floating_features=empty, target_features=empty,
-            floating_faces=faces, target_faces=faces,
-            floating_flags=flags, target_flags=flags,
+            floating_features=empty,
+            target_features=empty,
+            floating_faces=faces,
+            target_faces=faces,
+            floating_flags=flags,
+            target_flags=flags,
         )
         pytest.fail("Expected MeshMonkError")
     except MeshMonkError as e:
@@ -89,6 +104,7 @@ def test_programmatic_error_dispatch():
 # Exception hierarchy preserved
 # ---------------------------------------------------------------------------
 
+
 def test_meshmonk_error_still_subclass_of_runtime_error():
     """MeshMonkError must remain a RuntimeError subclass."""
     assert issubclass(MeshMonkError, RuntimeError)
@@ -101,9 +117,12 @@ def test_except_runtime_error_catches_meshmonk_error():
     flags = np.zeros((0,), dtype=np.float32)
     with pytest.raises(RuntimeError):
         meshmonk.rigid_register(
-            floating_features=empty, target_features=empty,
-            floating_faces=faces, target_faces=faces,
-            floating_flags=flags, target_flags=flags,
+            floating_features=empty,
+            target_features=empty,
+            floating_faces=faces,
+            target_faces=faces,
+            floating_flags=flags,
+            target_flags=flags,
         )
 
 
@@ -115,9 +134,12 @@ def test_except_meshmonk_error_catches_it():
     caught = False
     try:
         meshmonk.rigid_register(
-            floating_features=empty, target_features=empty,
-            floating_faces=faces, target_faces=faces,
-            floating_flags=flags, target_flags=flags,
+            floating_features=empty,
+            target_features=empty,
+            floating_faces=faces,
+            target_faces=faces,
+            floating_flags=flags,
+            target_flags=flags,
         )
     except MeshMonkError:
         caught = True
@@ -128,6 +150,7 @@ def test_except_meshmonk_error_catches_it():
 # Message string preserved
 # ---------------------------------------------------------------------------
 
+
 def test_error_message_still_contains_description():
     """str(e) must still contain the human-readable error description."""
     empty = np.zeros((0, 6), dtype=np.float32)
@@ -135,17 +158,23 @@ def test_error_message_still_contains_description():
     flags = np.zeros((0,), dtype=np.float32)
     with pytest.raises(MeshMonkError) as exc_info:
         meshmonk.rigid_register(
-            floating_features=empty, target_features=empty,
-            floating_faces=faces, target_faces=faces,
-            floating_flags=flags, target_flags=flags,
+            floating_features=empty,
+            target_features=empty,
+            floating_faces=faces,
+            target_faces=faces,
+            floating_flags=flags,
+            target_flags=flags,
         )
     msg = str(exc_info.value)
-    assert "DegenerateInput" in msg, f"Expected 'DegenerateInput' in message, got: {msg!r}"
+    assert (
+        "DegenerateInput" in msg
+    ), f"Expected 'DegenerateInput' in message, got: {msg!r}"
 
 
 # ---------------------------------------------------------------------------
 # All error codes accessible via nonrigid (InsufficientInliers)
 # ---------------------------------------------------------------------------
+
 
 def test_insufficient_inliers_code():
     """Trigger InsufficientInliers and verify .code."""
@@ -160,17 +189,20 @@ def test_insufficient_inliers_code():
 
     try:
         meshmonk.rigid_register(
-            floating_features=features, target_features=features,
-            floating_faces=faces, target_faces=faces,
-            floating_flags=flags, target_flags=flags,
+            floating_features=features,
+            target_features=features,
+            floating_faces=faces,
+            target_faces=faces,
+            floating_flags=flags,
+            target_flags=flags,
             num_iterations=2,
         )
     except MeshMonkError as e:
         # We may get DegenerateInput or InsufficientInliers depending on
         # how the C++ code validates. Either way, .code must be a valid enum.
-        assert isinstance(e.code, RegistrationError), (
-            f"Expected .code to be RegistrationError, got {type(e.code)}: {e.code!r}"
-        )
+        assert isinstance(
+            e.code, RegistrationError
+        ), f"Expected .code to be RegistrationError, got {type(e.code)}: {e.code!r}"
     except Exception:
         pass  # Other exceptions (e.g. from malformed faces) are acceptable
 
@@ -179,9 +211,10 @@ def test_insufficient_inliers_code():
 # RegistrationError enum is importable and has expected members
 # ---------------------------------------------------------------------------
 
+
 def test_registration_error_enum_members():
     """Verify all RegistrationError enum members exist."""
-    assert hasattr(RegistrationError, 'DegenerateInput')
-    assert hasattr(RegistrationError, 'InsufficientInliers')
-    assert hasattr(RegistrationError, 'DecompositionFailed')
-    assert hasattr(RegistrationError, 'NonConvergence')
+    assert hasattr(RegistrationError, "DegenerateInput")
+    assert hasattr(RegistrationError, "InsufficientInliers")
+    assert hasattr(RegistrationError, "DecompositionFailed")
+    assert hasattr(RegistrationError, "NonConvergence")
