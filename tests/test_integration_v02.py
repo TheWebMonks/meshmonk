@@ -98,23 +98,16 @@ def test_rigid_params_type_error():
     with pytest.raises(TypeError, match="rigid_params must be a dict"):
         meshmonk.nonrigid_register(floating=m, target=m, rigid_params=True)
 
-# ---- Bead 4: CLI demo --download exits 1 ----
+# ---- Bead 4: CLI demo --download uses real GitHub Releases URLs ----
 
-def test_demo_download_exits_nonzero():
-    proc = subprocess.run(
-        [sys.executable, "-m", "meshmonk", "demo", "--download"],
-        capture_output=True,
-        text=True,
-    )
-    assert proc.returncode == 1, (
-        f"Expected exit code 1 for 'demo --download', got {proc.returncode}. "
-        f"stdout: {proc.stdout!r}, stderr: {proc.stderr!r}"
-    )
-    combined = proc.stdout + proc.stderr
-    assert "Download URLs not yet configured" in combined, (
-        "Expected message 'Download URLs not yet configured' in output. "
-        f"Got stdout: {proc.stdout!r}, stderr: {proc.stderr!r}"
-    )
+def test_demo_download_uses_github_releases_urls():
+    """demo --download now uses real GitHub Releases URLs (not a stub)."""
+    import meshmonk.cli as cli_mod
+    assert hasattr(cli_mod, "DEMO_ASSETS"), "DEMO_ASSETS dict should exist in cli.py"
+    for name, asset in cli_mod.DEMO_ASSETS.items():
+        assert "releases/latest/download" in asset["url"], (
+            f"Expected GitHub Releases URL for {name}, got {asset['url']!r}"
+        )
 
 # ---- Bead 5: py.typed marker exists ----
 

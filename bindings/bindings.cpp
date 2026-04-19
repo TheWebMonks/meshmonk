@@ -206,14 +206,16 @@ NB_MODULE(_meshmonk_core, m) {
         .def(nb::init<>())
         .def_ro("aligned_features",     &meshmonk::NonrigidResult::aligned_features)
         .def_ro("final_inlier_weights", &meshmonk::NonrigidResult::final_inlier_weights)
-        .def_ro("displacement_field",   &meshmonk::NonrigidResult::displacement_field)
+        .def_ro("displacement_field",   &meshmonk::NonrigidResult::displacement_field,
+                "Per-vertex displacement from original floating mesh position. Shape (N, 3), float32.")
         .def_ro("iterations_run",       &meshmonk::NonrigidResult::iterations_run);
 
     nb::class_<meshmonk::PyramidResult>(m, "PyramidResult")
         .def(nb::init<>())
         .def_ro("aligned_features",     &meshmonk::PyramidResult::aligned_features)
         .def_ro("final_inlier_weights", &meshmonk::PyramidResult::final_inlier_weights)
-        .def_ro("displacement_field",   &meshmonk::PyramidResult::displacement_field)
+        .def_ro("displacement_field",   &meshmonk::PyramidResult::displacement_field,
+                "Per-vertex displacement from original floating mesh position. Shape (N, 3), float32.")
         .def_ro("per_layer_iterations", &meshmonk::PyramidResult::per_layer_iterations);
 
     // -----------------------------------------------------------------------

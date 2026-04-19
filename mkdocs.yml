@@ -1,0 +1,33 @@
+site_name: MeshMonk
+site_url: https://jsnyde0.github.io/meshmonk/
+repo_url: https://github.com/jsnyde0/meshmonk
+repo_name: jsnyde0/meshmonk
+theme:
+  name: material
+  palette:
+    primary: blue
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: false
+            show_root_heading: true
+            heading_level: 2
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - API Reference:
+    - Overview: api/index.md
+    - Rigid registration: api/rigid.md
+    - Nonrigid registration: api/nonrigid.md
+    - Pyramid registration: api/pyramid.md
+    - Types: api/types.md
+    - Errors: api/errors.md
+  - CLI Reference: cli.md
+  - Decisions: decisions/ADR-001-meshmonk-modernization.md

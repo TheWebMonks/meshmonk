@@ -16,7 +16,6 @@ installed the CLI emits a clear error message rather than a raw traceback.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import typer
 
@@ -35,9 +34,16 @@ _TRIMESH_IMPORT_ERROR = (
     "  pip install 'meshmonk[io]'"
 )
 
-# Default download URLs — set to None as a placeholder until hosting is confirmed.
-_TEMPLATE_URL: Optional[str] = None
-_DEMO_FACE_URL: Optional[str] = None
+DEMO_ASSETS = {
+    "Template.obj": {
+        "url": "https://github.com/jsnyde0/meshmonk/releases/latest/download/Template.obj",
+        "sha256": None,  # populated at first release — set to None until v0.3.0 is tagged
+    },
+    "demoFace.obj": {
+        "url": "https://github.com/jsnyde0/meshmonk/releases/latest/download/demoFace.obj",
+        "sha256": None,  # redistribution rights TBD — see Prerequisites in design doc
+    },
+}
 
 _CACHE_DIR = Path.home() / ".cache" / "meshmonk"
 _REPO_DATA_DIR = Path(__file__).parent.parent / "data"
@@ -209,28 +215,29 @@ def demo(
 
 def _demo_download() -> None:
     """Fetch demo meshes to the cache directory."""
-    if _TEMPLATE_URL is None or _DEMO_FACE_URL is None:
-        typer.echo(
-            "Demo meshes are bundled in the package at meshmonk/data/. "
-            "Download URLs not yet configured. "
-            "Use the bundled meshes with: meshmonk demo rigid",
-            err=True,
-        )
-        raise typer.Exit(code=1)
+    import hashlib
+    import urllib.request
 
     _CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-    try:
-        import urllib.request  # noqa: PLC0415
-    except ImportError:
-        typer.echo("urllib.request not available — cannot download.", err=True)
-        raise typer.Exit(code=1)
-
-    for url, name in [(_TEMPLATE_URL, "Template.obj"), (_DEMO_FACE_URL, "demoFace.obj")]:
+    for name, asset in DEMO_ASSETS.items():
         dest = _CACHE_DIR / name
-        typer.echo(f"Downloading {name} …")
-        urllib.request.urlretrieve(url, dest)  # noqa: S310
-        typer.echo(f"  → {dest}")
+        typer.echo(f"Downloading {name} ...")
+        urllib.request.urlretrieve(asset["url"], dest)  # noqa: S310
+        if asset["sha256"] is not None:
+            digest = hashlib.sha256(dest.read_bytes()).hexdigest()
+            if digest != asset["sha256"]:
+                dest.unlink(missing_ok=True)
+                typer.echo(
+                    f"SHA-256 mismatch for {name}. "
+                    "Your meshmonk version may be out of date. "
+                    "Run: pip install --upgrade meshmonk",
+                    err=True,
+                )
+                raise typer.Exit(code=1)
+        else:
+            typer.echo(f"  Warning: integrity check not configured for {name}")
+        typer.echo(f"  -> {dest}")
 
 
 def _demo_run(mode: str) -> None:
