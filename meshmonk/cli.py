@@ -216,6 +216,7 @@ def demo(
 def _demo_download() -> None:
     """Fetch demo meshes to the cache directory."""
     import hashlib
+    import urllib.error
     import urllib.request
 
     _CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -223,7 +224,13 @@ def _demo_download() -> None:
     for name, asset in DEMO_ASSETS.items():
         dest = _CACHE_DIR / name
         typer.echo(f"Downloading {name} ...")
-        urllib.request.urlretrieve(asset["url"], dest)  # noqa: S310
+        try:
+            with urllib.request.urlopen(asset["url"], timeout=30) as resp:  # noqa: S310
+                dest.write_bytes(resp.read())
+        except (urllib.error.URLError, OSError) as e:
+            dest.unlink(missing_ok=True)
+            typer.echo(str(e), err=True)
+            raise typer.Exit(code=1)
         if asset["sha256"] is not None:
             digest = hashlib.sha256(dest.read_bytes()).hexdigest()
             if digest != asset["sha256"]:

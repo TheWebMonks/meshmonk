@@ -14,7 +14,8 @@ Returned by `rigid_register`.
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `aligned_vertices` | `ndarray (N, 3)` | Transformed floating mesh vertices. |
+| `aligned_features` | `ndarray (N, 6)` | Transformed floating mesh features (positions + normals). Primary result field. |
+| `aligned_vertices` | `ndarray (N, 3)` | Transformed floating mesh vertices (derived from `aligned_features`). |
 | `transform` | `RigidTransform` | Best-fit rigid transform. |
 | `iterations_run` | `int` | Number of ICP iterations actually performed. |
 
@@ -24,7 +25,8 @@ Returned by `nonrigid_register`.
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `aligned_vertices` | `ndarray (N, 3)` | Deformed floating mesh vertices. |
+| `aligned_features` | `ndarray (N, 6)` | Deformed floating mesh features (positions + normals). Primary result field. |
+| `aligned_vertices` | `ndarray (N, 3)` | Deformed floating mesh vertices (derived from `aligned_features`). |
 | `displacement_field` | `ndarray (N, 3)` | Per-vertex displacement from original position (float32). |
 | `final_inlier_weights` | `ndarray (N,)` | Per-vertex inlier weights at convergence. |
 | `iterations_run` | `int` | Number of iterations performed. |
@@ -35,7 +37,8 @@ Returned by `pyramid_register`.
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `aligned_vertices` | `ndarray (N, 3)` | Deformed floating mesh vertices. |
+| `aligned_features` | `ndarray (N, 6)` | Deformed floating mesh features (positions + normals). Primary result field. |
+| `aligned_vertices` | `ndarray (N, 3)` | Deformed floating mesh vertices (derived from `aligned_features`). |
 | `displacement_field` | `ndarray (N, 3)` | Per-vertex displacement from original position (float32). |
 | `final_inlier_weights` | `ndarray (N,)` | Per-vertex inlier weights at convergence. |
 | `per_layer_iterations` | `list[int]` | Iterations run at each pyramid layer. |
@@ -48,11 +51,12 @@ Returned by `pyramid_register`.
 
 Represents a rigid SE(3) transform (optionally with uniform scaling).
 
-| Attribute | Type | Description |
+| Attribute / Method | Type | Description |
 |-----------|------|-------------|
-| `rotation` | `ndarray (3, 3)` | Rotation matrix. |
-| `translation` | `ndarray (3,)` | Translation vector. |
-| `scale` | `float` | Uniform scale factor (1.0 if `use_scaling=False`). |
+| `.matrix` | `ndarray (4, 4)` float32 | Homogeneous transformation matrix. |
+| `.compose(other)` | `RigidTransform` | Compose this transform with another (returns new transform). |
+| `.apply(features)` | `ndarray (N, 6)` | Apply transform to a feature array (positions + normals). |
+| `.inverse()` | `RigidTransform` | Compute the inverse transform. |
 
 ---
 

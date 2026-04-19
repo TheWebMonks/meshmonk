@@ -27,9 +27,12 @@ meshmonk = "meshmonk.cli:app"
 testpaths = ["tests"]
 addopts = "-q"
 
+[tool.scikit-build]
+sdist.exclude = ["tests/", "data/", "history/"]
+
 [tool.cibuildwheel]
 build = "cp310-* cp311-* cp312-*"
-test-requires = ["pytest", "scipy", "trimesh"]
+test-requires = ["pytest", "scipy", "trimesh", "pyyaml"]
 test-command = "pytest {project}/tests -q --ignore={project}/tests/test_golden.py --ignore={project}/tests/test_silent_logger.py"
 
 [tool.cibuildwheel.linux]

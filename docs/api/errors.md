@@ -26,4 +26,12 @@ try:
     result = meshmonk.rigid_register(floating=f, target=t)
 except meshmonk.MeshMonkError as exc:
     print(exc)  # human-readable message
+
+    # Programmatic dispatch on error code:
+    if exc.code == meshmonk.RegistrationError.DegenerateInput:
+        # Handle degenerate input specifically
+        pass
+    elif exc.code == meshmonk.RegistrationError.InsufficientInliers:
+        # Handle insufficient inliers
+        pass
 ```
