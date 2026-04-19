@@ -23,6 +23,7 @@ def _strip_ansi(s: str) -> str:
     """Strip ANSI escape sequences so substring checks survive Rich styling."""
     return _ANSI_RE.sub("", s)
 
+
 DATA_DIR = Path("/workspace/data")
 TEMPLATE_OBJ = DATA_DIR / "Template.obj"
 DEMO_FACE_OBJ = DATA_DIR / "demoFace.obj"

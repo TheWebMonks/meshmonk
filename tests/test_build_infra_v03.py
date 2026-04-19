@@ -15,6 +15,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib  # type: ignore[import-not-found]
+
 WORKSPACE = Path(__file__).parent.parent
 
 # ---------------------------------------------------------------------------
@@ -66,8 +71,6 @@ def test_cmake_stable_abi():
 
 def test_pyproject_version_bump():
     """pyproject.toml must have version 0.3.0.dev0."""
-    import tomllib
-
     with open(WORKSPACE / "pyproject.toml", "rb") as f:
         data = tomllib.load(f)
     assert (
@@ -77,8 +80,6 @@ def test_pyproject_version_bump():
 
 def test_pyproject_has_pyyaml():
     """pyproject.toml dev extra must include pyyaml."""
-    import tomllib
-
     with open(WORKSPACE / "pyproject.toml", "rb") as f:
         data = tomllib.load(f)
     dev_deps = data["project"]["optional-dependencies"]["dev"]
@@ -89,8 +90,6 @@ def test_pyproject_has_pyyaml():
 
 def test_pyproject_has_tomli():
     """pyproject.toml dev extra must include tomli (for Python < 3.11)."""
-    import tomllib
-
     with open(WORKSPACE / "pyproject.toml", "rb") as f:
         data = tomllib.load(f)
     dev_deps = data["project"]["optional-dependencies"]["dev"]
@@ -101,8 +100,6 @@ def test_pyproject_has_tomli():
 
 def test_pyproject_has_docs_extra():
     """pyproject.toml must have a docs optional-dependency group."""
-    import tomllib
-
     with open(WORKSPACE / "pyproject.toml", "rb") as f:
         data = tomllib.load(f)
     assert (
@@ -112,8 +109,6 @@ def test_pyproject_has_docs_extra():
 
 def test_pyproject_has_cibuildwheel_section():
     """pyproject.toml must have [tool.cibuildwheel] section."""
-    import tomllib
-
     with open(WORKSPACE / "pyproject.toml", "rb") as f:
         data = tomllib.load(f)
     assert "cibuildwheel" in data.get(
@@ -123,8 +118,6 @@ def test_pyproject_has_cibuildwheel_section():
 
 def test_pyproject_cibuildwheel_build_selector():
     """cibuildwheel build selector must include cp310, cp311, cp312."""
-    import tomllib
-
     with open(WORKSPACE / "pyproject.toml", "rb") as f:
         data = tomllib.load(f)
     build = data["tool"]["cibuildwheel"]["build"]
@@ -135,8 +128,6 @@ def test_pyproject_cibuildwheel_build_selector():
 
 def test_pyproject_cibuildwheel_manylinux_image():
     """cibuildwheel linux config must use manylinux_2_28."""
-    import tomllib
-
     with open(WORKSPACE / "pyproject.toml", "rb") as f:
         data = tomllib.load(f)
     linux = data["tool"]["cibuildwheel"]["linux"]
@@ -146,8 +137,6 @@ def test_pyproject_cibuildwheel_manylinux_image():
 
 def test_pyproject_cibuildwheel_cp312_override():
     """cibuildwheel must have cp312 override for SKBUILD_WHEEL_PY_API."""
-    import tomllib
-
     with open(WORKSPACE / "pyproject.toml", "rb") as f:
         data = tomllib.load(f)
     overrides = data["tool"]["cibuildwheel"].get("overrides", [])
@@ -161,8 +150,6 @@ def test_pyproject_cibuildwheel_cp312_override():
 
 def test_pyproject_test_command_excludes_silent_logger():
     """cibuildwheel test-command must exclude test_silent_logger.py."""
-    import tomllib
-
     with open(WORKSPACE / "pyproject.toml", "rb") as f:
         data = tomllib.load(f)
     test_cmd = data["tool"]["cibuildwheel"]["test-command"]
@@ -171,8 +158,6 @@ def test_pyproject_test_command_excludes_silent_logger():
 
 def test_pyproject_valid_toml():
     """pyproject.toml must parse as valid TOML."""
-    import tomllib
-
     with open(WORKSPACE / "pyproject.toml", "rb") as f:
         data = tomllib.load(f)
     # If we get here, TOML is valid
