@@ -216,7 +216,7 @@ jobs:
         env:
           CIBW_BUILD: cp312-manylinux_x86_64
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
-          CIBW_TEST_REQUIRES: pytest scipy trimesh
+          CIBW_TEST_REQUIRES: pytest scipy trimesh pyyaml meshio
           CIBW_TEST_COMMAND: pytest {project}/tests -q --ignore={project}/tests/test_golden.py --ignore={project}/tests/test_silent_logger.py
 
       - name: Upload wheel artifact

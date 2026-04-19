@@ -61,10 +61,13 @@ def test_silent_log_level_produces_no_output():
         "m = trimesh.creation.icosphere(subdivisions=0); "
         "meshmonk.rigid_register(floating=m, target=m, num_iterations=2)"
     )
+    import tempfile
+
     result = subprocess.run(
         [sys.executable, "-c", script],
         capture_output=True,
         text=True,
+        cwd=tempfile.gettempdir(),
     )
     assert result.returncode == 0, f"Subprocess failed: {result.stderr}"
     assert result.stderr == "", (

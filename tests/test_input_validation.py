@@ -187,7 +187,12 @@ class TestNonrigidAnnealingGuard:
     We verify the fix via source-code inspection to directly capture the fix.
     """
 
-    _SOURCE_FILE = "/workspace/library/src/NonrigidRegistration.cpp"
+    _SOURCE_FILE = str(
+        __import__("pathlib").Path(__file__).resolve().parent.parent
+        / "library"
+        / "src"
+        / "NonrigidRegistration.cpp"
+    )
 
     def test_viscous_annealing_guard_present(self):
         """NonrigidRegistration.cpp must have a guard for zero viscous start value."""

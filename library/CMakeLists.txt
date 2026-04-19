@@ -35,8 +35,8 @@ target_include_directories(
           ${CMAKE_CURRENT_SOURCE_DIR}/../vendor)
 
 # --- Link Dependencies ---
-# OpenMesh's CMake builds SHAREDANDSTATIC on non-Windows platforms regardless
-# of BUILD_SHARED_LIBS, exposing `OpenMeshCore`/`OpenMeshTools` as shared and
+# OpenMesh's CMake builds SHAREDANDSTATIC on non-Windows platforms regardless of
+# BUILD_SHARED_LIBS, exposing `OpenMeshCore`/`OpenMeshTools` as shared and
 # `OpenMeshCoreStatic`/`OpenMeshToolsStatic` as static. We link the static
 # variants so the wheel has no runtime dependency on libOpenMeshTools.so. On
 # Windows only the single `OpenMeshCore`/`OpenMeshTools` target exists (built

@@ -3,6 +3,7 @@
 import os
 import subprocess
 import sys
+import tempfile
 
 import numpy as np
 import pytest
@@ -12,12 +13,15 @@ class TestMainModule:
     def test_python_m_meshmonk_help(self):
         """python -m meshmonk --help should print CLI help."""
         env = dict(os.environ)  # inherit current environment (includes LD_LIBRARY_PATH)
+        # Run from tempdir so the repo's local `meshmonk/` directory doesn't
+        # shadow the installed package (which contains the _meshmonk_core .so).
         result = subprocess.run(
             [sys.executable, "-m", "meshmonk", "--help"],
             capture_output=True,
             text=True,
             timeout=30,
             env=env,
+            cwd=tempfile.gettempdir(),
         )
         assert result.returncode == 0
         assert "meshmonk" in result.stdout.lower()

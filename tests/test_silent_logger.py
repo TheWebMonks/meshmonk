@@ -6,6 +6,7 @@ TDD for bead workspace-dyj.2: Route std::cerr through logger.
 import os
 import subprocess
 import sys
+import tempfile
 
 
 class TestSilentMode:
@@ -34,6 +35,7 @@ class TestSilentMode:
             text=True,
             timeout=60,
             env=env,
+            cwd=tempfile.gettempdir(),
         )
 
     def test_rigid_register_silent_no_stderr(self):
