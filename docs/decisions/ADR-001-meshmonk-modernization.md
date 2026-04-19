@@ -83,6 +83,16 @@ Migration cost is a single focused afternoon. The 330-line Jules-written pybind1
 - v0.3 wheels are built with nanobind's **stable-ABI mode** (`NB_STABLE_ABI=1`), collapsing the wheel matrix from ~4 Pythons × 3 OSes × 2 arches = 24 wheels to 6 wheels (one per OS/arch). abi3 has <1% typical overhead; if profiling later shows it's >2%, flip the build flag for v0.4 — no API impact.
 - Build-time numpy is pinned to **2.0** for forward-compatibility with numpy 1.x at runtime.
 
+**Amendment (v0.3 implementation, 2026-04-19):** The 6-wheel strategy above was revised.
+Actual v0.3 strategy is 12 wheels:
+- abi3 floor is Python 3.12, not 3.10 — nanobind STABLE_ABI requires PyType_FromMetaclass()
+  added in CPython 3.12; silently ignored on 3.10/3.11
+- Per-version wheels for Python 3.10 and 3.11 bridge the gap (one wheel per platform per version)
+- musllinux dropped — niche audience, musl math-library differences; defer to v0.4+ if demand materializes
+- macOS x86_64 dropped — GitHub removed macOS 13 runners December 2025; Apple discontinued Intel Macs
+- Total: 12 wheels = 4 abi3 (cp312-abi3 on manylinux x86_64, manylinux aarch64, macOS arm64,
+  Windows x86_64) + 8 per-version (cp310 + cp311 on same 4 platforms)
+
 **Alternatives considered:**
 
 | Approach | Pros | Cons |

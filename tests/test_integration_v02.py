@@ -128,8 +128,13 @@ def test_py_typed_marker_exists():
 
 # ---- Version check ----
 
-def test_version_is_0_2_0():
-    assert meshmonk.__version__ == "0.2.0", (
-        f"Expected __version__ == '0.2.0', got {meshmonk.__version__!r}. "
-        "Update version in /workspace/meshmonk/__init__.py and /workspace/pyproject.toml"
+def test_version_is_string():
+    # Version is now read from importlib.metadata (pyproject.toml is the single source
+    # of truth as of v0.3). The fallback for uninstalled dev runs is "0.0.0.dev0".
+    assert isinstance(meshmonk.__version__, str), (
+        f"__version__ must be a string, got {type(meshmonk.__version__)}"
+    )
+    assert meshmonk.__version__, "__version__ must not be empty"
+    assert meshmonk.__version__ != "0.2.0", (
+        "__version__ is still hardcoded 0.2.0; should use importlib.metadata"
     )

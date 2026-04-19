@@ -40,7 +40,9 @@ find_package(nanobind CONFIG REQUIRED)
 add_subdirectory(library)
 
 # --- nanobind extension module ---
-nanobind_add_module(_meshmonk_core bindings/bindings.cpp)
+nanobind_add_module(_meshmonk_core STABLE_ABI bindings/bindings.cpp)
+# OpenMP: verified not linked. vci_openmp() defined but never invoked in
+# OpenMesh CMake tree; USE_OPENMP not checked. No fix needed.
 target_link_libraries(_meshmonk_core PRIVATE meshmonk_lib)
 target_include_directories(_meshmonk_core PRIVATE
     ${CMAKE_SOURCE_DIR}/library/include

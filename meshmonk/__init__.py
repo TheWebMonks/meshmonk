@@ -1,7 +1,11 @@
 """MeshMonk — Python-first 3D mesh registration library."""
 from __future__ import annotations
 
-__version__ = "0.2.0"
+try:
+    from importlib.metadata import version
+    __version__ = version("meshmonk")
+except Exception:
+    __version__ = "0.0.0.dev0"  # fallback for uninstalled dev runs
 
 import warnings
 from dataclasses import dataclass
