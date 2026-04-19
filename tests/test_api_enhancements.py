@@ -13,6 +13,8 @@ class TestMainModule:
     def test_python_m_meshmonk_help(self):
         """python -m meshmonk --help should print CLI help."""
         env = dict(os.environ)  # inherit current environment (includes LD_LIBRARY_PATH)
+        # Windows cp1252 can't encode Typer/Rich output (e.g. the '→' glyph).
+        env["PYTHONIOENCODING"] = "utf-8"
         # Run from tempdir so the repo's local `meshmonk/` directory doesn't
         # shadow the installed package (which contains the _meshmonk_core .so).
         result = subprocess.run(

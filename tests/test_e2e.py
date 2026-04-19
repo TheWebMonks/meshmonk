@@ -6,12 +6,20 @@ These tests are deliberately minimal — they check exit codes and output existe
 not numerical correctness (which is covered by Tiers 1-4).
 """
 
+import os
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+
+
+def _utf8_env() -> dict:
+    """Return env with PYTHONIOENCODING=utf-8 so Rich glyphs survive on Windows cp1252."""
+    env = dict(os.environ)
+    env["PYTHONIOENCODING"] = "utf-8"
+    return env
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 TEMPLATE_OBJ = DATA_DIR / "Template.obj"
@@ -43,7 +51,7 @@ def _meshmonk_cmd() -> list:
 def test_cli_help_exits_zero():
     """Assert 'meshmonk --help' exits with code 0."""
     cmd = _meshmonk_cmd() + ["--help"]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, env=_utf8_env())
     assert result.returncode == 0, (
         f"'meshmonk --help' exited with code {result.returncode}.\n"
         f"stdout: {result.stdout[:500]}\n"
@@ -78,6 +86,7 @@ def test_cli_rigid_exits_zero(tmp_path):
         capture_output=True,
         text=True,
         timeout=300,  # rigid registration can take up to 180 s in CI
+        env=_utf8_env(),
     )
     assert result.returncode == 0, (
         f"'meshmonk rigid' exited with code {result.returncode}.\n"

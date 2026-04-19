@@ -25,7 +25,9 @@ def test_roundtrip_schema():
 
         convert(obj_path, npz_path)
 
-        data = np.load(npz_path)
+        # Use a context manager — on Windows, an open NpzFile prevents tempdir cleanup.
+        with np.load(npz_path) as data:
+            data = {k: data[k] for k in data.files}
         assert "vertices" in data
         assert "faces" in data
         assert data["vertices"].shape == (4, 3)
@@ -42,7 +44,9 @@ def test_roundtrip_values():
 
         convert(obj_path, npz_path)
 
-        data = np.load(npz_path)
+        # Use a context manager — on Windows, an open NpzFile prevents tempdir cleanup.
+        with np.load(npz_path) as data:
+            data = {k: data[k] for k in data.files}
         # Vertex (0,0,0) must be present
         assert np.any(np.all(data["vertices"] == [0.0, 0.0, 0.0], axis=1))
         # All face indices must be present (0-based after OBJ 1-based conversion)
@@ -75,7 +79,9 @@ def test_roundtrip_normals():
 
         convert(obj_path, npz_path)
 
-        data = np.load(npz_path)
+        # Use a context manager — on Windows, an open NpzFile prevents tempdir cleanup.
+        with np.load(npz_path) as data:
+            data = {k: data[k] for k in data.files}
         assert "normals" in data, "normals key missing from NPZ"
         assert data["normals"].shape == (4, 3)
         assert data["normals"].dtype == np.float64
@@ -112,6 +118,8 @@ def test_arrays_are_c_contiguous():
 
         convert(obj_path, npz_path)
 
-        data = np.load(npz_path)
+        # Use a context manager — on Windows, an open NpzFile prevents tempdir cleanup.
+        with np.load(npz_path) as data:
+            data = {k: data[k] for k in data.files}
         assert data["vertices"].flags["C_CONTIGUOUS"]
         assert data["faces"].flags["C_CONTIGUOUS"]
