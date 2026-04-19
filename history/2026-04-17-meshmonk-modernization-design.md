@@ -5,7 +5,7 @@
 **Decisions:** [ADR-001](../docs/decisions/ADR-001-meshmonk-modernization.md)
 **Origin:** Brainstorming session 2026-04-17; prompted by revisiting the May 2025 "Phase 5" spec and finding it too narrow
 **Supersedes:** May 2025 `modernization-and-python-bindings` spec (remote-branch document; not present in this checkout)
-**Phase docs:** v0.0, v0.1, v0.2, v0.3 (linked below)
+**Phase docs:** v0.0, v0.1, v0.2, v0.3, v0.3.1, v0.4, v0.5 (linked below)
 
 ---
 
@@ -41,9 +41,9 @@ A **clean, modern, Python-first mesh registration library** the owner is proud o
 Out of scope for v0.1 (the initial overhaul), explicit:
 
 - Cross-platform wheels on PyPI — deferred to v0.3
-- MCP server wrapping the library for agents — deferred to v0.4+
-- Dropping OpenMesh in favor of `meshoptimizer` — deferred to v0.4+
-- Meson migration — contingent on OpenMesh drop, v0.4+ at earliest
+- MCP server wrapping the library for agents — deferred to v0.5
+- Dropping OpenMesh in favor of `meshoptimizer` — deferred to v0.5
+- Meson migration — contingent on OpenMesh drop, v0.5 at earliest
 - Windows CI — likely v0.2, certain by v0.3
 - Sphinx / MkDocs documentation site — v0.3
 - GPU/CUDA backend — no timeline
@@ -85,7 +85,7 @@ This section describes the **proposed post-overhaul architecture**, not the curr
 │    compute_inlier_weights(...)  → VecDynFloat                │
 │    compute_rigid_transform(...) → expected-style Result/Error│
 │    ...                                                        │
-│  Deps: Eigen3, OpenMesh (→ meshoptimizer v0.4+), nanoflann   │
+│  Deps: Eigen3, OpenMesh (→ meshoptimizer v0.5), nanoflann    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -159,7 +159,17 @@ See [v0.2 phase doc](./2026-04-17-meshmonk-modernization-v0.2-design.md) for det
 
 See [v0.3 phase doc](./2026-04-17-meshmonk-modernization-v0.3-design.md) for details.
 
-**v0.4+ — Future:** OpenMesh → meshoptimizer; reconsider Meson; MCP server; benchmarks.
+**v0.3.1 — Ship it:** Pre-merge housekeeping. PR to master, rename master → main, GH Pages deployment, mypy/pyright CI, ci.yml SHA-pinning, fix stale TODO comments.
+
+See [v0.3.1 phase doc](./2026-04-19-meshmonk-modernization-v0.3.1-design.md) for details.
+
+**v0.4 — API polish:** Deferred improvements from v0.2/v0.3. Diagnostic fields (converged, fitness, inlier_rmse, num_inliers); RigidTransform.matrix writable; pluggable logger sink; std::expected migration; validation boilerplate dedup; CI stub drift detection; target normals check. Most items are independent and can run on separate worktrees.
+
+See [v0.4 phase doc](./2026-04-19-meshmonk-modernization-v0.4-design.md) for details.
+
+**v0.5 — Next generation:** Architecture-level changes. OpenMesh → meshoptimizer; reconsider Meson; MCP server; benchmarks. Each item needs its own design pass before implementation.
+
+See [v0.5 phase doc](./2026-04-19-meshmonk-modernization-v0.5-design.md) for details.
 
 ### Branch strategy
 
@@ -218,7 +228,7 @@ All decisions captured in [ADR-001](../docs/decisions/ADR-001-meshmonk-moderniza
 - **D5 (FIRM):** CMake + scikit-build-core — not Meson
 - **D6 (FIRM):** Params structs + result structs + expected-style typed failure
 - **D7 (FLEXIBLE):** Tiered harness, analytical first, no circular baselining
-- **D8 (FLEXIBLE):** Keep OpenMesh for v0.1; v0.4+ migration requires a half-edge-lite module, not just meshoptimizer
+- **D8 (FLEXIBLE):** Keep OpenMesh for v0.1; v0.5 migration requires a half-edge-lite module, not just meshoptimizer
 - **D9 (FIRM):** Transfer repo to `jsnyde0/meshmonk`; claim PyPI `meshmonk`
 
 ---
@@ -267,7 +277,7 @@ All decisions captured in [ADR-001](../docs/decisions/ADR-001-meshmonk-moderniza
 ## Known Limitations
 
 **Explicitly not solving:**
-- OpenMesh is still the halfedge/decimation dependency — binary size, build time, and transitive dep burden deferred to v0.4+. If OpenMesh 11.0.0 emits C++20 warnings-as-errors, the fallback is to compile the `OpenMeshCore` + `OpenMeshTools` subtargets at C++17 (via `target_compile_features(... cxx_std_17)`) while MeshMonk itself stays on C++20 — this works because OpenMesh types are internal-only, never in MeshMonk's public API surface.
+- OpenMesh is still the halfedge/decimation dependency — binary size, build time, and transitive dep burden deferred to v0.5. If OpenMesh 11.0.0 emits C++20 warnings-as-errors, the fallback is to compile the `OpenMeshCore` + `OpenMeshTools` subtargets at C++17 (via `target_compile_features(... cxx_std_17)`) while MeshMonk itself stays on C++20 — this works because OpenMesh types are internal-only, never in MeshMonk's public API surface.
 - `tl::expected` (header-only) is used unconditionally for v0.1 to sidestep MSVC/libstdc++/libc++ `<expected>` version gaps; `std::expected` migration is scheduled for v0.2.
 - No image-based visual regression tests — if a future nonrigid regression is visually subtle but not numerically detectable, Tier 3 may miss it. Mitigation: user does one-time visual sign-off; subsequent numerical comparison is strict, and the Tier 3.5 legacy-baseline gate catches most numerical drift.
 - No GPU backend — MeshMonk remains CPU-only for v0.1 through v0.3

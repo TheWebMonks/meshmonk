@@ -88,7 +88,7 @@ Actual v0.3 strategy is 12 wheels:
 - abi3 floor is Python 3.12, not 3.10 — nanobind STABLE_ABI requires PyType_FromMetaclass()
   added in CPython 3.12; silently ignored on 3.10/3.11
 - Per-version wheels for Python 3.10 and 3.11 bridge the gap (one wheel per platform per version)
-- musllinux dropped — niche audience, musl math-library differences; defer to v0.4+ if demand materializes
+- musllinux dropped — niche audience, musl math-library differences; defer to v0.5 if demand materializes
 - macOS x86_64 dropped — GitHub removed macOS 13 runners December 2025; Apple discontinued Intel Macs
 - Total: 12 wheels = 4 abi3 (cp312-abi3 on manylinux x86_64, manylinux aarch64, macOS arm64,
   Windows x86_64) + 8 per-version (cp310 + cp311 on same 4 platforms)
@@ -197,7 +197,7 @@ Known rough edge: `uv pip install -e .` (editable) has an [open bug](https://git
 
 **What would invalidate this:**
 
-- We drop OpenMesh entirely (see D9 — post-v0.4+) AND measure real pain from CMake complexity
+- We drop OpenMesh entirely (see D9 — post-v0.5) AND measure real pain from CMake complexity
 - scikit-build-core stalls as a project
 - A new build backend emerges that strictly dominates for CMake projects
 
@@ -283,17 +283,17 @@ Flexibility: the tier selection and tolerance thresholds will evolve in v0.1 as 
 - Human visual inspection reveals we can't reliably distinguish "right" from "slightly wrong" for nonrigid — would need image-based metrics instead
 - CI time for Tier 3 exceeds budget — move Tier 3 to nightly, keep Tier 1/2 per-push
 
-### D8: Keep OpenMesh for v0.1; migrate to `meshoptimizer` in v0.4+
+### D8: Keep OpenMesh for v0.1; migrate to `meshoptimizer` in v0.5
 
 **Firmness: FLEXIBLE**
 
 In v0.1, preserve OpenMesh as the halfedge / quadric-decimation dependency, but confine it to an I/O boundary (no `TriMesh` reconstruction inside `update()` calls).
 
-In v0.4+, evaluate migrating away from OpenMesh. `meshoptimizer` (MIT, Arseny Kapoulkine) covers **only** the quadric-decimation half of what we use OpenMesh for — it is a mesh-data-layout library, not a half-edge topology library. A replacement path requires:
+In v0.5, evaluate migrating away from OpenMesh. `meshoptimizer` (MIT, Arseny Kapoulkine) covers **only** the quadric-decimation half of what we use OpenMesh for — it is a mesh-data-layout library, not a half-edge topology library. A replacement path requires:
 - `meshopt_simplify` for quadric decimation (near-equivalent to `OpenMesh::Decimater::ModQuadricT`)
 - **Plus a small half-edge-lite module** (~150–250 LOC) providing boundary-edge detection and vertex-neighbour queries for the `Downsampler`'s boundary-vertex locking. Reference implementations: libigl's `igl::is_border_vertex`, trimesh's `edges_unique`.
 
-Because this is NOT a like-for-like dependency swap, the v0.4+ migration deserves its own design pass, not a one-line roadmap bullet.
+Because this is NOT a like-for-like dependency swap, the v0.5 migration deserves its own design pass, not a one-line roadmap bullet.
 
 **Rationale:**
 
