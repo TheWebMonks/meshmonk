@@ -323,11 +323,8 @@ _PYRAMID_KNOWN_KWARGS = {
 }
 
 
-def _apply_rigid_kwargs(params: RigidParams, kwargs: dict) -> RigidParams:
-    """Apply kwarg overrides to a RigidParams struct."""
-    unknown = set(kwargs) - _RIGID_KNOWN_KWARGS
-    if unknown:
-        raise TypeError(f"rigid_register() got unexpected keyword arguments: {sorted(unknown)}")
+def _apply_shared_kwargs(params, kwargs: dict) -> None:
+    """Apply correspondence + inlier kwarg overrides shared by all registration types."""
     if "correspondences_symmetric" in kwargs:
         params.correspondences.symmetric = kwargs["correspondences_symmetric"]
     if "correspondences_num_neighbours" in kwargs:
@@ -340,6 +337,28 @@ def _apply_rigid_kwargs(params: RigidParams, kwargs: dict) -> RigidParams:
         params.inliers.kappa = kwargs["inlier_kappa"]
     if "inlier_use_orientation" in kwargs:
         params.inliers.use_orientation = kwargs["inlier_use_orientation"]
+
+
+def _apply_transform_kwargs(params, kwargs: dict) -> None:
+    """Apply transform kwarg overrides shared by nonrigid and pyramid registration."""
+    if "transform_sigma" in kwargs:
+        params.transform.sigma = kwargs["transform_sigma"]
+    if "transform_num_viscous_iterations_start" in kwargs:
+        params.transform.num_viscous_iterations_start = kwargs["transform_num_viscous_iterations_start"]
+    if "transform_num_viscous_iterations_end" in kwargs:
+        params.transform.num_viscous_iterations_end = kwargs["transform_num_viscous_iterations_end"]
+    if "transform_num_elastic_iterations_start" in kwargs:
+        params.transform.num_elastic_iterations_start = kwargs["transform_num_elastic_iterations_start"]
+    if "transform_num_elastic_iterations_end" in kwargs:
+        params.transform.num_elastic_iterations_end = kwargs["transform_num_elastic_iterations_end"]
+
+
+def _apply_rigid_kwargs(params: RigidParams, kwargs: dict) -> RigidParams:
+    """Apply kwarg overrides to a RigidParams struct."""
+    unknown = set(kwargs) - _RIGID_KNOWN_KWARGS
+    if unknown:
+        raise TypeError(f"rigid_register() got unexpected keyword arguments: {sorted(unknown)}")
+    _apply_shared_kwargs(params, kwargs)
     if "num_iterations" in kwargs:
         params.num_iterations = kwargs["num_iterations"]
     if "use_scaling" in kwargs:
@@ -352,28 +371,8 @@ def _apply_nonrigid_kwargs(params: NonrigidParams, kwargs: dict) -> NonrigidPara
     unknown = set(kwargs) - _NONRIGID_KNOWN_KWARGS
     if unknown:
         raise TypeError(f"nonrigid_register() got unexpected keyword arguments: {sorted(unknown)}")
-    if "correspondences_symmetric" in kwargs:
-        params.correspondences.symmetric = kwargs["correspondences_symmetric"]
-    if "correspondences_num_neighbours" in kwargs:
-        params.correspondences.num_neighbours = kwargs["correspondences_num_neighbours"]
-    if "correspondences_flag_threshold" in kwargs:
-        params.correspondences.flag_threshold = kwargs["correspondences_flag_threshold"]
-    if "correspondences_equalize_push_pull" in kwargs:
-        params.correspondences.equalize_push_pull = kwargs["correspondences_equalize_push_pull"]
-    if "inlier_kappa" in kwargs:
-        params.inliers.kappa = kwargs["inlier_kappa"]
-    if "inlier_use_orientation" in kwargs:
-        params.inliers.use_orientation = kwargs["inlier_use_orientation"]
-    if "transform_sigma" in kwargs:
-        params.transform.sigma = kwargs["transform_sigma"]
-    if "transform_num_viscous_iterations_start" in kwargs:
-        params.transform.num_viscous_iterations_start = kwargs["transform_num_viscous_iterations_start"]
-    if "transform_num_viscous_iterations_end" in kwargs:
-        params.transform.num_viscous_iterations_end = kwargs["transform_num_viscous_iterations_end"]
-    if "transform_num_elastic_iterations_start" in kwargs:
-        params.transform.num_elastic_iterations_start = kwargs["transform_num_elastic_iterations_start"]
-    if "transform_num_elastic_iterations_end" in kwargs:
-        params.transform.num_elastic_iterations_end = kwargs["transform_num_elastic_iterations_end"]
+    _apply_shared_kwargs(params, kwargs)
+    _apply_transform_kwargs(params, kwargs)
     if "num_iterations" in kwargs:
         params.num_iterations = kwargs["num_iterations"]
     return params
@@ -388,28 +387,8 @@ def _apply_pyramid_kwargs(params: PyramidParams, kwargs: dict, explicit_kwargs: 
     unknown = set(kwargs) - _PYRAMID_KNOWN_KWARGS
     if unknown:
         raise TypeError(f"pyramid_register() got unexpected keyword arguments: {sorted(unknown)}")
-    if "correspondences_symmetric" in kwargs:
-        params.correspondences.symmetric = kwargs["correspondences_symmetric"]
-    if "correspondences_num_neighbours" in kwargs:
-        params.correspondences.num_neighbours = kwargs["correspondences_num_neighbours"]
-    if "correspondences_flag_threshold" in kwargs:
-        params.correspondences.flag_threshold = kwargs["correspondences_flag_threshold"]
-    if "correspondences_equalize_push_pull" in kwargs:
-        params.correspondences.equalize_push_pull = kwargs["correspondences_equalize_push_pull"]
-    if "inlier_kappa" in kwargs:
-        params.inliers.kappa = kwargs["inlier_kappa"]
-    if "inlier_use_orientation" in kwargs:
-        params.inliers.use_orientation = kwargs["inlier_use_orientation"]
-    if "transform_sigma" in kwargs:
-        params.transform.sigma = kwargs["transform_sigma"]
-    if "transform_num_viscous_iterations_start" in kwargs:
-        params.transform.num_viscous_iterations_start = kwargs["transform_num_viscous_iterations_start"]
-    if "transform_num_viscous_iterations_end" in kwargs:
-        params.transform.num_viscous_iterations_end = kwargs["transform_num_viscous_iterations_end"]
-    if "transform_num_elastic_iterations_start" in kwargs:
-        params.transform.num_elastic_iterations_start = kwargs["transform_num_elastic_iterations_start"]
-    if "transform_num_elastic_iterations_end" in kwargs:
-        params.transform.num_elastic_iterations_end = kwargs["transform_num_elastic_iterations_end"]
+    _apply_shared_kwargs(params, kwargs)
+    _apply_transform_kwargs(params, kwargs)
     if "downsample_float_start" in kwargs:
         params.downsample.float_start = kwargs["downsample_float_start"]
     if "downsample_target_start" in kwargs:
