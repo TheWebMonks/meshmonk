@@ -1,0 +1,13 @@
+[project]
+name = "meshmonk-demo"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "meshmonk",
+    "trimesh>=4.0",
+    "matplotlib",
+    "scipy>=1.11",
+]
+
+[tool.uv.sources]
+meshmonk = { workspace = true }

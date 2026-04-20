@@ -65,3 +65,13 @@ meshmonk.egg-info/
 .dolt/
 *.db
 .beads-credential-key
+
+# CMake scratch build directories
+build2/
+build3/
+build4/
+build_verify/
+
+# Generated demo outputs
+demo/e2e_output.obj
+demo/e2e_result.png

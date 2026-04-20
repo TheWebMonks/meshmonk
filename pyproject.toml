@@ -27,6 +27,9 @@ meshmonk = "meshmonk.cli:app"
 testpaths = ["tests"]
 addopts = "-q --import-mode=importlib"
 
+[tool.uv.workspace]
+members = ["demo"]
+
 [tool.scikit-build]
 sdist.exclude = ["tests/", "data/", "history/"]
 
