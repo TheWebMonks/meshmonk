@@ -32,9 +32,6 @@ jobs:
   typecheck:
     name: typecheck (ubuntu-latest, python 3.12)
     runs-on: ubuntu-latest
-    # Advisory job: records type findings without blocking PRs. Tighten once
-    # the trimesh Geometry vs Trimesh narrowing is resolved.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 

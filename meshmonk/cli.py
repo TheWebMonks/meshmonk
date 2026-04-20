@@ -16,8 +16,12 @@ installed the CLI emits a clear error message rather than a raw traceback.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 import typer
+
+if TYPE_CHECKING:
+    import trimesh as _trimesh_types
 
 app = typer.Typer(
     name="meshmonk",
@@ -60,9 +64,9 @@ def _require_trimesh():
         raise typer.Exit(code=1)
 
 
-def _load_mesh(trimesh_mod, path: str | Path):
+def _load_mesh(trimesh_mod, path: str | Path) -> "_trimesh_types.Trimesh":
     """Load an OBJ (or any trimesh-supported format) from *path*."""
-    return trimesh_mod.load(str(path))
+    return cast("_trimesh_types.Trimesh", trimesh_mod.load(str(path)))
 
 
 def _save_mesh(trimesh_mod, vertices, faces, out_path: str | Path) -> None:
