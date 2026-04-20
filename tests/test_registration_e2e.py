@@ -41,8 +41,12 @@ def meshes():
 
 @pytest.fixture(scope="module")
 def features(meshes):
-    feat_float = meshmonk.features_from_vertices(meshes["floating_v"], meshes["floating_f"])
-    feat_target = meshmonk.features_from_vertices(meshes["target_v"], meshes["target_f"])
+    feat_float = meshmonk.features_from_vertices(
+        meshes["floating_v"], meshes["floating_f"]
+    )
+    feat_target = meshmonk.features_from_vertices(
+        meshes["target_v"], meshes["target_f"]
+    )
     return {"float": feat_float, "target": feat_target}
 
 
@@ -84,9 +88,9 @@ def test_rigid_produces_valid_alignment(meshes, rigid_result):
     aligned_c = r.aligned_vertices.mean(axis=0)
     tlo = meshes["target_v"].min(axis=0)
     thi = meshes["target_v"].max(axis=0)
-    assert np.all(aligned_c >= tlo) and np.all(aligned_c <= thi), (
-        f"rigid output centroid {aligned_c} outside target bbox [{tlo}, {thi}]"
-    )
+    assert np.all(aligned_c >= tlo) and np.all(
+        aligned_c <= thi
+    ), f"rigid output centroid {aligned_c} outside target bbox [{tlo}, {thi}]"
 
 
 # ---------------------------------------------------------------------------
@@ -111,7 +115,9 @@ def test_nonrigid_refines_rigid_output(meshes, features, rigid_result):
 
     # Nonrigid should make small-but-nonzero corrections on top of rigid.
     step = np.linalg.norm(r.aligned_vertices - rigid_result.aligned_vertices, axis=1)
-    assert 0.1 < step.mean() < 10.0, f"nonrigid step-mean out of range: {step.mean():.2f}"
+    assert (
+        0.1 < step.mean() < 10.0
+    ), f"nonrigid step-mean out of range: {step.mean():.2f}"
     assert step.max() < 50.0
 
 
@@ -138,7 +144,9 @@ def test_pyramid_refines_rigid_output(meshes, features, rigid_result):
     assert all(i > 0 for i in r.per_layer_iterations)
 
     step = np.linalg.norm(r.aligned_vertices - rigid_result.aligned_vertices, axis=1)
-    assert 0.1 < step.mean() < 10.0, f"pyramid step-mean out of range: {step.mean():.2f}"
+    assert (
+        0.1 < step.mean() < 10.0
+    ), f"pyramid step-mean out of range: {step.mean():.2f}"
     assert step.max() < 50.0
 
 
@@ -168,4 +176,6 @@ def test_e2e_pipeline_consistency(meshes, features, rigid_result):
 
     # The two methods should agree to within a few units per vertex on average.
     diff = np.linalg.norm(nr.aligned_vertices - py.aligned_vertices, axis=1)
-    assert diff.mean() < 5.0, f"nonrigid vs pyramid mean-divergence too high: {diff.mean():.2f}"
+    assert (
+        diff.mean() < 5.0
+    ), f"nonrigid vs pyramid mean-divergence too high: {diff.mean():.2f}"

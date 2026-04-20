@@ -36,6 +36,7 @@ def summarise(mesh, label: str) -> None:
 
 def load_meshes(floating_path: Path = FLOATING, target_path: Path = TARGET):
     import trimesh
+
     floating = trimesh.load(str(floating_path))
     target = trimesh.load(str(target_path))
     return floating, target
@@ -43,6 +44,7 @@ def load_meshes(floating_path: Path = FLOATING, target_path: Path = TARGET):
 
 def save_obj(vertices: np.ndarray, faces: np.ndarray, path: Path) -> None:
     import trimesh
+
     out = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
     out.export(str(path))
 
@@ -51,9 +53,9 @@ def _view_axes(plane: str):
     """Return (ix, iy, xlabel, ylabel) for a given plane name."""
     if plane == "front":  # XY (looking down -Z)
         return 0, 1, "X", "Y"
-    if plane == "side":   # ZY (looking down +X)
+    if plane == "side":  # ZY (looking down +X)
         return 2, 1, "Z", "Y"
-    if plane == "top":    # XZ (looking down -Y)
+    if plane == "top":  # XZ (looking down -Y)
         return 0, 2, "X", "Z"
     raise ValueError(f"unknown plane {plane!r}")
 
@@ -86,6 +88,7 @@ def multi_view_plot(
     the before-plots to the original floating mesh.
     """
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -99,29 +102,61 @@ def multi_view_plot(
         ax_after = axes[row, 1]
 
         # Before
-        ax_before.scatter(target_v[:, ix], target_v[:, iy], s=0.3, c="tomato",
-                          alpha=0.35, label="target", rasterized=True)
-        ax_before.scatter(floating_v[:, ix], floating_v[:, iy], s=0.4, c="steelblue",
-                          alpha=0.7, label="floating", rasterized=True)
+        ax_before.scatter(
+            target_v[:, ix],
+            target_v[:, iy],
+            s=0.3,
+            c="tomato",
+            alpha=0.35,
+            label="target",
+            rasterized=True,
+        )
+        ax_before.scatter(
+            floating_v[:, ix],
+            floating_v[:, iy],
+            s=0.4,
+            c="steelblue",
+            alpha=0.7,
+            label="floating",
+            rasterized=True,
+        )
         ax_before.set_title(f"Before — {plane}")
-        ax_before.set_xlabel(xlabel); ax_before.set_ylabel(ylabel)
+        ax_before.set_xlabel(xlabel)
+        ax_before.set_ylabel(ylabel)
         ax_before.set_aspect("equal")
         (xlo, xhi), (ylo, yhi) = _zoom_bounds(floating_v, ix, iy)
-        ax_before.set_xlim(xlo, xhi); ax_before.set_ylim(ylo, yhi)
+        ax_before.set_xlim(xlo, xhi)
+        ax_before.set_ylim(ylo, yhi)
         if row == 0:
             ax_before.legend(markerscale=12, loc="upper right", fontsize=8)
 
         # After
-        ax_after.scatter(target_v[:, ix], target_v[:, iy], s=0.3, c="tomato",
-                         alpha=0.35, label="target", rasterized=True)
-        ax_after.scatter(aligned_v[:, ix], aligned_v[:, iy], s=0.4, c="seagreen",
-                         alpha=0.7, label="aligned", rasterized=True)
+        ax_after.scatter(
+            target_v[:, ix],
+            target_v[:, iy],
+            s=0.3,
+            c="tomato",
+            alpha=0.35,
+            label="target",
+            rasterized=True,
+        )
+        ax_after.scatter(
+            aligned_v[:, ix],
+            aligned_v[:, iy],
+            s=0.4,
+            c="seagreen",
+            alpha=0.7,
+            label="aligned",
+            rasterized=True,
+        )
         ax_after.set_title(f"After — {plane}")
-        ax_after.set_xlabel(xlabel); ax_after.set_ylabel(ylabel)
+        ax_after.set_xlabel(xlabel)
+        ax_after.set_ylabel(ylabel)
         ax_after.set_aspect("equal")
         zoom_pts = aligned_v if zoom_to == "aligned" else floating_v
         (xlo, xhi), (ylo, yhi) = _zoom_bounds(zoom_pts, ix, iy)
-        ax_after.set_xlim(xlo, xhi); ax_after.set_ylim(ylo, yhi)
+        ax_after.set_xlim(xlo, xhi)
+        ax_after.set_ylim(ylo, yhi)
         if row == 0:
             ax_after.legend(markerscale=12, loc="upper right", fontsize=8)
 

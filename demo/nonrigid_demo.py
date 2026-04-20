@@ -26,7 +26,7 @@ from _common import (
 )
 
 HERE = Path(__file__).parent
-OUT_RIGID = HERE / "nonrigid_input_rigid.obj"   # rigid pre-alignment (nonrigid input)
+OUT_RIGID = HERE / "nonrigid_input_rigid.obj"  # rigid pre-alignment (nonrigid input)
 OUT_MESH = HERE / "nonrigid_output.obj"
 OUT_PNG = HERE / "nonrigid_result.png"
 
@@ -60,7 +60,9 @@ def main() -> None:
             num_iterations=40,
             use_scaling=True,
         )
-    print(f"  done in {time.perf_counter() - t0:.1f}s  iterations={rigid.iterations_run}")
+    print(
+        f"  done in {time.perf_counter() - t0:.1f}s  iterations={rigid.iterations_run}"
+    )
     aligned_rigid = rigid.aligned_vertices
     save_obj(aligned_rigid, floating_f, OUT_RIGID)
     print(f"  saved rigid intermediate → {OUT_RIGID}")
@@ -85,7 +87,9 @@ def main() -> None:
     print(f"  displacement:       mean={displ.mean():.3f}  max={displ.max():.3f}")
 
     step_move = np.linalg.norm(aligned_v - aligned_rigid, axis=1)
-    print(f"  step-move (rigid → nonrigid): mean={step_move.mean():.3f}  max={step_move.max():.3f}")
+    print(
+        f"  step-move (rigid → nonrigid): mean={step_move.mean():.3f}  max={step_move.max():.3f}"
+    )
 
     print("\nSaving output mesh...")
     save_obj(aligned_v, floating_f, OUT_MESH)
@@ -93,7 +97,10 @@ def main() -> None:
 
     print("\nRendering multi-view plot (rigid → nonrigid)...")
     multi_view_plot(
-        aligned_rigid, target_v, aligned_v, OUT_PNG,
+        aligned_rigid,
+        target_v,
+        aligned_v,
+        OUT_PNG,
         title="Nonrigid registration (input: rigid-aligned)",
     )
 

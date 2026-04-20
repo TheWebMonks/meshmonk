@@ -63,7 +63,10 @@ def main() -> None:
 
     print("\nRendering multi-view plot...")
     multi_view_plot(
-        floating_v, target_v, aligned_v, OUT_PNG,
+        floating_v,
+        target_v,
+        aligned_v,
+        OUT_PNG,
         title="Rigid registration (SE(3) + scale)",
     )
 

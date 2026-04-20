@@ -36,8 +36,6 @@ import numpy as np
 
 import meshmonk
 from _common import (
-    FLOATING,
-    TARGET,
     _view_axes,
     _zoom_bounds,
     load_meshes,
@@ -53,6 +51,7 @@ HERE = Path(__file__).parent
 def _compare_plot(floating_v, target_v, stages: list[dict], out_png: Path) -> None:
     """3x(1+N) grid: rows = planes, cols = original + each stage output."""
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -64,28 +63,56 @@ def _compare_plot(floating_v, target_v, stages: list[dict], out_png: Path) -> No
         ix, iy, xlabel, ylabel = _view_axes(plane)
 
         ax0 = axes[row, 0]
-        ax0.scatter(target_v[:, ix], target_v[:, iy], s=0.3, c="tomato",
-                    alpha=0.35, rasterized=True)
-        ax0.scatter(floating_v[:, ix], floating_v[:, iy], s=0.4, c="steelblue",
-                    alpha=0.7, rasterized=True)
+        ax0.scatter(
+            target_v[:, ix],
+            target_v[:, iy],
+            s=0.3,
+            c="tomato",
+            alpha=0.35,
+            rasterized=True,
+        )
+        ax0.scatter(
+            floating_v[:, ix],
+            floating_v[:, iy],
+            s=0.4,
+            c="steelblue",
+            alpha=0.7,
+            rasterized=True,
+        )
         ax0.set_title(f"original — {plane}")
-        ax0.set_xlabel(xlabel); ax0.set_ylabel(ylabel)
+        ax0.set_xlabel(xlabel)
+        ax0.set_ylabel(ylabel)
         ax0.set_aspect("equal")
         (xlo, xhi), (ylo, yhi) = _zoom_bounds(floating_v, ix, iy)
-        ax0.set_xlim(xlo, xhi); ax0.set_ylim(ylo, yhi)
+        ax0.set_xlim(xlo, xhi)
+        ax0.set_ylim(ylo, yhi)
 
         for col, stage in enumerate(stages, start=1):
             ax = axes[row, col]
             aligned = stage["aligned"]
-            ax.scatter(target_v[:, ix], target_v[:, iy], s=0.3, c="tomato",
-                       alpha=0.35, rasterized=True)
-            ax.scatter(aligned[:, ix], aligned[:, iy], s=0.4, c="seagreen",
-                       alpha=0.7, rasterized=True)
+            ax.scatter(
+                target_v[:, ix],
+                target_v[:, iy],
+                s=0.3,
+                c="tomato",
+                alpha=0.35,
+                rasterized=True,
+            )
+            ax.scatter(
+                aligned[:, ix],
+                aligned[:, iy],
+                s=0.4,
+                c="seagreen",
+                alpha=0.7,
+                rasterized=True,
+            )
             ax.set_title(f"{stage['name']} — {plane}")
-            ax.set_xlabel(xlabel); ax.set_ylabel(ylabel)
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
             ax.set_aspect("equal")
             (xlo, xhi), (ylo, yhi) = _zoom_bounds(aligned, ix, iy)
-            ax.set_xlim(xlo, xhi); ax.set_ylim(ylo, yhi)
+            ax.set_xlim(xlo, xhi)
+            ax.set_ylim(ylo, yhi)
 
     fig.suptitle("End-to-end: rigid, then nonrigid vs pyramid", fontsize=14)
     fig.tight_layout(rect=(0, 0, 1, 0.97))
@@ -134,7 +161,10 @@ def main() -> None:
     print(f"  done in {elapsed:.1f}s  iterations={r_rigid.iterations_run}")
     save_obj(aligned_rigid, floating_f, HERE / "e2e_rigid.obj")
     multi_view_plot(
-        floating_v, target_v, aligned_rigid, HERE / "e2e_rigid.png",
+        floating_v,
+        target_v,
+        aligned_rigid,
+        HERE / "e2e_rigid.png",
         title="Stage 1: rigid  (original → rigid)",
     )
     stages.append({"name": "rigid", "aligned": aligned_rigid, "elapsed": elapsed})
@@ -152,10 +182,15 @@ def main() -> None:
         )
     elapsed = time.perf_counter() - t0
     aligned_nonrigid = r_nonrigid.aligned_vertices
-    print(f"  done in {elapsed:.1f}s  mean-inlier={r_nonrigid.final_inlier_weights.mean():.3f}")
+    print(
+        f"  done in {elapsed:.1f}s  mean-inlier={r_nonrigid.final_inlier_weights.mean():.3f}"
+    )
     save_obj(aligned_nonrigid, floating_f, HERE / "e2e_nonrigid.obj")
     multi_view_plot(
-        aligned_rigid, target_v, aligned_nonrigid, HERE / "e2e_nonrigid.png",
+        aligned_rigid,
+        target_v,
+        aligned_nonrigid,
+        HERE / "e2e_nonrigid.png",
         title="Stage 2a: nonrigid  (rigid → nonrigid)",
     )
     stages.append({"name": "nonrigid", "aligned": aligned_nonrigid, "elapsed": elapsed})
@@ -174,11 +209,16 @@ def main() -> None:
         )
     elapsed = time.perf_counter() - t0
     aligned_pyramid = r_pyramid.aligned_vertices
-    print(f"  done in {elapsed:.1f}s  per-layer={r_pyramid.per_layer_iterations}  "
-          f"mean-inlier={r_pyramid.final_inlier_weights.mean():.3f}")
+    print(
+        f"  done in {elapsed:.1f}s  per-layer={r_pyramid.per_layer_iterations}  "
+        f"mean-inlier={r_pyramid.final_inlier_weights.mean():.3f}"
+    )
     save_obj(aligned_pyramid, floating_f, HERE / "e2e_pyramid.obj")
     multi_view_plot(
-        aligned_rigid, target_v, aligned_pyramid, HERE / "e2e_pyramid.png",
+        aligned_rigid,
+        target_v,
+        aligned_pyramid,
+        HERE / "e2e_pyramid.png",
         title="Stage 2b: pyramid  (rigid → pyramid)",
     )
     stages.append({"name": "pyramid", "aligned": aligned_pyramid, "elapsed": elapsed})
@@ -190,15 +230,21 @@ def main() -> None:
     # Summary: rigid is cumulative; nonrigid/pyramid are both measured from rigid.
     print("\nSummary:")
     print(f"  {'stage':<9} {'time':>6}   {'baseline':<8}   mean-move  max-move")
-    baselines = {"rigid": floating_v, "nonrigid": aligned_rigid, "pyramid": aligned_rigid}
+    baselines = {
+        "rigid": floating_v,
+        "nonrigid": aligned_rigid,
+        "pyramid": aligned_rigid,
+    }
     labels = {"rigid": "original", "nonrigid": "rigid", "pyramid": "rigid"}
     for stage in stages:
         aligned = stage["aligned"]
         base = baselines[stage["name"]]
         move = np.linalg.norm(aligned - base, axis=1)
-        print(f"  {stage['name']:<9} {stage['elapsed']:5.1f}s   "
-              f"{labels[stage['name']]:<8}   "
-              f"{move.mean():6.2f}     {move.max():6.2f}")
+        print(
+            f"  {stage['name']:<9} {stage['elapsed']:5.1f}s   "
+            f"{labels[stage['name']]:<8}   "
+            f"{move.mean():6.2f}     {move.max():6.2f}"
+        )
 
     print("\nDone.\n")
 
