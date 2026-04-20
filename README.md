@@ -1,46 +1,97 @@
-# Note
-This project is now maintained at KU Leuven GitLab: https://gitlab.kuleuven.be/mirc/meshmonk
+# MeshMonk: High-Performance 3D Mesh Registration
 
-# Installing meshmonk
-MeshMonk can be built and installed on:
+> **MATLAB users:** The MATLAB MEX interface has been removed from this repository as part of the Python-first rewrite.
+> For MATLAB support, use the university fork at https://github.com/TheWebMonks/meshmonk
 
-* [Ubuntu 16.04](docs/ubuntu.md)
-* [OSX](docs/osx.md)
-* [Windows](docs/windows.md)
+MeshMonk is a C++20 library with Python bindings for high-performance 3D mesh registration. It provides rigid, non-rigid, and pyramid-based registration via a clean Python API backed by a battle-tested C++ algorithmic core.
 
-# Using meshmonk
+## Overview
 
-## From Matlab
-The following toolboxes are required from Matlab:
-* Statistics and Machine Learning Toolbox
-* Image Processing Toolbox
+MeshMonk v0.1 is a Python-first redesign. The library can be used:
 
-### Setting Environment Variables
+- **As a Python library:** `pip install 'meshmonk[io]'` — then `import meshmonk`
+- **As a CLI tool:** `meshmonk rigid Template.obj demoFace.obj --out result.obj`
 
-#### Ubuntu
-Setting the library paths inside Matlab has some unresolved [problems](https://nl.mathworks.com/matlabcentral/newsreader/view_thread/253412). It seems overwriting the library paths to use inside matlab doesn't work. So instead, we'll preload the necessary libs when starting Matlab:
+## Installation
 
-So start matlab from the terminal with the command `LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6:/usr/local/lib/libmeshmonk.so:/usr/local/lib/libOpenMeshCore.so:/usr/local/lib/libOpenMeshTools.so matlab` to make sure all the libraries are loaded.
+**From PyPI** (when available):
 
-#### Mac OSX
-Add two lines to your startup.m file:
-```
-p = ['usr/local/lib/'];
-setenv('LD_LIBRARY_PATH', p);
+```bash
+pip install 'meshmonk[io]'
 ```
 
-### Mexing meshmonk functions
-On ubuntu/mac: 
-In matlab, go into the projects/meshmonk/matlab folder (or wherever you put the meshmonk repository) and run the mex_all.m script to mex all the meshmonk functions you need.
+**From source** (current method):
 
-On Windows: 
-In matlab, go into the Documents/GitHub/meshmonk folder (or wherever you put the meshmonk repository) and run the mex_windows_all.m script to mex all the meshmonk functions you need.
+```bash
+git clone https://github.com/jsnyde0/meshmonk.git
+cd meshmonk
+uv pip install --system '.[io]'
+```
 
-## From other software
-If you're creating your own c++ project and want to use meshmonk, simply add '-lmeshmonk -lOpenMeshCore -lOpenMeshTools' as an option to your linker when compiling your software that uses the meshmonk library.
+## Python API Quickstart
 
--include the meshmonk.hpp header
+```python
+import meshmonk, trimesh
 
-## Demo
-An example of a facial registration can be found in the demo folder
+floating = trimesh.load("Template.obj")
+target   = trimesh.load("demoFace.obj")
 
+result = meshmonk.pyramid_register(floating=floating, target=target)
+print(result.aligned_vertices.shape)  # (N, 3)
+```
+
+## CLI Usage
+
+```bash
+# Rigid registration
+meshmonk rigid Template.obj demoFace.obj --out result.obj
+
+# Pyramid (multi-resolution nonrigid) registration
+meshmonk pyramid Template.obj demoFace.obj --out result.obj
+
+# View all options for a subcommand
+meshmonk rigid --help
+meshmonk pyramid --help
+```
+
+## CI Matrix
+
+The test suite runs across the following platforms on every pull request:
+
+| OS | Python | Compiler |
+|---|---|---|
+| Ubuntu 22.04 | 3.10, 3.11, 3.12, 3.13 | gcc-11, clang-15 |
+| Ubuntu 24.04 | 3.10, 3.11, 3.12, 3.13 | gcc-13 |
+| macOS 13 (x86_64) | 3.10, 3.11, 3.12, 3.13 | AppleClang |
+| macOS 14 (arm64) | 3.10, 3.11, 3.12, 3.13 | AppleClang |
+| Windows latest | 3.12 | MSVC |
+
+## Repository Structure
+
+- `CMakeLists.txt`: Root CMake file for the project.
+- `library/`: Core MeshMonk C++ library (`libmeshmonk_shared`).
+- `bindings/`: nanobind Python bindings.
+- `meshmonk/`: Python package (`import meshmonk`).
+- `vendor/`: Third-party dependencies (OpenMesh, nanoflann, Eigen).
+- `tests/`: Python test suite.
+- `docs/`: Documentation and architecture decisions.
+
+## Development Setup
+
+```bash
+git clone https://github.com/jsnyde0/meshmonk.git
+cd meshmonk
+uv pip install --system '.[dev,io]'
+pytest tests/
+```
+
+## Documentation
+
+- [Migrating from MATLAB](docs/migration-from-matlab.md)
+- [Architecture decisions](docs/decisions/ADR-001-meshmonk-modernization.md)
+
+## MATLAB Users
+
+The MATLAB MEX interface has been removed in v0.1 as part of the Python-first rewrite (see [ADR-001 D3](docs/decisions/ADR-001-meshmonk-modernization.md)).
+
+For MATLAB support, use the university fork: https://github.com/TheWebMonks/meshmonk

@@ -1,0 +1,21 @@
+//-----------------------------------------------------------------------------
+
+/** \page holefiller_docu Mesh Hole Filler
+
+\section HoleFillerAlgo The holefilling algorithm
+
+  The holefiller (OpenMesh::HoleFiller::HoleFillerT) provides a
+  hole filling algorith based on the Filling Holes in Meshes paper
+  by Liepa in 2003.
+
+  \code
+
+    // Initialize holefiller
+    OpenMesh::HoleFiller::HoleFillerT<Mesh> filler(mesh_);
+
+    // Execute the algorithm and fill all holes
+    filler.fill_all_holes();
+  \endcode
+
+*/
+

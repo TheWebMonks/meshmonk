@@ -1,0 +1,256 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["master", "main"]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: pre-commit (linting + formatting checks)
+  # ---------------------------------------------------------------------------
+  pre-commit:
+    name: pre-commit (ubuntu-latest, python 3.12)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run pre-commit on all files
+        run: pre-commit run --all-files
+
+  # ---------------------------------------------------------------------------
+  # Job 2: typecheck (pyright on pure-Python surface)
+  # ---------------------------------------------------------------------------
+  typecheck:
+    name: typecheck (ubuntu-latest, python 3.12)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install package with dev and io extras
+        run: uv pip install --system ".[dev,io]"
+
+      - name: Run pyright
+        run: pyright meshmonk/
+
+  # ---------------------------------------------------------------------------
+  # Job 3: build-and-test matrix
+  # ---------------------------------------------------------------------------
+  build-and-test:
+    name: ${{ matrix.os }} / python ${{ matrix.python-version }} / ${{ matrix.cc }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu 22.04 + gcc-11
+          - os: ubuntu-22.04
+            python-version: "3.10"
+            cc: gcc-11
+            cxx: g++-11
+          - os: ubuntu-22.04
+            python-version: "3.11"
+            cc: gcc-11
+            cxx: g++-11
+          - os: ubuntu-22.04
+            python-version: "3.12"
+            cc: gcc-11
+            cxx: g++-11
+          - os: ubuntu-22.04
+            python-version: "3.13"
+            cc: gcc-11
+            cxx: g++-11
+
+          # Ubuntu 22.04 + clang-15
+          - os: ubuntu-22.04
+            python-version: "3.10"
+            cc: clang-15
+            cxx: clang++-15
+          - os: ubuntu-22.04
+            python-version: "3.11"
+            cc: clang-15
+            cxx: clang++-15
+          - os: ubuntu-22.04
+            python-version: "3.12"
+            cc: clang-15
+            cxx: clang++-15
+          - os: ubuntu-22.04
+            python-version: "3.13"
+            cc: clang-15
+            cxx: clang++-15
+
+          # Ubuntu 24.04 + gcc-13
+          - os: ubuntu-24.04
+            python-version: "3.10"
+            cc: gcc-13
+            cxx: g++-13
+          - os: ubuntu-24.04
+            python-version: "3.11"
+            cc: gcc-13
+            cxx: g++-13
+          - os: ubuntu-24.04
+            python-version: "3.12"
+            cc: gcc-13
+            cxx: g++-13
+          - os: ubuntu-24.04
+            python-version: "3.13"
+            cc: gcc-13
+            cxx: g++-13
+
+          # macOS 14 (arm64) + AppleClang
+          - os: macos-14
+            python-version: "3.10"
+            cc: clang
+            cxx: clang++
+          - os: macos-14
+            python-version: "3.11"
+            cc: clang
+            cxx: clang++
+          - os: macos-14
+            python-version: "3.12"
+            cc: clang
+            cxx: clang++
+          - os: macos-14
+            python-version: "3.13"
+            cc: clang
+            cxx: clang++
+
+          # Windows latest + MSVC
+          - os: windows-latest
+            python-version: "3.12"
+            cc: cl
+            cxx: cl
+
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: lukka/get-cmake@98fde40bf98bdc391abe7227e6b1052d9b36a22f  # v3.28.0
+
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Activate MSVC developer command prompt
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756  # v1
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install package with dev and io extras
+        run: uv pip install --system ".[dev,io]"
+
+      - name: Verify type stub exists
+        run: |
+          python -c "import pathlib; p = pathlib.Path('meshmonk/_meshmonk_core.pyi'); assert p.exists(), 'missing _meshmonk_core.pyi'"
+
+      - name: Run tests (excluding golden tests)
+        run: pytest tests/ -q --ignore=tests/test_golden.py
+
+  # ---------------------------------------------------------------------------
+  # Job 4: integration test (depends on build-and-test)
+  # ---------------------------------------------------------------------------
+  integration-test:
+    name: integration test (ubuntu-latest, python 3.12)
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: lukka/get-cmake@98fde40bf98bdc391abe7227e6b1052d9b36a22f  # v3.28.0
+
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install package with dev and io extras
+        run: uv pip install --system ".[dev,io]"
+
+      - name: Run rigid registration
+        run: |
+          meshmonk rigid data/Template.obj data/demoFace.obj --out /tmp/rigid.obj
+          test -s /tmp/rigid.obj || (echo "rigid.obj is missing or empty"; exit 1)
+
+      - name: Run pyramid registration
+        run: |
+          meshmonk pyramid data/Template.obj data/demoFace.obj --out /tmp/pyramid.obj
+          test -s /tmp/pyramid.obj || (echo "pyramid.obj is missing or empty"; exit 1)
+
+  # ---------------------------------------------------------------------------
+  # Job 5: cibuildwheel dry-run (one manylinux wheel, no PyPI upload)
+  # ---------------------------------------------------------------------------
+  cibuildwheel:
+    name: cibuildwheel dry-run (manylinux x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Build one manylinux wheel
+        uses: pypa/cibuildwheel@ee63bf16da6cddfb925f542f2c7b59ad50e93969  # v2.22.0
+        env:
+          CIBW_BUILD: cp312-manylinux_x86_64
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          CIBW_TEST_REQUIRES: pytest scipy trimesh pyyaml meshio
+          CIBW_TEST_COMMAND: pytest {project}/tests -q --ignore={project}/tests/test_golden.py --ignore={project}/tests/test_silent_logger.py
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b  # v4.5.0
+        with:
+          name: wheel-manylinux-x86_64
+          path: wheelhouse/*.whl
+
+  # ---------------------------------------------------------------------------
+  # Job 6: deploy-docs (mkdocs → GitHub Pages, main only)
+  # ---------------------------------------------------------------------------
+  deploy-docs:
+    name: deploy docs (ubuntu-latest, python 3.12)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install docs extras
+        run: uv pip install --system ".[docs]"
+
+      - name: Build mkdocs site
+        run: mkdocs build --strict
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@47f197a2200bb9de68ba5f48fad1c088eb1c4a32  # v4.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site

@@ -1,14 +1,11 @@
 %% Demo nonrigid registration modular
 
-% Add MeshMonk's toolbox to the working path and setup current folder
-addpath(genpath('path\to\meshmonk')) % Set to location of meshmonk
-
-studypath = 'path\to\DemoFolder\';   % Set to location of demo material
-cd(studypath);
+% Add path to compiled MEX files (assuming mex_all.m was run in matlab/ directory)
+addpath(fullfile('..', 'matlab'));
 
 %% Load face template (floating) and face (target)
 
-floatingPath = [studypath '/Template.obj'];
+floatingPath = 'Template.obj';
 [floatingPoints,floatingFaces] = read_vertices_and_faces_from_obj_file(floatingPath);
 floatingFaces = uint32(floatingFaces-1); %-1 to make it compatible with C++ indexing
 floatingPoints = single(floatingPoints);
@@ -19,7 +16,7 @@ numFloatingElements = size(floatingFeatures,1);
 floatingFlags = single(ones(numFloatingElements,1));
 clear floatingPoints;
  
-targetPath = [studypath '/demoFace.obj'];
+targetPath = 'demoFace.obj';
 [targetPoints,targetFaces] = read_vertices_and_faces_from_obj_file(targetPath);
 targetPoints = single(targetPoints);
 targetFaces = uint32(targetFaces-1);%-1 to make it compatible with C++ indexing

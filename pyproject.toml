@@ -1,0 +1,51 @@
+[build-system]
+requires = ["scikit-build-core>=0.8", "nanobind>=2.0", "cmake>=3.26"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "meshmonk"
+version = "0.3.0.dev0"
+description = "Python-first 3D mesh registration library"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [{ name = "jsnyde0" }]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "typer>=0.9",
+]
+
+[project.optional-dependencies]
+io = ["trimesh>=4.0"]
+dev = ["pytest", "pre-commit", "ruff", "pyright", "meshio", "scipy>=1.11", "pyyaml", "tomli>=2.0; python_version < '3.11'"]
+docs = ["mkdocs-material", "mkdocstrings[python]"]
+
+[project.scripts]
+meshmonk = "meshmonk.cli:app"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --import-mode=importlib"
+
+[tool.scikit-build]
+sdist.exclude = ["tests/", "data/", "history/"]
+
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-*"
+test-requires = ["pytest", "scipy", "trimesh", "pyyaml"]
+test-command = "pytest {project}/tests -q --ignore={project}/tests/test_golden.py --ignore={project}/tests/test_silent_logger.py"
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64", "aarch64"]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+
+[tool.cibuildwheel.macos]
+archs = ["arm64"]
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]
+
+[[tool.cibuildwheel.overrides]]
+select = "cp312-*"
+environment = { SKBUILD_WHEEL_PY_API = "cp312" }

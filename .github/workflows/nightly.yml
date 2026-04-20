@@ -1,0 +1,46 @@
+name: Nightly golden tests
+
+on:
+  schedule:
+    # Run at 02:00 UTC every day
+    - cron: "0 2 * * *"
+  # Allow manual trigger from the GitHub UI
+  workflow_dispatch: {}
+
+jobs:
+  golden-tests:
+    name: golden tests (ubuntu-latest, python 3.12)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: lukka/get-cmake@v3.28.0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install package with dev and io extras
+        run: uv pip install --system ".[dev,io]"
+
+      - name: Check if any .npz golden files exist
+        id: check_goldens
+        run: |
+          if ls tests/golden/*.npz 2>/dev/null | head -1 | grep -q "."; then
+            echo "goldens_exist=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "goldens_exist=false" >> "$GITHUB_OUTPUT"
+            echo "No .npz golden files found in tests/golden/ — skipping golden comparison tests"
+          fi
+
+      - name: Run golden tests
+        if: steps.check_goldens.outputs.goldens_exist == 'true'
+        run: pytest tests/test_golden.py -v
+
+      - name: Skip message (no goldens)
+        if: steps.check_goldens.outputs.goldens_exist == 'false'
+        run: echo "Golden tests skipped — capture goldens via visual sign-off session first."

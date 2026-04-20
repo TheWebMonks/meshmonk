@@ -33,7 +33,7 @@ Keep the algorithmic core in C++, upgrade to C++20, and redesign the public API 
 
 **Rationale:**
 
-The load-bearing algorithmic value of MeshMonk — viscoelastic diffusion, SVD-based rigid fit, Mahalanobis inlier detection, pyramid annealing — represents roughly 30% of the codebase and reflects years of numerical tuning. This is exactly the code most expensive and most risky to rewrite.
+The load-bearing algorithmic value of MeshMonk — viscoelastic diffusion, quaternion-based rigid fit (Horn method via eigendecomposition), Mahalanobis inlier detection, pyramid annealing — represents roughly 30% of the codebase and reflects years of numerical tuning. This is exactly the code most expensive and most risky to rewrite.
 
 The Rust scientific-geometry ecosystem is not mature enough in 2026 to support this work credibly:
 - No production-quality halfedge mesh library (what we use OpenMesh for). `plexus` is unmaintained.
@@ -82,6 +82,16 @@ Migration cost is a single focused afternoon. The 330-line Jules-written pybind1
 - v0.1 targets **CPython 3.10–3.13**. Older Pythons are EoL or close to it; 3.10 gives `match`, built-in generic types (`list[int]`), and `ParamSpec` without `from __future__ import annotations`.
 - v0.3 wheels are built with nanobind's **stable-ABI mode** (`NB_STABLE_ABI=1`), collapsing the wheel matrix from ~4 Pythons × 3 OSes × 2 arches = 24 wheels to 6 wheels (one per OS/arch). abi3 has <1% typical overhead; if profiling later shows it's >2%, flip the build flag for v0.4 — no API impact.
 - Build-time numpy is pinned to **2.0** for forward-compatibility with numpy 1.x at runtime.
+
+**Amendment (v0.3 implementation, 2026-04-19):** The 6-wheel strategy above was revised.
+Actual v0.3 strategy is 12 wheels:
+- abi3 floor is Python 3.12, not 3.10 — nanobind STABLE_ABI requires PyType_FromMetaclass()
+  added in CPython 3.12; silently ignored on 3.10/3.11
+- Per-version wheels for Python 3.10 and 3.11 bridge the gap (one wheel per platform per version)
+- musllinux dropped — niche audience, musl math-library differences; defer to v0.5 if demand materializes
+- macOS x86_64 dropped — GitHub removed macOS 13 runners December 2025; Apple discontinued Intel Macs
+- Total: 12 wheels = 4 abi3 (cp312-abi3 on manylinux x86_64, manylinux aarch64, macOS arm64,
+  Windows x86_64) + 8 per-version (cp310 + cp311 on same 4 platforms)
 
 **Alternatives considered:**
 
@@ -187,7 +197,7 @@ Known rough edge: `uv pip install -e .` (editable) has an [open bug](https://git
 
 **What would invalidate this:**
 
-- We drop OpenMesh entirely (see D9 — post-v0.4+) AND measure real pain from CMake complexity
+- We drop OpenMesh entirely (see D9 — post-v0.5) AND measure real pain from CMake complexity
 - scikit-build-core stalls as a project
 - A new build backend emerges that strictly dominates for CMake projects
 
@@ -213,7 +223,7 @@ Derived from first principles, not library cargo-culting:
 - **Minimize numpy-to-C++ friction:** `Eigen::Ref<const T>` is zero-copy for *read-only* inputs from `Eigen::Map` (what nanobind produces from numpy arrays). The floating-features buffer is mutated in place by the internal algorithm, so the wrapper copies it once per call — still a single copy of ~170 KB for the default Template mesh.
 - **Introspectable output:** result structs expose what exists today. v0.1 ships minimal fields. `RigidResult` holds `aligned_features`, `transform`, `iterations_run`. `NonrigidResult` and `PyramidResult` additionally expose `displacement_field` (`(N,3)` per-vertex displacement from original floating) so MATLAB-migrants can recover the transform without diffing outputs. Diagnostic fields (`converged`, `fitness`, `inlier_rmse`, `num_inliers`) land in v0.2 once convergence criteria and inlier thresholds are pinned down. Shipping fields with undefined semantics would be worse than omitting them.
 - **Composable:** Advanced users run stages individually; primitives share types
-- **Safe by construction:** Designated initializers eliminate positional-arg transposition. Expected-style returns make failure explicit for four concrete detection sites: `DegenerateInput` (empty inputs, dim/shape mismatch, zero-range bbox, all-zero inlier flags), `InsufficientInliers` (<4 non-zero inlier weights — rigid needs ≥3 for SVD well-posedness), `DecompositionFailed` (`RigidTransformer` SVD or `EigenVectorDecomposer` fails to converge on valid-shaped input), `NonConvergence` (v0.2+ only; v0.1 runs fixed iterations). Current `std::cerr` failure writes are routed through a logger sink consumers can suppress. Strong types prevent `Transform * Features` confusion.
+- **Safe by construction:** Designated initializers eliminate positional-arg transposition. Expected-style returns make failure explicit for four concrete detection sites: `DegenerateInput` (empty inputs, dim/shape mismatch, zero-range bbox, all-zero inlier flags), `InsufficientInliers` (<4 non-zero inlier weights — rigid needs ≥3 non-collinear points for the cross-variance matrix to yield a unique rotation quaternion), `DecompositionFailed` (`RigidTransformer` eigendecomposition via Horn method / `SelfAdjointEigenSolver` on 4×4 Q matrix, or `EigenVectorDecomposer` fails to converge on valid-shaped input), `NonConvergence` (v0.2+ only; v0.1 runs fixed iterations). Current `std::cerr` failure writes are routed through a logger sink consumers can suppress. Strong types prevent `Transform * Features` confusion.
 - **Boundary vs. internal detection split:** `DegenerateInput` is raised by an explicit pre-check at the top of each public API function so shape / rank / dim errors never reach the algorithmic core. Internal algorithmic classes (`ViscoElasticTransformer`, `InlierDetector`, `RigidTransformer`) are **NOT** rewritten to return an expected type — they retain existing control flow and signal failure via the log sink plus an internal failure-status bridge that the public wrapper converts before returning. This preserves the "load-bearing code untouched" constraint while still giving callers typed errors.
 - **Pythonic at the top:** kwargs + dataclass-like results + exceptions (translated from `expected`)
 - **Field-order stability:** param struct field order is STABLE across minor versions (v0.x → v0.x+1); reordering requires an ADR update. The nanobind shim uses named `nb::arg()` bindings so Python callers are immune to field reordering. C++ callers using designated initializers would still fail to compile on reorder.
@@ -273,17 +283,17 @@ Flexibility: the tier selection and tolerance thresholds will evolve in v0.1 as 
 - Human visual inspection reveals we can't reliably distinguish "right" from "slightly wrong" for nonrigid — would need image-based metrics instead
 - CI time for Tier 3 exceeds budget — move Tier 3 to nightly, keep Tier 1/2 per-push
 
-### D8: Keep OpenMesh for v0.1; migrate to `meshoptimizer` in v0.4+
+### D8: Keep OpenMesh for v0.1; migrate to `meshoptimizer` in v0.5
 
 **Firmness: FLEXIBLE**
 
 In v0.1, preserve OpenMesh as the halfedge / quadric-decimation dependency, but confine it to an I/O boundary (no `TriMesh` reconstruction inside `update()` calls).
 
-In v0.4+, evaluate migrating away from OpenMesh. `meshoptimizer` (MIT, Arseny Kapoulkine) covers **only** the quadric-decimation half of what we use OpenMesh for — it is a mesh-data-layout library, not a half-edge topology library. A replacement path requires:
+In v0.5, evaluate migrating away from OpenMesh. `meshoptimizer` (MIT, Arseny Kapoulkine) covers **only** the quadric-decimation half of what we use OpenMesh for — it is a mesh-data-layout library, not a half-edge topology library. A replacement path requires:
 - `meshopt_simplify` for quadric decimation (near-equivalent to `OpenMesh::Decimater::ModQuadricT`)
 - **Plus a small half-edge-lite module** (~150–250 LOC) providing boundary-edge detection and vertex-neighbour queries for the `Downsampler`'s boundary-vertex locking. Reference implementations: libigl's `igl::is_border_vertex`, trimesh's `edges_unique`.
 
-Because this is NOT a like-for-like dependency swap, the v0.4+ migration deserves its own design pass, not a one-line roadmap bullet.
+Because this is NOT a like-for-like dependency swap, the v0.5 migration deserves its own design pass, not a one-line roadmap bullet.
 
 **Rationale:**
 
@@ -331,6 +341,17 @@ If `TheWebMonks` wants to continue MATLAB-flavored work, they fork from the tran
 
 - A concrete stakeholder (funder, institution, co-author) requires the repo live on `TheWebMonks` for branding / grant-reporting reasons
 - PyPI `meshmonk` is already taken (verify before v0.3; fall back to `meshmonk-py` or similar)
+
+## v0.0 Clarifications
+
+### Tag naming collision
+
+The `v0.0` tag coexists with legacy tags `v0.0.1`–`v0.0.6` from the conda/MATLAB
+era. The modernization track reuses the `v0.x` prefix intentionally; legacy tags
+are archived and will not be re-published. Readers should treat `v0.0`–`v0.3` as
+the Python-first modernization track and `v0.0.1`–`v0.0.6` as archived
+pre-modernization MATLAB/conda history. This is a naming clarification, not a
+decision change.
 
 ## Related
 

@@ -1,0 +1,20 @@
+root = true
+
+[*]
+indent_style = space
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.py]
+indent_size = 4
+
+[*.cpp]
+indent_size = 4
+
+[*.hpp]
+indent_size = 4
+
+[*.cmake]
+indent_size = 4
