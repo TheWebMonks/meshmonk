@@ -1,7 +1,16 @@
-"""End-to-end demo: chained rigid → nonrigid → pyramid.
+"""End-to-end demo: rigid first, then nonrigid vs pyramid as alternatives.
 
-Each stage takes the *previous* stage's output as its input, so the
-per-stage plots show the incremental improvement at each step.
+Pyramid is a multi-resolution variant of the viscoelastic nonrigid
+registration — not a refinement applied on top of it. So the realistic
+shape of the pipeline is:
+
+    rigid  →  nonrigid       (single-resolution viscoelastic)
+       or
+    rigid  →  pyramid        (multi-resolution viscoelastic)
+
+This demo runs rigid once, then applies both nonrigid and pyramid to
+that rigid output so you can compare the two deformable approaches
+side-by-side on equal footing.
 
 Usage (from repo root or demo/):
     cd demo && uv run e2e_demo.py
@@ -9,13 +18,13 @@ Usage (from repo root or demo/):
 Inputs:  Template.obj   (floating — the template face)
          demoFace.obj   (target  — the subject face)
 Outputs:
-    e2e_rigid.obj       — after rigid stage
-    e2e_nonrigid.obj    — after nonrigid stage (input = rigid output)
-    e2e_pyramid.obj     — after pyramid stage  (input = nonrigid output)
+    e2e_rigid.obj       — after rigid
+    e2e_nonrigid.obj    — rigid output, then nonrigid
+    e2e_pyramid.obj     — rigid output, then pyramid
     e2e_rigid.png       — original   → rigid
     e2e_nonrigid.png    — rigid      → nonrigid
-    e2e_pyramid.png     — nonrigid   → pyramid
-    e2e_compare.png     — side-by-side progression across all stages
+    e2e_pyramid.png     — rigid      → pyramid
+    e2e_compare.png     — side-by-side: original | rigid | nonrigid | pyramid
 """
 
 from __future__ import annotations
@@ -42,7 +51,7 @@ HERE = Path(__file__).parent
 
 
 def _compare_plot(floating_v, target_v, stages: list[dict], out_png: Path) -> None:
-    """3x(1+N) grid: rows = planes, cols = original + each stage (cumulative)."""
+    """3x(1+N) grid: rows = planes, cols = original + each stage output."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -78,7 +87,7 @@ def _compare_plot(floating_v, target_v, stages: list[dict], out_png: Path) -> No
             (xlo, xhi), (ylo, yhi) = _zoom_bounds(aligned, ix, iy)
             ax.set_xlim(xlo, xhi); ax.set_ylim(ylo, yhi)
 
-    fig.suptitle("End-to-end progression (cumulative)", fontsize=14)
+    fig.suptitle("End-to-end: rigid, then nonrigid vs pyramid", fontsize=14)
     fig.tight_layout(rect=(0, 0, 1, 0.97))
     fig.savefig(str(out_png), dpi=120)
     plt.close(fig)
@@ -88,7 +97,7 @@ def _compare_plot(floating_v, target_v, stages: list[dict], out_png: Path) -> No
 def main() -> None:
     meshmonk.set_log_level("warning")
 
-    print("\n=== meshmonk end-to-end demo (chained) ===\n")
+    print("\n=== meshmonk end-to-end demo (rigid → {nonrigid, pyramid}) ===\n")
     print("Loading meshes...")
     floating, target = load_meshes()
     summarise(floating, "floating (Template)")
@@ -108,7 +117,7 @@ def main() -> None:
     stages: list[dict] = []
 
     # -- Stage 1: rigid (input = original floating) --
-    print("\nStage 1/3 — rigid (SE(3) + scale)...")
+    print("\nStage 1 — rigid (SE(3) + scale)...")
     t0 = time.perf_counter()
     with quiet_stderr():
         r_rigid = meshmonk.rigid_register(
@@ -130,8 +139,8 @@ def main() -> None:
     )
     stages.append({"name": "rigid", "aligned": aligned_rigid, "elapsed": elapsed})
 
-    # -- Stage 2: nonrigid (input = rigid output) --
-    print("\nStage 2/3 — nonrigid (input = rigid output)...")
+    # -- Stage 2a: nonrigid on rigid output --
+    print("\nStage 2a — nonrigid (input = rigid output)...")
     t0 = time.perf_counter()
     with quiet_stderr():
         r_nonrigid = meshmonk.nonrigid_register(
@@ -143,21 +152,20 @@ def main() -> None:
         )
     elapsed = time.perf_counter() - t0
     aligned_nonrigid = r_nonrigid.aligned_vertices
-    feat_after_nonrigid = r_nonrigid.aligned_features
     print(f"  done in {elapsed:.1f}s  mean-inlier={r_nonrigid.final_inlier_weights.mean():.3f}")
     save_obj(aligned_nonrigid, floating_f, HERE / "e2e_nonrigid.obj")
     multi_view_plot(
         aligned_rigid, target_v, aligned_nonrigid, HERE / "e2e_nonrigid.png",
-        title="Stage 2: nonrigid  (rigid → nonrigid)",
+        title="Stage 2a: nonrigid  (rigid → nonrigid)",
     )
     stages.append({"name": "nonrigid", "aligned": aligned_nonrigid, "elapsed": elapsed})
 
-    # -- Stage 3: pyramid (input = nonrigid output) --
-    print("\nStage 3/3 — pyramid (input = nonrigid output)...")
+    # -- Stage 2b: pyramid on rigid output (alternative to nonrigid) --
+    print("\nStage 2b — pyramid (input = rigid output, alternative to nonrigid)...")
     t0 = time.perf_counter()
     with quiet_stderr():
         r_pyramid = meshmonk.pyramid_register(
-            floating_features=feat_after_nonrigid,
+            floating_features=feat_after_rigid,
             target_features=feat_target,
             floating_faces=floating_f,
             target_faces=target_f,
@@ -170,26 +178,27 @@ def main() -> None:
           f"mean-inlier={r_pyramid.final_inlier_weights.mean():.3f}")
     save_obj(aligned_pyramid, floating_f, HERE / "e2e_pyramid.obj")
     multi_view_plot(
-        aligned_nonrigid, target_v, aligned_pyramid, HERE / "e2e_pyramid.png",
-        title="Stage 3: pyramid  (nonrigid → pyramid)",
+        aligned_rigid, target_v, aligned_pyramid, HERE / "e2e_pyramid.png",
+        title="Stage 2b: pyramid  (rigid → pyramid)",
     )
     stages.append({"name": "pyramid", "aligned": aligned_pyramid, "elapsed": elapsed})
 
     # -- Cumulative comparison --
-    print("\nRendering cumulative comparison plot...")
+    print("\nRendering comparison plot...")
     _compare_plot(floating_v, target_v, stages, HERE / "e2e_compare.png")
 
-    # Summary: movement relative to original floating
-    print("\nSummary (displacement relative to original floating):")
-    prev = floating_v
+    # Summary: rigid is cumulative; nonrigid/pyramid are both measured from rigid.
+    print("\nSummary:")
+    print(f"  {'stage':<9} {'time':>6}   {'baseline':<8}   mean-move  max-move")
+    baselines = {"rigid": floating_v, "nonrigid": aligned_rigid, "pyramid": aligned_rigid}
+    labels = {"rigid": "original", "nonrigid": "rigid", "pyramid": "rigid"}
     for stage in stages:
         aligned = stage["aligned"]
-        total = np.linalg.norm(aligned - floating_v, axis=1)
-        step = np.linalg.norm(aligned - prev, axis=1)
+        base = baselines[stage["name"]]
+        move = np.linalg.norm(aligned - base, axis=1)
         print(f"  {stage['name']:<9} {stage['elapsed']:5.1f}s   "
-              f"total(mean={total.mean():6.2f} max={total.max():6.2f})   "
-              f"step(mean={step.mean():6.2f} max={step.max():6.2f})")
-        prev = aligned
+              f"{labels[stage['name']]:<8}   "
+              f"{move.mean():6.2f}     {move.max():6.2f}")
 
     print("\nDone.\n")
 
