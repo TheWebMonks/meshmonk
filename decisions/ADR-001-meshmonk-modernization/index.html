@@ -1,0 +1,1430 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://jsnyde0.github.io/meshmonk/decisions/ADR-001-meshmonk-modernization/">
+      
+      
+        <link rel="prev" href="../../cli/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Decisions - MeshMonk</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-001-meshmonk-modernization-python-first-rebuild" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="MeshMonk" class="md-header__button md-logo" aria-label="MeshMonk" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            MeshMonk
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Decisions
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jsnyde0/meshmonk" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jsnyde0/meshmonk
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quickstart
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../cli/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLI Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Decisions
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="MeshMonk" class="md-nav__button md-logo" aria-label="MeshMonk" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    MeshMonk
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jsnyde0/meshmonk" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jsnyde0/meshmonk
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/rigid/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rigid registration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/nonrigid/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nonrigid registration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pyramid/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pyramid registration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#d1-modernize-in-c20-do-not-rewrite-in-rust" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D1: Modernize in C++20 — do not rewrite in Rust
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d2-nanobind-for-python-bindings-not-pybind11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D2: nanobind for Python bindings — not pybind11
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d3-drop-matlab-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D3: Drop MATLAB support
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d4-delete-the-c-cli-replace-with-a-python-typer-based-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D4: Delete the C++ CLI, replace with a Python typer-based CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d5-cmake-scikit-build-core-do-not-migrate-to-meson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D5: CMake + scikit-build-core — do not migrate to Meson
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d6-redesign-the-public-api-params-structs-result-structs-expected-style-typed-failure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D6: Redesign the public API — params structs + result structs + expected-style typed failure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d7-harness-strategy-tiered-analyticalconstructed-first-no-circular-baselining" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D7: Harness strategy — tiered, analytical+constructed first, no circular baselining
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d8-keep-openmesh-for-v01-migrate-to-meshoptimizer-in-v05" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D8: Keep OpenMesh for v0.1; migrate to meshoptimizer in v0.5
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d9-transfer-repo-to-jsnyde0meshmonk-claim-pypi-meshmonk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D9: Transfer repo to jsnyde0/meshmonk; claim PyPI meshmonk
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v00-clarifications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.0 Clarifications
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v0.0 Clarifications">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tag-naming-collision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag naming collision
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="adr-001-meshmonk-modernization-python-first-rebuild">ADR-001: MeshMonk Modernization — Python-First Rebuild</h1>
+<p><strong>Status:</strong> Accepted
+<strong>Date:</strong> 2026-04-17
+<strong>Design:</strong> Design doc (not in this checkout — see in-session transcript from 2026-04-17)
+<strong>Parent:</strong> —
+<strong>Related:</strong> Supersedes the May 2025 <code>modernization-and-python-bindings</code> spec (remote-branch document; not present in this checkout)</p>
+<p><strong>Scope note:</strong> this ADR captures strategic decisions. File paths and branch names cited in the design doc are expected to be labeled as one of: current checkout, remote branch state under <code>origin/*</code>, or proposed future layout.</p>
+<h2 id="context">Context</h2>
+<p>MeshMonk is a C++ 3D mesh registration library developed by a university research group (~10 years of algorithmic tuning). Between May and June 2025 a modernization effort (Phases 1–4) restructured the repo, introduced a CMake build system, and produced a first-pass pybind11 Python binding (<code>meshmonk_python</code>) — largely written by an older AI coding agent with limited validation.</p>
+<p>The 2025 plan's Phase 5 was scoped as "demo/test scripts + README polish." Revisiting that plan in 2026 revealed deeper issues that make Phase 5 the wrong frame:</p>
+<ul>
+<li>The pybind11 bindings are untested and untrusted (author's own comments note confusion about the API shape).</li>
+<li>There is no <code>pyproject.toml</code>, no <code>pip install</code> story, no CI.</li>
+<li>The C++ public API has 15+ positional-arg telescoping signatures, in-place mutation, and no typed failure mode.</li>
+<li>~45% of the C++ codebase is MATLAB MEX plumbing that blocks build-system flexibility and adds maintenance burden.</li>
+<li>The C++ CLI was built by the same untrusted AI-agent run and was never validated.</li>
+<li>The repo has essentially no automated test coverage — no pytest, no integration tests, no CI.</li>
+</ul>
+<p>The user explicitly wants the "cleanest best architecture to be proud of," is open to radical rewrites (including Rust), and has no sunk-cost attachment to the existing code. This ADR captures the strategic decisions that shape the resulting overhaul.</p>
+<h2 id="decisions">Decisions</h2>
+<h3 id="d1-modernize-in-c20-do-not-rewrite-in-rust">D1: Modernize in C++20 — do not rewrite in Rust</h3>
+<p><strong>Firmness: FIRM</strong></p>
+<p>Keep the algorithmic core in C++, upgrade to C++20, and redesign the public API surface. Do not port to Rust.</p>
+<p><strong>Rationale:</strong></p>
+<p>The load-bearing algorithmic value of MeshMonk — viscoelastic diffusion, quaternion-based rigid fit (Horn method via eigendecomposition), Mahalanobis inlier detection, pyramid annealing — represents roughly 30% of the codebase and reflects years of numerical tuning. This is exactly the code most expensive and most risky to rewrite.</p>
+<p>The Rust scientific-geometry ecosystem is not mature enough in 2026 to support this work credibly:
+- No production-quality halfedge mesh library (what we use OpenMesh for). <code>plexus</code> is unmaintained.
+- <code>nalgebra</code>/<code>faer</code> cover basic linear algebra but lack Eigen's ecosystem depth for SVD/sparse solvers.
+- No competitor in this space (Open3D, libigl, PyMeshLab, CGAL) is Rust-based.</p>
+<p>Realistic cost of a Rust rewrite with numerical re-validation: 12–18 months. The memory-safety argument does not apply to a batch scientific tool processing trusted input.</p>
+<p>C++20 gives us the modern idioms we actually need: designated initializers for aggregate structs, <code>[[nodiscard]]</code>, concepts, and a clean path to standard-library <code>expected</code> once the compiler matrix permits it.</p>
+<p><strong>Alternatives considered:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Modernize in C++20 (chosen)</strong></td>
+<td>• Preserve algorithmic value<br>• Eigen/OpenMesh ecosystem intact<br>• Clean idioms available<br>• Weeks of work, not years</td>
+<td>• Still C++ (verbose, build complexity)<br>• Manual memory management risks</td>
+</tr>
+<tr>
+<td>Rust rewrite (PyO3)</td>
+<td>• Memory safety<br>• Modern tooling<br>• Smaller wheels</td>
+<td>• No OpenMesh equivalent<br>• Ecosystem immature for geometry<br>• 12–18 month revalidation<br>• No field precedent</td>
+</tr>
+<tr>
+<td>Stay on C++14, narrow Python scope</td>
+<td>• Minimal risk</td>
+<td>• Keeps all current API flaws<br>• No path to modern idioms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What would invalidate this:</strong></p>
+<ul>
+<li>A production-quality Rust halfedge mesh library appears and is adopted by 2+ major geometry projects</li>
+<li>The algorithmic code is fully re-derived and re-verified against a new numerical reference, making the C++ tuning non-unique</li>
+<li>Performance profiling reveals a fundamental C++ limitation that Rust solves</li>
+</ul>
+<h3 id="d2-nanobind-for-python-bindings-not-pybind11">D2: nanobind for Python bindings — not pybind11</h3>
+<p><strong>Firmness: FIRM</strong></p>
+<p>Replace the existing pybind11 bindings with nanobind. Treat the existing pybind11 wrapper as disposable.</p>
+<p><strong>Rationale:</strong></p>
+<p>nanobind is the pybind11 author's (Wenzel Jakob) rewritten successor, actively developed and used in production by JAX, Mitsuba 3, DrJit, and — decisively — libigl-python-bindings, the closest analogue to what MeshMonk-Python should be.</p>
+<p>Concrete wins for this project:
+- 2–10× smaller compiled binary (Eigen-heavy extensions go from ~800 KB to ~120–200 KB)
+- 2–5× faster compile times
+- 2–3× faster cold import
+- First-class <code>stubgen</code> for shipping <code>.pyi</code> type stubs
+- Near-identical Eigen bridge API (<code>nanobind/eigen/dense.h</code> ≈ <code>pybind11/eigen.h</code>)</p>
+<p>Migration cost is a single focused afternoon. The 330-line Jules-written pybind11 file has no sunk cost to protect.</p>
+<p><strong>Python version + ABI strategy:</strong></p>
+<ul>
+<li>v0.1 targets <strong>CPython 3.10–3.13</strong>. Older Pythons are EoL or close to it; 3.10 gives <code>match</code>, built-in generic types (<code>list[int]</code>), and <code>ParamSpec</code> without <code>from __future__ import annotations</code>.</li>
+<li>v0.3 wheels are built with nanobind's <strong>stable-ABI mode</strong> (<code>NB_STABLE_ABI=1</code>), collapsing the wheel matrix from ~4 Pythons × 3 OSes × 2 arches = 24 wheels to 6 wheels (one per OS/arch). abi3 has &lt;1% typical overhead; if profiling later shows it's &gt;2%, flip the build flag for v0.4 — no API impact.</li>
+<li>Build-time numpy is pinned to <strong>2.0</strong> for forward-compatibility with numpy 1.x at runtime.</li>
+</ul>
+<p><strong>Amendment (v0.3 implementation, 2026-04-19):</strong> The 6-wheel strategy above was revised.
+Actual v0.3 strategy is 12 wheels:
+- abi3 floor is Python 3.12, not 3.10 — nanobind STABLE_ABI requires PyType_FromMetaclass()
+  added in CPython 3.12; silently ignored on 3.10/3.11
+- Per-version wheels for Python 3.10 and 3.11 bridge the gap (one wheel per platform per version)
+- musllinux dropped — niche audience, musl math-library differences; defer to v0.5 if demand materializes
+- macOS x86_64 dropped — GitHub removed macOS 13 runners December 2025; Apple discontinued Intel Macs
+- Total: 12 wheels = 4 abi3 (cp312-abi3 on manylinux x86_64, manylinux aarch64, macOS arm64,
+  Windows x86_64) + 8 per-version (cp310 + cp311 on same 4 platforms)</p>
+<p><strong>Alternatives considered:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>nanobind (chosen)</strong></td>
+<td>• Smaller wheels<br>• Faster builds<br>• Built-in stubgen<br>• libigl precedent</td>
+<td>• C++17 minimum (we need C++20 anyway)<br>• Less Stack Overflow history</td>
+</tr>
+<tr>
+<td>Continue pybind11</td>
+<td>• Familiar, vast ecosystem</td>
+<td>• Larger binaries<br>• Slower builds<br>• External stubgen tools</td>
+</tr>
+<tr>
+<td>Cython</td>
+<td>• Mature</td>
+<td>• Poor C++ binding ergonomics</td>
+</tr>
+<tr>
+<td>SWIG</td>
+<td>• Legacy</td>
+<td>• Verbose, hard to maintain</td>
+</tr>
+<tr>
+<td>ctypes/cffi</td>
+<td>• Minimal binary size</td>
+<td>• No type safety, no NumPy integration</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What would invalidate this:</strong></p>
+<ul>
+<li>nanobind's maintenance pauses or Wenzel Jakob steps back</li>
+<li>A blocker emerges in nanobind's Eigen/NumPy interop that doesn't affect pybind11</li>
+<li>Binary size regresses to pybind11 parity</li>
+</ul>
+<h3 id="d3-drop-matlab-support">D3: Drop MATLAB support</h3>
+<p><strong>Firmness: FIRM</strong></p>
+<p>Remove all MATLAB MEX code (<code>matlab/</code>, <code>_mex</code> function variants, and MATLAB-specific demo/tooling). Redirect MATLAB users to the university fork that already exists.</p>
+<p><strong>Rationale:</strong></p>
+<p>MATLAB support is ~45% of the non-algorithmic code in the current codebase. It requires:
+- Maintaining parallel <code>_mex</code> raw-pointer API surfaces
+- Keeping CMake as the build system (Meson has no MEX support — though CMake is independently the right call, see D5)
+- MATLAB-specific demo tooling
+- Cross-platform MEX testing that has never existed</p>
+<p>Users who need MATLAB can use the university fork. This is explicitly sanctioned by the user (repo owner) as the official MATLAB path going forward. A README banner points MATLAB users there.</p>
+<p><strong>Alternatives considered:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Drop MATLAB (chosen)</strong></td>
+<td>• ~250 LOC deleted<br>• Single API surface<br>• Simpler tests, CI, release</td>
+<td>• MATLAB users must migrate to fork</td>
+</tr>
+<tr>
+<td>Keep MATLAB minimally</td>
+<td>• Backward compatibility</td>
+<td>• Perpetual parallel-API maintenance<br>• Blocks clean redesign</td>
+</tr>
+<tr>
+<td>Deprecate over multiple releases</td>
+<td>• Gentle migration</td>
+<td>• Slows down primary Python work</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What would invalidate this:</strong></p>
+<ul>
+<li>The university fork becomes unavailable or unmaintained</li>
+<li>A large paying customer specifically needs MATLAB support in this repo</li>
+<li>Python bindings fail to reach MATLAB-user feature parity within 2 minor versions</li>
+</ul>
+<h3 id="d4-delete-the-c-cli-replace-with-a-python-typer-based-cli">D4: Delete the C++ CLI, replace with a Python <code>typer</code>-based CLI</h3>
+<p><strong>Firmness: FIRM</strong></p>
+<p>Delete the entire <code>cli/</code> directory on the CLI branch (<code>cli.cpp</code>, <code>cxxopts</code> dep, shell test scripts). Build the CLI in Python using <code>typer</code>, distributed as a <code>meshmonk</code> entry point via <code>pyproject.toml</code>.</p>
+<p><strong>Rationale:</strong></p>
+<p>The current C++ CLI was built by an older AI agent, has no numerical validation, and was under active churn (see branch <code>add-compute-rigid-transform-cli</code>, which investigation confirmed is 100% plumbing with zero library-level value). A research agent verified the branch adds no unique math — every CLI command just calls a library function that already existed.</p>
+<p>A Python CLI is materially simpler:
+- ~100 lines of Python vs. ~600 lines of C++
+- Uses <code>meshio</code>/<code>trimesh</code> for I/O — format-agnostic (<code>.obj</code>, <code>.ply</code>, <code>.stl</code>, <code>.vtk</code>) for free
+- Trivially testable with pytest
+- Agent-friendly (typed arguments, auto-help, shell completion)
+- Share types and behavior with the Python library layer</p>
+<p><strong>Alternatives considered:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Python CLI via typer (chosen)</strong></td>
+<td>• Simpler<br>• Format-agnostic I/O<br>• Trivial to test<br>• Shared with library</td>
+<td>• Requires Python at runtime</td>
+</tr>
+<tr>
+<td>Keep C++ CLI, finish Karlijne's verification</td>
+<td>• Binary-only deployment</td>
+<td>• Pure plumbing, no trust, no tests<br>• Dead-end path</td>
+</tr>
+<tr>
+<td>Rust CLI via clap</td>
+<td>• Standalone binary</td>
+<td>• New language in build<br>• No benefit over Python</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What would invalidate this:</strong></p>
+<ul>
+<li>A user materializes who needs the CLI without Python runtime (embedded, air-gapped), in numbers justifying a separate binary path</li>
+<li>Python CLI perf becomes a bottleneck</li>
+</ul>
+<h3 id="d5-cmake-scikit-build-core-do-not-migrate-to-meson">D5: CMake + scikit-build-core — do not migrate to Meson</h3>
+<p><strong>Firmness: FIRM</strong></p>
+<p>Keep CMake as the primary build system. Use <code>scikit-build-core</code> as the PEP 517 backend for Python packaging. Don't migrate to Meson.</p>
+<p><strong>Rationale:</strong></p>
+<p>OpenMesh is a CMake project. As long as we keep it in-tree for v0.1 (see D8), CMake must be in the toolchain. Meson would require either <code>cmake.subproject()</code> layering (more complex than pure CMake) or porting OpenMesh to Meson (multi-month commitment).</p>
+<p>Beyond the OpenMesh constraint, scikit-build-core is independently the correct 2026 answer for CMake-based Python packages:
+- PEP 517 native (no <code>setup.py</code>)
+- First-class <code>cibuildwheel</code> support (for v0.3 PyPI)
+- Minimal changes to existing <code>CMakeLists.txt</code> — just add <code>pyproject.toml</code>
+- Used by libigl-python, Awkward Array, PyBaMM, and nanobind's own examples</p>
+<p>Known rough edge: <code>uv pip install -e .</code> (editable) has an <a href="https://github.com/astral-sh/uv/issues/14383">open bug</a> with scikit-build-core. Workaround: <code>uv pip install .</code> (non-editable) for production, <code>pip install -e . --no-build-isolation</code> for development.</p>
+<p><strong>Alternatives considered:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CMake + scikit-build-core (chosen)</strong></td>
+<td>• OpenMesh-compatible<br>• PEP 517 modern<br>• cibuildwheel ready<br>• libigl precedent</td>
+<td>• uv editable-install rough edge (workaround available)</td>
+</tr>
+<tr>
+<td>Meson + meson-python</td>
+<td>• Cleaner DSL<br>• NumPy/SciPy adopted</td>
+<td>• Requires <code>cmake.subproject()</code> for OpenMesh<br>• Or port OpenMesh (months)<br>• No net gain</td>
+</tr>
+<tr>
+<td>setuptools + CMakeExtension</td>
+<td>• Legacy familiarity</td>
+<td>• Deprecated pattern<br>• Editable installs unreliable</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What would invalidate this:</strong></p>
+<ul>
+<li>We drop OpenMesh entirely (see D9 — post-v0.5) AND measure real pain from CMake complexity</li>
+<li>scikit-build-core stalls as a project</li>
+<li>A new build backend emerges that strictly dominates for CMake projects</li>
+</ul>
+<h3 id="d6-redesign-the-public-api-params-structs-result-structs-expected-style-typed-failure">D6: Redesign the public API — params structs + result structs + expected-style typed failure</h3>
+<p><strong>Firmness: FIRM</strong></p>
+<p>Replace the current telescoping 15-arg in-place-mutation C++ API with:
+- Config <strong>aggregate structs</strong> (<code>RigidParams</code>, <code>NonrigidParams</code>, <code>PyramidParams</code>) using C++20 designated initializers
+- Value-returned <strong>result structs</strong> (<code>RigidResult</code>, <code>NonrigidResult</code>, <code>PyramidResult</code>)
+- <code>[[nodiscard]]</code> expected-style return values for typed failure (<code>tl::expected</code> in v0.1; <code>std::expected</code> once the compiler matrix permits it)
+- <code>Eigen::Ref&lt;const T&gt;</code> for zero-copy input parameters
+- Strong-typed <code>RigidTransform</code> (with <code>.compose()</code>, <code>.apply()</code>, <code>.inverse()</code>)
+- Free functions, no class-based builders</p>
+<p>Expose both <strong>high-level pipelines</strong> (<code>rigid_registration</code>) and <strong>low-level primitives</strong> (<code>compute_correspondences</code>, <code>compute_inlier_weights</code>, <code>compute_rigid_transform</code>) sharing the same param structs.</p>
+<p>The Python API layers over this with kwargs-friendly shims and duck-typed mesh objects (<code>.vertices</code>, <code>.faces</code>, <code>.flags</code> attributes).</p>
+<p><strong>Rationale:</strong></p>
+<p>Derived from first principles, not library cargo-culting:
+- <strong>Minimize numpy-to-C++ friction:</strong> <code>Eigen::Ref&lt;const T&gt;</code> is zero-copy for <em>read-only</em> inputs from <code>Eigen::Map</code> (what nanobind produces from numpy arrays). The floating-features buffer is mutated in place by the internal algorithm, so the wrapper copies it once per call — still a single copy of ~170 KB for the default Template mesh.
+- <strong>Introspectable output:</strong> result structs expose what exists today. v0.1 ships minimal fields. <code>RigidResult</code> holds <code>aligned_features</code>, <code>transform</code>, <code>iterations_run</code>. <code>NonrigidResult</code> and <code>PyramidResult</code> additionally expose <code>displacement_field</code> (<code>(N,3)</code> per-vertex displacement from original floating) so MATLAB-migrants can recover the transform without diffing outputs. Diagnostic fields (<code>converged</code>, <code>fitness</code>, <code>inlier_rmse</code>, <code>num_inliers</code>) land in v0.2 once convergence criteria and inlier thresholds are pinned down. Shipping fields with undefined semantics would be worse than omitting them.
+- <strong>Composable:</strong> Advanced users run stages individually; primitives share types
+- <strong>Safe by construction:</strong> Designated initializers eliminate positional-arg transposition. Expected-style returns make failure explicit for four concrete detection sites: <code>DegenerateInput</code> (empty inputs, dim/shape mismatch, zero-range bbox, all-zero inlier flags), <code>InsufficientInliers</code> (&lt;4 non-zero inlier weights — rigid needs ≥3 non-collinear points for the cross-variance matrix to yield a unique rotation quaternion), <code>DecompositionFailed</code> (<code>RigidTransformer</code> eigendecomposition via Horn method / <code>SelfAdjointEigenSolver</code> on 4×4 Q matrix, or <code>EigenVectorDecomposer</code> fails to converge on valid-shaped input), <code>NonConvergence</code> (v0.2+ only; v0.1 runs fixed iterations). Current <code>std::cerr</code> failure writes are routed through a logger sink consumers can suppress. Strong types prevent <code>Transform * Features</code> confusion.
+- <strong>Boundary vs. internal detection split:</strong> <code>DegenerateInput</code> is raised by an explicit pre-check at the top of each public API function so shape / rank / dim errors never reach the algorithmic core. Internal algorithmic classes (<code>ViscoElasticTransformer</code>, <code>InlierDetector</code>, <code>RigidTransformer</code>) are <strong>NOT</strong> rewritten to return an expected type — they retain existing control flow and signal failure via the log sink plus an internal failure-status bridge that the public wrapper converts before returning. This preserves the "load-bearing code untouched" constraint while still giving callers typed errors.
+- <strong>Pythonic at the top:</strong> kwargs + dataclass-like results + exceptions (translated from <code>expected</code>)
+- <strong>Field-order stability:</strong> param struct field order is STABLE across minor versions (v0.x → v0.x+1); reordering requires an ADR update. The nanobind shim uses named <code>nb::arg()</code> bindings so Python callers are immune to field reordering. C++ callers using designated initializers would still fail to compile on reorder.</p>
+<p><strong>Portability note:</strong> v0.1 uses <code>tl::expected</code> unconditionally (header-only, single file, identical API) to sidestep MSVC/libstdc++/libc++ <code>&lt;expected&gt;</code> version gaps. v0.2 migrates to <code>std::expected</code> once the compiler matrix is known.</p>
+<p><strong>Alternatives considered:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Params struct + result struct + expected (chosen)</strong></td>
+<td>• Discoverable<br>• Safe<br>• Zero-copy<br>• Composable</td>
+<td>• C++20 required</td>
+</tr>
+<tr>
+<td>Fluent builder (<code>.with_iters(40).run()</code>)</td>
+<td>• Familiar from Java</td>
+<td>• Harder to bind to Python<br>• Each setter needs a binding</td>
+</tr>
+<tr>
+<td>Keep telescoping 15-arg + in-place</td>
+<td>• Minimal change</td>
+<td>• Every current flaw retained</td>
+</tr>
+<tr>
+<td>Heavy OO with <code>Mesh</code>/<code>Registration</code> classes</td>
+<td>• Some "OO cleanliness"</td>
+<td>• Extra indirection<br>• Poor numpy interop<br>• API bloat</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What would invalidate this:</strong></p>
+<ul>
+<li>C++20 designated initializers break on a required target compiler</li>
+<li>Benchmarks show <code>Eigen::Ref</code> forces hidden copies for our common call patterns beyond the expected floating-buffer mutation copy</li>
+</ul>
+<h3 id="d7-harness-strategy-tiered-analyticalconstructed-first-no-circular-baselining">D7: Harness strategy — tiered, analytical+constructed first, no circular baselining</h3>
+<p><strong>Firmness: FLEXIBLE</strong></p>
+<p>Design verification around:
+1. <strong>Tier 1 — Analytical</strong> (synthetic rigid recovery, self-consistency, round-trip, correspondence sanity) — grounded in math, no reference needed. End-to-end rigid ICP is exercised here (apply known SE(3), recover from identity), not in Tier 2.
+2. <strong>Tier 2 — Primitive fixture</strong> (port the 8-vertex cube fixture from <code>origin/add-compute-rigid-transform-cli:cli/test_data/rigid_transform/</code>) — exercises <code>compute_rigid_transform</code> as a least-squares primitive, not end-to-end ICP
+3. <strong>Tier 3 — Human-approved visual golden</strong> (user inspects in Blender/MeshLab once, we freeze)
+4. <strong>Tier 3.5 — Legacy scientific-equivalence gate</strong> — lock reference outputs on <code>Template.obj ↔ demoFace.obj</code> as the v0.1 numerical reference. Capture source in priority order: (a) <strong>checked-in outputs on <code>origin/cli:demo/</code></strong> (<code>rigid_output.obj</code>, <code>pyramid_output.obj</code>, <code>rigid_transform.txt</code>) from a prior <code>meshmonk_cli</code> run — v0.0 ingests these directly, no build required; (b) reproducing them from a fresh <code>origin/cli</code> build on the owner's toolchain as a separate reproducibility check (divergence logged, not a blocker); (c) MATLAB demos (<code>test_rigid_registration.m</code>, <code>test_pyramid_registration.m</code>) as cross-check or fallback — same research-validated library via MEX. All Tier 3 and 3.5 goldens stored as <code>.npz</code> (compressed ~1.3 MB each for 54K-vertex meshes vs 10+ MB as OBJs). NOT circular with rejecting pybind11 output: the baseline is the raw library, not the abandoned binding layer.
+5. <strong>Tier 4 — Soft anchor</strong> — <code>origin/cli:demo/rigid_transform.txt</code> (committed 4×4 rigid transform from <code>meshmonk_cli rigid_reg</code>) carried into <code>data/</code> during v0.0 — loose tolerance
+6. <strong>Tier 5 — E2E smoke</strong> (CLI commands exit 0, output exists, is valid OBJ)</p>
+<p>Explicitly reject freezing <strong>untrusted pybind11 output</strong> as "ground truth" (circular). The Tier 3.5 legacy baseline is different — it captures the raw C++ library behavior that the research group has been using for years.</p>
+<p>Visualization is outsourced to Blender / MeshLab. A ~20-line numpy Hausdorff/RMSE helper covers automated golden comparison — no custom viewer.</p>
+<p><strong>Rationale:</strong></p>
+<p>The repo has essentially no existing test coverage. The only mechanically-verified artifact is the 8-vertex cube fixture on <code>add-compute-rigid-transform-cli</code>. MATLAB demos represent years of researcher use but have no automated comparison mechanism.</p>
+<p>The right move is to start with what math guarantees (Tier 1), add the one existing trustworthy fixture (Tier 2), get one human sign-off per registration type (Tier 3), and build up from there. This avoids the anti-pattern of interpreting code correctness as equivalent to numerical correctness.</p>
+<p>Flexibility: the tier selection and tolerance thresholds will evolve in v0.1 as we measure run-to-run numerical noise and identify gaps.</p>
+<p><strong>Alternatives considered:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Tiered harness with analytical + human approval (chosen)</strong></td>
+<td>• No circular trust<br>• Fast CI for Tier 1/2<br>• Human review catches subtle issues</td>
+<td>• Requires 1 human session per golden<br>• Tolerance calibration takes measurement</td>
+</tr>
+<tr>
+<td>Freeze current pybind11 output as golden</td>
+<td>• Fast to set up</td>
+<td>• Circular (trust untrusted code)<br>• Locks in any existing bugs</td>
+</tr>
+<tr>
+<td>Only synthetic tests, no real-data goldens</td>
+<td>• Fully automated</td>
+<td>• Misses algorithm-to-implementation gaps<br>• No real-face coverage</td>
+</tr>
+<tr>
+<td>Manual testing only</td>
+<td>• Simple</td>
+<td>• No regression safety net<br>• Blocks CI</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What would invalidate this:</strong></p>
+<ul>
+<li>A trustworthy external baseline emerges (published reference implementation with golden outputs)</li>
+<li>Human visual inspection reveals we can't reliably distinguish "right" from "slightly wrong" for nonrigid — would need image-based metrics instead</li>
+<li>CI time for Tier 3 exceeds budget — move Tier 3 to nightly, keep Tier 1/2 per-push</li>
+</ul>
+<h3 id="d8-keep-openmesh-for-v01-migrate-to-meshoptimizer-in-v05">D8: Keep OpenMesh for v0.1; migrate to <code>meshoptimizer</code> in v0.5</h3>
+<p><strong>Firmness: FLEXIBLE</strong></p>
+<p>In v0.1, preserve OpenMesh as the halfedge / quadric-decimation dependency, but confine it to an I/O boundary (no <code>TriMesh</code> reconstruction inside <code>update()</code> calls).</p>
+<p>In v0.5, evaluate migrating away from OpenMesh. <code>meshoptimizer</code> (MIT, Arseny Kapoulkine) covers <strong>only</strong> the quadric-decimation half of what we use OpenMesh for — it is a mesh-data-layout library, not a half-edge topology library. A replacement path requires:
+- <code>meshopt_simplify</code> for quadric decimation (near-equivalent to <code>OpenMesh::Decimater::ModQuadricT</code>)
+- <strong>Plus a small half-edge-lite module</strong> (~150–250 LOC) providing boundary-edge detection and vertex-neighbour queries for the <code>Downsampler</code>'s boundary-vertex locking. Reference implementations: libigl's <code>igl::is_border_vertex</code>, trimesh's <code>edges_unique</code>.</p>
+<p>Because this is NOT a like-for-like dependency swap, the v0.5 migration deserves its own design pass, not a one-line roadmap bullet.</p>
+<p><strong>Rationale:</strong></p>
+<p>Replacing OpenMesh in v0.1 would add 1–2 weeks of scope with numerical re-validation risk for the quadric decimation in <code>Downsampler</code>. Not worth it for the initial overhaul.</p>
+<p>Deferring the migration also keeps the door open for reconsidering Meson (see D5 "what would invalidate").</p>
+<p><strong>Alternatives considered:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Keep in v0.1, defer migration (chosen)</strong></td>
+<td>• Limits scope<br>• Preserves validated decimation math</td>
+<td>• Extra dep, extra build time, bigger binary</td>
+</tr>
+<tr>
+<td>Drop OpenMesh in v0.1</td>
+<td>• Simpler deps immediately</td>
+<td>• Extra weeks of work, re-validation risk</td>
+</tr>
+<tr>
+<td>Keep OpenMesh forever</td>
+<td>• No migration ever</td>
+<td>• Misses future simplification opportunity</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What would invalidate this:</strong></p>
+<ul>
+<li>OpenMesh development stops or breaks on a needed platform</li>
+<li>Wheel size becomes a real user complaint</li>
+<li>A compelling reason to move to Meson materializes (needs OpenMesh drop first)</li>
+</ul>
+<h3 id="d9-transfer-repo-to-jsnyde0meshmonk-claim-pypi-meshmonk">D9: Transfer repo to <code>jsnyde0/meshmonk</code>; claim PyPI <code>meshmonk</code></h3>
+<p><strong>Firmness: FIRM</strong></p>
+<p>Transferred <code>TheWebMonks/meshmonk</code> → <code>jsnyde0/meshmonk</code> on 2026-04-17 using GitHub's native repo-transfer feature (preserves stars, forks, issues, PRs; old URL 301-redirects indefinitely). PyPI namespace <code>meshmonk</code> still to be claimed under <code>jsnyde0</code>.</p>
+<p><strong>Rationale:</strong></p>
+<p>The repo owner is also the owner of <code>TheWebMonks</code>, so this is a unilateral call, not a negotiation. GitHub's repo transfer preserves stars (currently 85), forks, watchers, issues, PRs, releases, and automatically redirects the old URL — existing <code>git clone</code> URLs and inbound links keep working. The Python-first rewrite is personal, unpaid work and deserves personal attribution on the owner's GitHub profile. Tying the rewrite to <code>jsnyde0/meshmonk</code> also anchors the PyPI namespace naming under the same owner.</p>
+<p>If <code>TheWebMonks</code> wants to continue MATLAB-flavored work, they fork from the transferred repo — the MATLAB fork then becomes their fork of <code>jsnyde0/meshmonk</code>, which is the right topology given the Python-first primary going forward.</p>
+<p><strong>Licensing continuity:</strong> Apache-2.0 continues across the full tree — Apache-2.0 is irrevocable on the 2017 contribution set and this ADR adds nothing to prohibit. A <code>NOTICE</code> file at repo root attributes original copyright to TheWebMonks (2017) and new copyright to jsnyde0 (2026). <code>pyproject.toml</code> <code>[project]</code> lists <code>license = {text = "Apache-2.0"}</code>, <code>authors = [{name = "jsnyde0"}]</code>. New source files carry <code>Copyright 2026 jsnyde0</code> headers; untouched legacy files keep their original <code>Copyright 2017 WebMonks</code> headers.</p>
+<p><strong>Alternatives considered:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Transfer to <code>jsnyde0</code> (chosen)</strong></td>
+<td>• Preserves 85 stars<br>• Redirects old URLs<br>• Personal attribution<br>• Clean PyPI ownership</td>
+<td>• Removes repo from TheWebMonks org page</td>
+</tr>
+<tr>
+<td>Fork to <code>jsnyde0</code> without transfer</td>
+<td>• TheWebMonks keeps star count</td>
+<td>• Lose star history on rewrite<br>• Two diverging upstreams<br>• MATLAB users confused about canonical location</td>
+</tr>
+<tr>
+<td>Stay on <code>TheWebMonks</code></td>
+<td>• No change</td>
+<td>• No personal attribution<br>• Mixes org-scale branding with personal weekend project</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What would invalidate this:</strong></p>
+<ul>
+<li>A concrete stakeholder (funder, institution, co-author) requires the repo live on <code>TheWebMonks</code> for branding / grant-reporting reasons</li>
+<li>PyPI <code>meshmonk</code> is already taken (verify before v0.3; fall back to <code>meshmonk-py</code> or similar)</li>
+</ul>
+<h2 id="v00-clarifications">v0.0 Clarifications</h2>
+<h3 id="tag-naming-collision">Tag naming collision</h3>
+<p>The <code>v0.0</code> tag coexists with legacy tags <code>v0.0.1</code>–<code>v0.0.6</code> from the conda/MATLAB
+era. The modernization track reuses the <code>v0.x</code> prefix intentionally; legacy tags
+are archived and will not be re-published. Readers should treat <code>v0.0</code>–<code>v0.3</code> as
+the Python-first modernization track and <code>v0.0.1</code>–<code>v0.0.6</code> as archived
+pre-modernization MATLAB/conda history. This is a naming clarification, not a
+decision change.</p>
+<h2 id="related">Related</h2>
+<ul>
+<li>Design doc (not in this checkout) — what we're building and how, implementation details</li>
+<li>Obsolete prior spec: May 2025 <code>modernization-and-python-bindings</code> document on a remote modernization branch, not in this checkout</li>
+<li>Research reports dispatched 2026-04-17 (in-session transcripts): pybind11 vs nanobind, Python build backends, mesh library patterns, C++ architecture review, Rust vs C++, modern C++ idioms</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
