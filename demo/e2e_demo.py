@@ -1,121 +1,160 @@
-"""End-to-end demo: pyramid registration of demo faces via the Python API.
+"""End-to-end demo: runs rigid → nonrigid → pyramid and compares results.
 
 Usage (from repo root or demo/):
     cd demo && uv run e2e_demo.py
 
 Inputs:  Template.obj   (floating — the template face)
          demoFace.obj   (target  — the subject face)
-Output:  e2e_output.obj (aligned template written to disk)
-         e2e_result.png (before/after scatter plot)
+Outputs:
+    e2e_rigid.obj       — rigid-only aligned template
+    e2e_nonrigid.obj    — nonrigid aligned template
+    e2e_pyramid.obj     — pyramid aligned template
+    e2e_rigid.png       — front/side/top multi-view (rigid)
+    e2e_nonrigid.png    — front/side/top multi-view (nonrigid)
+    e2e_pyramid.png     — front/side/top multi-view (pyramid)
+    e2e_compare.png     — side-by-side comparison across methods
 """
 
-import contextlib
-import os
+from __future__ import annotations
+
 import time
 from pathlib import Path
 
 import numpy as np
 
 import meshmonk
+from _common import (
+    FLOATING,
+    TARGET,
+    load_meshes,
+    multi_view_plot,
+    quiet_stderr,
+    save_obj,
+    summarise,
+    _view_axes,
+    _zoom_bounds,
+)
 
 HERE = Path(__file__).parent
-FLOATING = HERE / "Template.obj"
-TARGET = HERE / "demoFace.obj"
-OUT_MESH = HERE / "e2e_output.obj"
-OUT_PNG = HERE / "e2e_result.png"
 
 
-@contextlib.contextmanager
-def _quiet_stderr():
-    """Redirect C-level stderr to /dev/null (silences OpenMesh topology warnings)."""
-    devnull = os.open(os.devnull, os.O_WRONLY)
-    old = os.dup(2)
-    os.dup2(devnull, 2)
-    try:
-        yield
-    finally:
-        os.dup2(old, 2)
-        os.close(devnull)
-        os.close(old)
-
-
-def _summarise(mesh, label):
-    v = np.asarray(mesh.vertices)
-    print(f"  {label}: {v.shape[0]:,} vertices  bbox {v.min(axis=0).round(2)} → {v.max(axis=0).round(2)}")
-
-
-def _save_obj(vertices, faces, path):
-    import trimesh
-    out = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
-    out.export(str(path))
-
-
-def _plot(floating_v, target_v, aligned_v, out_png):
+def _compare_plot(floating_v, target_v, results: dict, out_png: Path) -> None:
+    """3x(1+N) grid: rows = planes (front/side/top), cols = before + each method."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    planes = ("front", "side", "top")
+    methods = list(results.keys())
+    ncols = 1 + len(methods)
+    fig, axes = plt.subplots(len(planes), ncols, figsize=(4 * ncols, 4 * len(planes)))
 
-    axes[0].set_title("Before registration")
-    axes[0].scatter(floating_v[:, 0], floating_v[:, 1], s=0.3, c="steelblue", alpha=0.5, label="floating", rasterized=True)
-    axes[0].scatter(target_v[:, 0], target_v[:, 1], s=0.3, c="tomato", alpha=0.5, label="target", rasterized=True)
-    axes[0].legend(markerscale=10)
-    axes[0].set_aspect("equal")
+    for row, plane in enumerate(planes):
+        ix, iy, xlabel, ylabel = _view_axes(plane)
 
-    axes[1].set_title("After pyramid registration")
-    axes[1].scatter(aligned_v[:, 0], aligned_v[:, 1], s=0.3, c="steelblue", alpha=0.5, label="aligned", rasterized=True)
-    axes[1].scatter(target_v[:, 0], target_v[:, 1], s=0.3, c="tomato", alpha=0.5, label="target", rasterized=True)
-    axes[1].legend(markerscale=10)
-    axes[1].set_aspect("equal")
+        ax0 = axes[row, 0]
+        ax0.scatter(target_v[:, ix], target_v[:, iy], s=0.3, c="tomato",
+                    alpha=0.35, rasterized=True)
+        ax0.scatter(floating_v[:, ix], floating_v[:, iy], s=0.4, c="steelblue",
+                    alpha=0.7, rasterized=True)
+        ax0.set_title(f"Before — {plane}")
+        ax0.set_xlabel(xlabel); ax0.set_ylabel(ylabel)
+        ax0.set_aspect("equal")
+        (xlo, xhi), (ylo, yhi) = _zoom_bounds(floating_v, ix, iy)
+        ax0.set_xlim(xlo, xhi); ax0.set_ylim(ylo, yhi)
 
-    fig.tight_layout()
+        for col, name in enumerate(methods, start=1):
+            ax = axes[row, col]
+            aligned = results[name]["aligned"]
+            ax.scatter(target_v[:, ix], target_v[:, iy], s=0.3, c="tomato",
+                       alpha=0.35, rasterized=True)
+            ax.scatter(aligned[:, ix], aligned[:, iy], s=0.4, c="seagreen",
+                       alpha=0.7, rasterized=True)
+            ax.set_title(f"{name} — {plane}")
+            ax.set_xlabel(xlabel); ax.set_ylabel(ylabel)
+            ax.set_aspect("equal")
+            (xlo, xhi), (ylo, yhi) = _zoom_bounds(aligned, ix, iy)
+            ax.set_xlim(xlo, xhi); ax.set_ylim(ylo, yhi)
+
+    fig.suptitle("End-to-end comparison", fontsize=14)
+    fig.tight_layout(rect=(0, 0, 1, 0.97))
     fig.savefig(str(out_png), dpi=120)
-    print(f"  saved plot → {out_png}")
+    plt.close(fig)
+    print(f"  saved compare plot → {out_png}")
 
 
-def main():
+def _run_stage(name, fn, floating_v, target_v, floating_f, out_mesh, out_png, title):
+    t0 = time.perf_counter()
+    with quiet_stderr():
+        result = fn()
+    elapsed = time.perf_counter() - t0
+    aligned_v = result.aligned_vertices
+    print(f"  {name}: {elapsed:.1f}s  → {aligned_v.shape[0]:,} verts")
+    save_obj(aligned_v, floating_f, out_mesh)
+    multi_view_plot(floating_v, target_v, aligned_v, out_png, title=title)
+    return {"aligned": aligned_v, "elapsed": elapsed, "result": result}
+
+
+def main() -> None:
     meshmonk.set_log_level("warning")
 
-    print("\n=== meshmonk e2e demo ===\n")
+    print("\n=== meshmonk end-to-end demo ===\n")
     print("Loading meshes...")
-    import trimesh
-    floating = trimesh.load(str(FLOATING))
-    target = trimesh.load(str(TARGET))
-    _summarise(floating, "floating (Template)")
-    _summarise(target,   "target  (demoFace)")
+    floating, target = load_meshes()
+    summarise(floating, "floating (Template)")
+    summarise(target, "target  (demoFace)")
 
     floating_v = np.asarray(floating.vertices)
-    target_v   = np.asarray(target.vertices)
+    target_v = np.asarray(target.vertices)
     floating_f = np.asarray(floating.faces)
 
-    print("\nRunning pyramid_register (with rigid pre-alignment)...")
-    t0 = time.perf_counter()
+    print("\nRunning all three stages...")
+    results: dict[str, dict] = {}
 
-    with _quiet_stderr():
-        result = meshmonk.pyramid_register(
-            floating=FLOATING,
-            target=TARGET,
-            rigid_params={},
-            num_iterations=10,
-            num_pyramid_layers=3,
-        )
+    results["rigid"] = _run_stage(
+        "rigid",
+        lambda: meshmonk.rigid_register(
+            floating=FLOATING, target=TARGET,
+            num_iterations=40, use_scaling=True,
+        ),
+        floating_v, target_v, floating_f,
+        HERE / "e2e_rigid.obj", HERE / "e2e_rigid.png",
+        "Rigid (SE(3) + scale)",
+    )
 
-    elapsed = time.perf_counter() - t0
-    print(f"  done in {elapsed:.1f}s")
-    print(f"  per-layer iterations: {result.per_layer_iterations}")
-    print(f"  mean inlier weight:   {result.final_inlier_weights.mean():.3f}")
+    results["nonrigid"] = _run_stage(
+        "nonrigid",
+        lambda: meshmonk.nonrigid_register(
+            floating=FLOATING, target=TARGET,
+            rigid_params={"num_iterations": 40, "use_scaling": True},
+            num_iterations=40,
+        ),
+        floating_v, target_v, floating_f,
+        HERE / "e2e_nonrigid.obj", HERE / "e2e_nonrigid.png",
+        "Nonrigid (viscoelastic)",
+    )
 
-    aligned_v  = result.aligned_vertices
-    displ_mag  = np.linalg.norm(result.displacement_field, axis=1)
-    print(f"  displacement field:   mean={displ_mag.mean():.3f}  max={displ_mag.max():.3f}")
+    results["pyramid"] = _run_stage(
+        "pyramid",
+        lambda: meshmonk.pyramid_register(
+            floating=FLOATING, target=TARGET,
+            rigid_params={"num_iterations": 40, "use_scaling": True},
+            num_iterations=10, num_pyramid_layers=3,
+        ),
+        floating_v, target_v, floating_f,
+        HERE / "e2e_pyramid.obj", HERE / "e2e_pyramid.png",
+        "Pyramid (3 layers)",
+    )
 
-    print("\nSaving output mesh...")
-    _save_obj(aligned_v, floating_f, OUT_MESH)
-    print(f"  saved → {OUT_MESH}")
+    print("\nRendering comparison plot...")
+    _compare_plot(floating_v, target_v, results, HERE / "e2e_compare.png")
 
-    print("\nRendering before/after plot...")
-    _plot(floating_v, target_v, aligned_v, OUT_PNG)
+    # Summary
+    print("\nSummary:")
+    for name, r in results.items():
+        aligned = r["aligned"]
+        diff = np.linalg.norm(aligned - floating_v, axis=1)
+        print(f"  {name:<8} {r['elapsed']:5.1f}s   mean-move={diff.mean():6.2f}  max-move={diff.max():6.2f}")
 
     print("\nDone.\n")
 
