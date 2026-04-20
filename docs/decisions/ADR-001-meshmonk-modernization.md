@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-04-17
-**Design:** [Design doc](../../history/2026-04-17-meshmonk-modernization-design.md)
+**Design:** Design doc (not in this checkout — see in-session transcript from 2026-04-17)
 **Parent:** —
 **Related:** Supersedes the May 2025 `modernization-and-python-bindings` spec (remote-branch document; not present in this checkout)
 
@@ -355,6 +355,6 @@ decision change.
 
 ## Related
 
-- [Design doc](../../history/2026-04-17-meshmonk-modernization-design.md) — what we're building and how, implementation details
+- Design doc (not in this checkout) — what we're building and how, implementation details
 - Obsolete prior spec: May 2025 `modernization-and-python-bindings` document on a remote modernization branch, not in this checkout
 - Research reports dispatched 2026-04-17 (in-session transcripts): pybind11 vs nanobind, Python build backends, mesh library patterns, C++ architecture review, Rust vs C++, modern C++ idioms
