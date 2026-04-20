@@ -61,6 +61,7 @@ issues.jsonl
 meshmonk.egg-info/
 
 # Beads / Dolt files (added by bd init)
+.beads/
 .dolt/
 *.db
 .beads-credential-key
