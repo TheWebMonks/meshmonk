@@ -1,0 +1,151 @@
+name: Nightly benchmarks
+
+on:
+  schedule:
+    # Run at 06:00 UTC every day
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      refresh_baseline:
+        description: "Refresh baseline.json and open a PR (ADR D6 — requires review)"
+        type: boolean
+        default: false
+
+jobs:
+  bench:
+    name: benchmark regression gate (ubuntu-latest, python 3.12)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: lukka/get-cmake@v3.28.0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install package with dev and io extras
+        run: uv pip install --system ".[dev,io]"
+
+      - name: Run benchmarks (rigid + nonrigid with 20% regression gate)
+        env:
+          OMP_NUM_THREADS: "1"
+        run: |
+          pytest benchmarks/ \
+            --benchmark-only \
+            --benchmark-json=new.json \
+            --benchmark-compare=benchmarks/baseline.json \
+            --benchmark-compare-fail=median:20% \
+            --benchmark-min-rounds=5 \
+            -k "not pyramid" \
+            -v
+
+      - name: Run pyramid benchmarks (30% regression tolerance)
+        env:
+          OMP_NUM_THREADS: "1"
+        run: |
+          pytest benchmarks/ \
+            --benchmark-only \
+            --benchmark-json=new_pyramid.json \
+            --benchmark-min-rounds=5 \
+            -k "pyramid" \
+            -v
+
+      - name: Check pyramid regression tolerance (30%)
+        env:
+          OMP_NUM_THREADS: "1"
+        run: |
+          python - <<'PYEOF'
+          import json, sys
+
+          with open("new_pyramid.json") as f:
+              new = json.load(f)
+          with open("benchmarks/baseline.json") as f:
+              baseline = json.load(f)
+
+          # Build lookup: name -> median for baseline
+          baseline_map = {}
+          for bench in baseline.get("benchmarks", []):
+              baseline_map[bench["name"]] = bench["stats"]["median"]
+
+          failures = []
+          for bench in new.get("benchmarks", []):
+              name = bench["name"]
+              new_median = bench["stats"]["median"]
+              if name not in baseline_map:
+                  print(f"  SKIP (no baseline): {name}")
+                  continue
+              base_median = baseline_map[name]
+              ratio = new_median / base_median
+              threshold = 1.30
+              status = "OK" if ratio <= threshold else "FAIL"
+              print(f"  {status}: {name}  ratio={ratio:.3f}  (threshold={threshold:.2f})")
+              if ratio > threshold:
+                  failures.append((name, ratio, threshold))
+
+          if failures:
+              print("\nPyramid regression failures:")
+              for name, ratio, thr in failures:
+                  print(f"  {name}: {ratio:.3f} > {thr:.2f}")
+              sys.exit(1)
+          else:
+              print("\nAll pyramid benchmarks within tolerance.")
+          PYEOF
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results
+          path: |
+            new.json
+            new_pyramid.json
+
+      # Baseline refresh: only when workflow_dispatch with refresh_baseline=true
+      # Opens a PR — does NOT auto-merge. Required by ADR D6.
+      - name: Merge benchmark results for baseline update
+        if: inputs.refresh_baseline
+        run: |
+          python - <<'PYEOF'
+          import json
+
+          # Merge rigid/nonrigid and pyramid results into one baseline file
+          try:
+              with open("new.json") as f:
+                  combined = json.load(f)
+          except FileNotFoundError:
+              combined = {"benchmarks": [], "machine_info": {}, "commit_info": {}}
+
+          try:
+              with open("new_pyramid.json") as f:
+                  pyramid = json.load(f)
+              combined["benchmarks"].extend(pyramid.get("benchmarks", []))
+          except FileNotFoundError:
+              pass
+
+          with open("benchmarks/baseline.json", "w") as f:
+              json.dump(combined, f, indent=2)
+          print("baseline.json updated")
+          PYEOF
+
+      - name: Open PR to update baseline.json
+        if: inputs.refresh_baseline
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          BRANCH="refresh-baseline-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH"
+          git add benchmarks/baseline.json
+          git commit -m "bench: refresh baseline.json from nightly run $(date +%Y-%m-%d)"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "bench: refresh baseline.json ($(date +%Y-%m-%d))" \
+            --body "Automated baseline refresh from nightly workflow_dispatch. Review the updated baseline.json before merging. Per ADR-002 D6, this must not be auto-merged." \
+            --base main \
+            --head "$BRANCH"

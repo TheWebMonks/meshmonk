@@ -71,7 +71,13 @@ build2/
 build3/
 build4/
 build_verify/
+build_bench/
+build_venv/
 
 # Generated demo outputs
 demo/e2e_output.obj
 demo/e2e_result.png
+
+# pytest-benchmark results directory (local runs only)
+# benchmarks/baseline.json is explicitly tracked (committed baseline)
+.benchmarks/

@@ -17,7 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 io = ["trimesh>=4.0"]
-dev = ["pytest", "pre-commit", "ruff", "pyright", "meshio", "scipy>=1.11", "pyyaml", "tomli>=2.0; python_version < '3.11'"]
+dev = ["pytest", "pre-commit", "ruff", "pyright", "meshio", "scipy>=1.11", "pyyaml", "tomli>=2.0; python_version < '3.11'", "pytest-benchmark>=4.0", "trimesh>=4.0"]
 docs = ["mkdocs-material", "mkdocstrings[python]"]
 
 [project.scripts]
@@ -26,6 +26,7 @@ meshmonk = "meshmonk.cli:app"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --import-mode=importlib"
+python_files = ["test_*.py", "bench_*.py"]
 
 [tool.uv.workspace]
 members = ["demo"]

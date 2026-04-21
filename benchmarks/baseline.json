@@ -1,0 +1,484 @@
+{
+    "machine_info": {
+        "node": "2170820f6e01",
+        "processor": "",
+        "machine": "aarch64",
+        "python_compiler": "Clang 22.1.3 ",
+        "python_implementation": "CPython",
+        "python_implementation_version": "3.11.15",
+        "python_version": "3.11.15",
+        "python_build": [
+            "main",
+            "Apr 14 2026 14:27:06"
+        ],
+        "release": "6.17.8-orbstack-00308-g8f9c941121b1",
+        "system": "Linux",
+        "cpu": {
+            "python_version": "3.11.15.final.0 (64 bit)",
+            "cpuinfo_version": [
+                9,
+                0,
+                0
+            ],
+            "cpuinfo_version_string": "9.0.0",
+            "arch": "ARM_8",
+            "bits": 64,
+            "count": 14,
+            "arch_string_raw": "aarch64",
+            "flags": [
+                "aes",
+                "afp",
+                "asimd",
+                "asimddp",
+                "asimdfhm",
+                "asimdhp",
+                "asimdrdm",
+                "atomics",
+                "bf16",
+                "cpuid",
+                "crc32",
+                "dcpodp",
+                "dcpop",
+                "dit",
+                "ecv",
+                "evtstrm",
+                "fcma",
+                "flagm",
+                "flagm2",
+                "fp",
+                "fphp",
+                "frint",
+                "ilrcpc",
+                "jscvt",
+                "lrcpc",
+                "pmull",
+                "sb",
+                "sha1",
+                "sha2",
+                "sha3",
+                "sha512",
+                "uscat"
+            ],
+            "vendor_id_raw": "Apple",
+            "brand_raw": "-",
+            "hz_advertised_friendly": "2.0000 GHz",
+            "hz_actual_friendly": "2.0000 GHz",
+            "hz_advertised": [
+                2000000000,
+                0
+            ],
+            "hz_actual": [
+                2000000000,
+                0
+            ]
+        }
+    },
+    "commit_info": {
+        "id": "c59f78c31856175433ca760797c640c2f6e35e91",
+        "time": "2026-04-21T16:13:44+00:00",
+        "author_time": "2026-04-21T16:13:44+00:00",
+        "dirty": true,
+        "project": "meshmonk",
+        "branch": "main"
+    },
+    "benchmarks": [
+        {
+            "group": null,
+            "name": "test_bench_nonrigid[1K]",
+            "fullname": "benchmarks/bench_nonrigid.py::test_bench_nonrigid[1K]",
+            "params": {
+                "nonrigid_inputs": 1000
+            },
+            "param": "1K",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.6967868479987374,
+                "max": 0.7028873359995487,
+                "mean": 0.7002463217984769,
+                "stddev": 0.00234479487804849,
+                "rounds": 5,
+                "median": 0.6998787179982173,
+                "iqr": 0.0031022032508190023,
+                "q1": 0.6990376864978316,
+                "q3": 0.7021398897486506,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.6967868479987374,
+                "hd15iqr": 0.7028873359995487,
+                "ops": 1.4280689078546691,
+                "total": 3.5012316089923843,
+                "data": [
+                    0.6997879659975297,
+                    0.7028873359995487,
+                    0.6998787179982173,
+                    0.6967868479987374,
+                    0.7018907409983512
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_bench_nonrigid[3K]",
+            "fullname": "benchmarks/bench_nonrigid.py::test_bench_nonrigid[3K]",
+            "params": {
+                "nonrigid_inputs": 3000
+            },
+            "param": "3K",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.6798471479996806,
+                "max": 0.6891237570016528,
+                "mean": 0.6834661070002767,
+                "stddev": 0.003879984834254698,
+                "rounds": 5,
+                "median": 0.6825565540020762,
+                "iqr": 0.006237354748009238,
+                "q1": 0.6801788392504022,
+                "q3": 0.6864161939984115,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 0.6798471479996806,
+                "hd15iqr": 0.6891237570016528,
+                "ops": 1.4631303436376475,
+                "total": 3.4173305350013834,
+                "data": [
+                    0.6802894030006428,
+                    0.685513672997331,
+                    0.6891237570016528,
+                    0.6825565540020762,
+                    0.6798471479996806
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_bench_nonrigid[7K]",
+            "fullname": "benchmarks/bench_nonrigid.py::test_bench_nonrigid[7K]",
+            "params": {
+                "nonrigid_inputs": 7000
+            },
+            "param": "7K",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.6818145869983709,
+                "max": 0.6874949470002321,
+                "mean": 0.6844980526002473,
+                "stddev": 0.0026452522840924074,
+                "rounds": 5,
+                "median": 0.6834778580014245,
+                "iqr": 0.004859724254856701,
+                "q1": 0.6823724062478504,
+                "q3": 0.6872321305027072,
+                "iqr_outliers": 0,
+                "stddev_outliers": 3,
+                "outliers": "3;0",
+                "ld15iqr": 0.6818145869983709,
+                "hd15iqr": 0.6874949470002321,
+                "ops": 1.4609245361637406,
+                "total": 3.4224902630012366,
+                "data": [
+                    0.6871445250035322,
+                    0.682558345997677,
+                    0.6874949470002321,
+                    0.6834778580014245,
+                    0.6818145869983709
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_bench_pyramid[1K]",
+            "fullname": "benchmarks/bench_pyramid.py::test_bench_pyramid[1K]",
+            "params": {
+                "pyramid_inputs": 1000
+            },
+            "param": "1K",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.4082986519970291,
+                "max": 0.4341944160005369,
+                "mean": 0.42104439359973184,
+                "stddev": 0.011112281050224486,
+                "rounds": 5,
+                "median": 0.4249160139988817,
+                "iqr": 0.01877133549805876,
+                "q1": 0.4101057980014957,
+                "q3": 0.4288771334995545,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.4082986519970291,
+                "hd15iqr": 0.4341944160005369,
+                "ops": 2.3750464682606736,
+                "total": 2.1052219679986592,
+                "data": [
+                    0.4107081800029846,
+                    0.4082986519970291,
+                    0.4249160139988817,
+                    0.427104705999227,
+                    0.4341944160005369
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_bench_pyramid[3K]",
+            "fullname": "benchmarks/bench_pyramid.py::test_bench_pyramid[3K]",
+            "params": {
+                "pyramid_inputs": 3000
+            },
+            "param": "3K",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.40534582500185934,
+                "max": 0.4150938569982827,
+                "mean": 0.4094309563995921,
+                "stddev": 0.003550859307141519,
+                "rounds": 5,
+                "median": 0.4089102840007399,
+                "iqr": 0.0034136444974137703,
+                "q1": 0.40752494400021533,
+                "q3": 0.4109385884976291,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.40534582500185934,
+                "hd15iqr": 0.4150938569982827,
+                "ops": 2.442414244378802,
+                "total": 2.0471547819979605,
+                "data": [
+                    0.4082513169996673,
+                    0.4089102840007399,
+                    0.40534582500185934,
+                    0.4095534989974112,
+                    0.4150938569982827
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_bench_pyramid[7K]",
+            "fullname": "benchmarks/bench_pyramid.py::test_bench_pyramid[7K]",
+            "params": {
+                "pyramid_inputs": 7000
+            },
+            "param": "7K",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.40249641699847416,
+                "max": 0.4116871080004785,
+                "mean": 0.40754360099963377,
+                "stddev": 0.0035808876989281524,
+                "rounds": 5,
+                "median": 0.40804598099930445,
+                "iqr": 0.00535623949872388,
+                "q1": 0.4049030080004741,
+                "q3": 0.41025924749919795,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.40249641699847416,
+                "hd15iqr": 0.4116871080004785,
+                "ops": 2.4537251905002884,
+                "total": 2.037718004998169,
+                "data": [
+                    0.4116871080004785,
+                    0.40249641699847416,
+                    0.40804598099930445,
+                    0.4097832939987711,
+                    0.4057052050011407
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_bench_rigid[1K]",
+            "fullname": "benchmarks/bench_rigid.py::test_bench_rigid[1K]",
+            "params": {
+                "rigid_inputs": 1000
+            },
+            "param": "1K",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.7275772530010727,
+                "max": 0.7391516809984751,
+                "mean": 0.7320865224006411,
+                "stddev": 0.004327677223479028,
+                "rounds": 5,
+                "median": 0.7318142610020004,
+                "iqr": 0.004387436748402251,
+                "q1": 0.7293559297513639,
+                "q3": 0.7337433664997661,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.7275772530010727,
+                "hd15iqr": 0.7391516809984751,
+                "ops": 1.3659587622523404,
+                "total": 3.6604326120032056,
+                "data": [
+                    0.7275772530010727,
+                    0.7318142610020004,
+                    0.7319405950001965,
+                    0.7299488220014609,
+                    0.7391516809984751
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_bench_rigid[3K]",
+            "fullname": "benchmarks/bench_rigid.py::test_bench_rigid[3K]",
+            "params": {
+                "rigid_inputs": 3000
+            },
+            "param": "3K",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.7076130169989483,
+                "max": 0.7221718139990116,
+                "mean": 0.7143726715992671,
+                "stddev": 0.006492308808391213,
+                "rounds": 5,
+                "median": 0.7145505989974481,
+                "iqr": 0.011944609748752555,
+                "q1": 0.7080737720007164,
+                "q3": 0.720018381749469,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.7076130169989483,
+                "hd15iqr": 0.7221718139990116,
+                "ops": 1.399829584411871,
+                "total": 3.5718633579963353,
+                "data": [
+                    0.7221718139990116,
+                    0.7193005709996214,
+                    0.7076130169989483,
+                    0.7145505989974481,
+                    0.7082273570013058
+                ],
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_bench_rigid[7K]",
+            "fullname": "benchmarks/bench_rigid.py::test_bench_rigid[7K]",
+            "params": {
+                "rigid_inputs": 7000
+            },
+            "param": "7K",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.6953997899981914,
+                "max": 0.705118820998905,
+                "mean": 0.7002164799989259,
+                "stddev": 0.004796737987947878,
+                "rounds": 5,
+                "median": 0.6998377169984451,
+                "iqr": 0.009514373252386576,
+                "q1": 0.6955799167481018,
+                "q3": 0.7050942900004884,
+                "iqr_outliers": 0,
+                "stddev_outliers": 3,
+                "outliers": "3;0",
+                "ld15iqr": 0.6953997899981914,
+                "hd15iqr": 0.705118820998905,
+                "ops": 1.428129769241555,
+                "total": 3.5010823999946297,
+                "data": [
+                    0.695639958998072,
+                    0.705118820998905,
+                    0.7050861130010162,
+                    0.6998377169984451,
+                    0.6953997899981914
+                ],
+                "iterations": 1
+            }
+        }
+    ],
+    "datetime": "2026-04-21T16:42:17.478059+00:00",
+    "version": "5.2.3"
+}
