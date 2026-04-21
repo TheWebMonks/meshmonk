@@ -81,7 +81,9 @@ Every perf change must pass the existing e2e test suite (`tests/test_registratio
 
 **Rationale:**
 
-`6a5` (cache temporaries, no parallelism) should produce bitwise-identical output since the operations are unchanged. `9f5` and `bdt` introduce OpenMP and may produce output that differs by a few ULPs on some entries. The existing e2e tests use `np.testing.assert_allclose` with meaningful tolerances; if they pass, the change is acceptable.
+`6a5` (cache temporaries, no parallelism) should produce bitwise-identical output since the operations are unchanged — and D4 enforces this specifically (see D4 criterion 5). `9f5` and `bdt` introduce OpenMP and may produce output that differs by a few ULPs on some entries.
+
+The existing e2e suite in `tests/test_registration_e2e.py` uses scalar aggregate thresholds (`step.mean() < 10.0`, `move.mean() > 10.0`, `diff.mean() < 5.0`, `step.max() < 50.0`) — these catch gross breakage but are too coarse to detect subtle loop-variable races introduced by incorrect parallelization. The **parallel-vs-sequential parity test** described in the design doc (a dedicated test run of the affected registration path under `OMP_NUM_THREADS=1` vs default threads, asserting output equivalence within ~1e-5 on aligned vertex coordinates) is the real numeric guard for `9f5` and `bdt`, and is a **required artifact** of those beads — not a "nice to have".
 
 If a user needs deterministic output, `OMP_NUM_THREADS=1` restores sequential behavior. This is documented in `benchmarks/README.md` and a future `docs/gotchas.md`.
 
@@ -107,8 +109,9 @@ If a user needs deterministic output, `OMP_NUM_THREADS=1` restores sequential be
 Each of `9f5`, `6a5`, `bdt` merges only when the PR description includes:
 1. Baseline wall-clock from `benchmarks/baseline.json` for affected scenarios.
 2. Post-change wall-clock on the same harness.
-3. E2e tests green (with existing tolerances).
-4. Speedup ≥ a bead-specific threshold: `9f5` ≥ 2× on 5K-nonrigid, `6a5` ≥ 5% on 5K-pyramid (raised from an initial 3% based on prior GitHub Actions run-to-run variance data — 3% falls inside CI noise), `bdt` ≥ 1.5× on 5K-nonrigid.
+3. E2e tests green (with existing aggregate-threshold tolerances).
+4. Speedup ≥ a bead-specific threshold: `9f5` ≥ 2× on 5K-nonrigid, `6a5` ≥ 5% on 5K-pyramid (raised from an initial 3% based on prior GitHub Actions run-to-run variance data — 3% falls inside CI noise), `bdt` ≥ 1.5× on 5K-nonrigid. The `6a5` revised expected range (3–8% after the F1/F2 inner-loop-only scope boundary) means this bead may fall below its threshold; that is acceptable per this ADR's own escape hatch (below) — the PR closes and we re-triage with real numbers. Refresh the floor after 44m provides a noise characterization.
+5. **For `6a5` only:** bitwise-identical e2e output vs baseline. `6a5` changes memory layout, not operations — output must not shift. A diff of registration vertex arrays vs a committed reference is cheap insurance against accidental reordering during the hoist. `9f5` and `bdt` are exempt from bitwise equality (parallel float reductions are non-associative) and instead must pass the parallel-vs-sequential parity test (see D3).
 
 **Rationale:**
 
