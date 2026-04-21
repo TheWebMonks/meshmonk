@@ -20,6 +20,10 @@ Key invariants enforced here:
 
 3. Benchmark config: rounds >= 5, median aggregation (set via
    pytest-benchmark ini options or the benchmark fixture's timer).
+
+Shared harness utilities (load_full_mesh, downsample_to) live in
+``benchmarks/_harness.py`` and are imported by all bench files and
+test_harness_sizing.py.
 """
 
 from __future__ import annotations

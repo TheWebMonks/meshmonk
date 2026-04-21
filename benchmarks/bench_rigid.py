@@ -13,16 +13,11 @@ See benchmarks/README.md for tier-choice rationale.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import numpy as np
 import pytest
 
 import meshmonk
-
-DATA_DIR = Path(__file__).parent.parent / "data"
-TEMPLATE_OBJ = DATA_DIR / "Template.obj"
-DEMOFACE_OBJ = DATA_DIR / "demoFace.obj"
+from benchmarks._harness import downsample_to, load_full_mesh
 
 # Mesh-size tiers (vertex counts). The top tier matches Template.obj (7,160 v).
 MESH_SIZES = [1000, 3000, 7000]
@@ -31,36 +26,9 @@ MESH_SIZES = [1000, 3000, 7000]
 RNG_SEED = 42
 
 
-def _load_full_mesh():
-    """Load Template.obj and demoFace.obj as numpy arrays."""
-    trimesh = pytest.importorskip("trimesh")
-    floating = trimesh.load(str(TEMPLATE_OBJ), process=False)
-    target = trimesh.load(str(DEMOFACE_OBJ), process=False)
-    float_v = np.asarray(floating.vertices, dtype=np.float32)
-    float_f = np.asarray(floating.faces, dtype=np.int32)
-    target_v = np.asarray(target.vertices, dtype=np.float32)
-    target_f = np.asarray(target.faces, dtype=np.int32)
-    return float_v, float_f, target_v, target_f
-
-
-def _downsample_to(feat, faces, flags, target_n: int):
-    """Iteratively downsample until vertex count <= target_n."""
-    current_n = feat.shape[0]
-    while current_n > target_n:
-        ratio = target_n / current_n
-        # Clamp ratio to avoid over-aggressive single steps
-        ratio = max(ratio, 0.5)
-        feat, faces, flags, _ = meshmonk.downsample_mesh(feat, faces, flags, ratio)
-        new_n = feat.shape[0]
-        if new_n >= current_n:
-            break
-        current_n = new_n
-    return feat, faces, flags
-
-
 def _build_inputs(target_n: int):
     """Build (floating_feat, floating_faces, target_feat, target_faces) at target_n vertices."""
-    float_v, float_f, target_v, target_f = _load_full_mesh()
+    float_v, float_f, target_v, target_f = load_full_mesh()
 
     full_n = float_v.shape[0]
     float_feat = meshmonk.features_from_vertices(float_v, float_f)
@@ -69,7 +37,7 @@ def _build_inputs(target_n: int):
     target_feat = meshmonk.features_from_vertices(target_v, target_f)
 
     if target_n < full_n:
-        float_feat, float_f, float_flags = _downsample_to(
+        float_feat, float_f, float_flags = downsample_to(
             float_feat, float_f, float_flags, target_n
         )
 
