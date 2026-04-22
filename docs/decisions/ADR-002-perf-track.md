@@ -165,6 +165,38 @@ If a bead can't meet its threshold, the PR is closed (not merged with caveats) a
 
 ---
 
+### D4 Outcome (2026-04-22): 9f5 closed below recalibrated gate
+
+**Measured result against the recalibrated `≥1.3× on nonrigid@7K, no regression elsewhere` gate:**
+
+| Benchmark | Baseline (OMP=1) | Post (OMP=14) | Post (OMP=4) | Speedup @ best threads |
+|---|---|---|---|---|
+| **nonrigid@7K (gate)** | 1069 ms | 1111 ms | 1105 ms | **0.97×** (MISS vs ≥1.3×) |
+| nonrigid@1K / 3K | 725 / 847 ms | 746 / 887 ms | 772 / 911 ms | 0.93–0.94× (regression, guard violated) |
+| pyramid@1K / 3K / 7K | 419 / 457 / 545 ms | 433 / 485 / 565 ms | 430 / 468 / 553 ms | 0.97–0.99× (regression, guard violated) |
+| rigid@7K | 1117 ms | — | 1162 ms | 0.96× (regression, guard violated) |
+
+Both gate criteria failed: gate threshold unmet (0.97× < 1.3×), and the no-regression guard clause triggered on every non-7K-nonrigid benchmark.
+
+**Implementation was correct:** parallel-vs-sequential parity test (D3 required artifact) produced bitwise-identical aligned vertex coordinates under `OMP_NUM_THREADS=1` vs `OMP_NUM_THREADS=4` (max-abs-diff = 0.00e+00). All existing e2e and memory-layout tests passed. The OpenMP pragma on `NeighbourFinder::update` compiled, linked, and executed — it was simply slower than the serial baseline.
+
+**Structural reason the optimization did not pay off at benchmark-reachable mesh sizes:**
+
+1. `NeighbourFinder::update` is invoked ~42 times per nonrigid run (one per iteration, for both correspondence directions).
+2. Per invocation, the parallelizable workload is ~7000 query points at the largest benchmark tier, split across 14 cores = ~500 pts/thread. Even at 4 threads, it is ~1750 pts/thread.
+3. OpenMP parallel-region entry/exit (fork-join + implicit barrier + per-thread stack alloc for the moved-inside temporaries) has fixed overhead per invocation. At this granularity that overhead exceeds the compute savings — especially at the 1K tier, where per-thread workload is <100 points.
+4. Reducing thread count from 14 → 4 recovered ~6 ms on a 1069 ms baseline — confirming oversubscription is not the root cause; fork-join cost at the invocation rate is.
+
+The pre-triage Amdahl ceiling of 1.59× assumed idealized parallelization efficiency (zero fork-join cost, linear scaling inside the region). Reality on this workload mix: the k-NN path consumes 26–37% of wall-clock, but parallelising it introduced more overhead than it saved on the benchmark meshes.
+
+**Action per D4 protocol:** Bead `meshmonk-modernization-9f5` closed (code not merged). Working-tree changes preserved in `git stash` labeled "9f5 OpenMP NeighbourFinder — closed below D4 recalibrated gate 2026-04-22 (see ADR-002 D4 Outcome 9f5)" — stash index currently `stash@{0}` (6a5 hoist code shifted to `stash@{1}`). Code kept rather than destroyed in case future benchmark coverage (a real 50K mesh, or a workload with larger N per NeighbourFinder invocation) reopens the question.
+
+**Implications for `bdt`:** The same fork-join overhead concern applies to any OpenMP pragma on an inner loop of a multi-iteration registration. `bdt` targets the nonrigid smoothing/viscoelastic-transform loop. Before implementation, `bdt` must pre-triage the smoothing-loop wall-clock share against the fixed harness (same pattern as 9f5's 2026-04-22 pre-triage) and verify the per-invocation parallelisable work is large enough to amortize OpenMP fork-join cost at current mesh tiers. If pre-triage shows the same pattern as 9f5 (share <50%, fine-grained invocation), `bdt` should be closed or deferred without implementation.
+
+**Deferred for future revisit:** When the D1 high-end tier gains a real 50K-vertex benchmark mesh, re-run 9f5 (unstash, rebuild, measure). At 50K points split across 14 threads ≈ 3600 pts/thread, compute-per-invocation should clear the fork-join break-even. The gate to clear at that point is the original `≥2×` target, not the 7K-tier recalibration.
+
+---
+
 ### D5: `OMP_NUM_THREADS` is the only public thread knob for v0.x
 
 **Firmness: FLEXIBLE**
