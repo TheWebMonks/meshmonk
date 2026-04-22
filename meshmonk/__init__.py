@@ -479,6 +479,26 @@ def _prepare_arrays(
     import warnings as _warnings
     from meshmonk._meshmonk_core import compute_normals as _compute_normals
 
+    # Symmetry check
+    if (floating is None) != (target is None):
+        raise ValueError("both floating and target must be provided, or neither")
+    # Mixed Pattern A + B check
+    pattern_b_args = any(
+        x is not None
+        for x in [
+            floating_features,
+            target_features,
+            floating_faces,
+            target_faces,
+            floating_flags,
+            target_flags,
+        ]
+    )
+    if floating is not None and pattern_b_args:
+        raise TypeError(
+            "Cannot mix Pattern A (floating/target) with Pattern B "
+            "(floating_features/target_features) arguments"
+        )
     pattern_a = floating is not None
     if pattern_a:
         feat_float, faces_float, flags_float = _mesh_to_arrays(
@@ -603,26 +623,6 @@ def rigid_register(
     -------
     RigidRegResult
     """
-    if (floating is None) != (target is None):
-        raise ValueError("both floating and target must be provided, or neither")
-    # Reject mixed Pattern A + Pattern B
-    pattern_a = floating is not None  # (already checked target matches)
-    pattern_b_args = any(
-        x is not None
-        for x in [
-            floating_features,
-            target_features,
-            floating_faces,
-            target_faces,
-            floating_flags,
-            target_flags,
-        ]
-    )
-    if pattern_a and pattern_b_args:
-        raise TypeError(
-            "Cannot mix Pattern A (floating/target) with Pattern B "
-            "(floating_features/target_features) arguments"
-        )
     feat_float, feat_target, faces_float, faces_target, flags_float, flags_target = (
         _prepare_arrays(
             floating,
@@ -687,26 +687,6 @@ def nonrigid_register(
     -------
     NonrigidRegResult
     """
-    if (floating is None) != (target is None):
-        raise ValueError("both floating and target must be provided, or neither")
-    # Reject mixed Pattern A + Pattern B
-    pattern_a = floating is not None  # (already checked target matches)
-    pattern_b_args = any(
-        x is not None
-        for x in [
-            floating_features,
-            target_features,
-            floating_faces,
-            target_faces,
-            floating_flags,
-            target_flags,
-        ]
-    )
-    if pattern_a and pattern_b_args:
-        raise TypeError(
-            "Cannot mix Pattern A (floating/target) with Pattern B "
-            "(floating_features/target_features) arguments"
-        )
     feat_float, feat_target, faces_float, faces_target, flags_float, flags_target = (
         _prepare_arrays(
             floating,
@@ -792,26 +772,6 @@ def pyramid_register(
     -------
     PyramidRegResult
     """
-    if (floating is None) != (target is None):
-        raise ValueError("both floating and target must be provided, or neither")
-    # Reject mixed Pattern A + Pattern B
-    pattern_a = floating is not None  # (already checked target matches)
-    pattern_b_args = any(
-        x is not None
-        for x in [
-            floating_features,
-            target_features,
-            floating_faces,
-            target_faces,
-            floating_flags,
-            target_flags,
-        ]
-    )
-    if pattern_a and pattern_b_args:
-        raise TypeError(
-            "Cannot mix Pattern A (floating/target) with Pattern B "
-            "(floating_features/target_features) arguments"
-        )
     feat_float, feat_target, faces_float, faces_target, flags_float, flags_target = (
         _prepare_arrays(
             floating,

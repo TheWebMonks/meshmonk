@@ -121,13 +121,22 @@ class TestPrepareArrays:
         assert flags_f.shape == (4,)
         np.testing.assert_array_equal(flags_f, np.ones(4, dtype=np.float32))
 
-    def test_pattern_a_flags_override(self):
+    def test_pattern_b_flags_override(self):
+        """Pattern B: explicit floating_flags override is applied."""
         from meshmonk import _prepare_arrays
 
-        pytest.importorskip("trimesh")
-        mesh = self._make_tetrahedron()
+        feat = np.random.randn(4, 6).astype(np.float32)
+        faces = np.array([[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]], dtype=np.int32)
         custom = np.array([1.0, 0.5, 0.0, 1.0], dtype=np.float32)
-        _, _, _, _, flags_f, _ = _prepare_arrays(mesh, mesh, floating_flags=custom)
+        _, _, _, _, flags_f, _ = _prepare_arrays(
+            None,
+            None,
+            floating_features=feat,
+            target_features=feat,
+            floating_faces=faces,
+            target_faces=faces,
+            floating_flags=custom,
+        )
         np.testing.assert_array_equal(flags_f, custom)
 
     def test_pattern_b_returns_correct_shape(self):
@@ -153,6 +162,25 @@ class TestPrepareArrays:
         feat = np.random.randn(4, 6).astype(np.float32)
         with pytest.raises(ValueError, match="Missing"):
             _prepare_arrays(None, None, floating_features=feat)
+
+    def test_prepare_arrays_symmetry_check_raises(self):
+        """_prepare_arrays must raise ValueError when only one of floating/target is given."""
+        from meshmonk import _prepare_arrays
+
+        with pytest.raises(ValueError, match="both floating and target must be provided, or neither"):
+            _prepare_arrays("some_path.obj", None)
+
+    def test_prepare_arrays_mixed_pattern_raises(self):
+        """_prepare_arrays must raise TypeError when Pattern A and B args are mixed."""
+        from meshmonk import _prepare_arrays
+
+        feat = np.random.randn(4, 6).astype(np.float32)
+        with pytest.raises(TypeError, match="Cannot mix Pattern A"):
+            _prepare_arrays(
+                "some_path.obj",
+                "other_path.obj",
+                floating_features=feat,
+            )
 
 
 class TestRigidParamsKwarg:
