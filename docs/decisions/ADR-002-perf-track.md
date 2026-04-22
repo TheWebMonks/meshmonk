@@ -131,6 +131,22 @@ If a bead can't meet its threshold, the PR is closed (not merged with caveats) a
 
 - The harness proves too noisy to discriminate at the 3% level — then `6a5`'s threshold raises to 5-10%.
 
+### D4 Outcome (2026-04-22): 6a5 closed below gate
+
+**Measurement summary:** 1.3–4.0% speedup across 9 scenarios (rigid/nonrigid/pyramid × 1K/3K/7K tiers) on Template.obj (7160 vertices max).
+
+**Key result:** Pyramid@7K = 3.0%. The 7K tier is the closest achievable proxy for the ADR's 5K-pyramid gate target due to Template.obj tier-snapping; the 50K scenario from D1 requires a mesh we do not have.
+
+**Gate outcome: MISS** — 3.0% vs ≥5% threshold. No scenario reached the gate.
+
+**Scaling analysis:** Allocation-hoist wins shrink with mesh size. Per-iteration allocation cost is O(N); compute is O(N log N) or worse. As N grows, allocation's share of wall-clock falls. A 50K synthetic upsample would not be expected to rescue the gate — the scaling direction is unfavorable.
+
+**Note on prior measurement:** A prior harness run measured 5.75% pyramid@7K, but that was against a broken harness — the downsampler had a ratio-semantics defect fixed in bead 03i.1. That number is not comparable to the post-03i.1 results above.
+
+**Action per D4 protocol:** PR closed (code not merged), bead closed. Code preserved in `git stash` labeled "6a5 hoist code — closed below D4 gate 2026-04-22 (see ADR-002 D4 Outcome)" rather than destroyed, in case future benchmark coverage (e.g. a real 50K mesh, or different workload profile) reopens the question.
+
+**Retained artifacts:** `tests/test_memory_layout_regression.py` + `tests/golden/memory_layout_reference.npy` kept as reusable insurance for future memory-layout changes to InlierDetector, NonrigidRegistration, and ViscoElasticTransformer. Originally captured as the 6a5 parity test; reframed as a generic regression guard (no 6a5-specific framing).
+
 ---
 
 ### D5: `OMP_NUM_THREADS` is the only public thread knob for v0.x
