@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, Mapping
+from typing_extensions import Unpack
+from meshmonk._types import RigidKwargs, NonrigidKwargs, PyramidKwargs
+
 try:
     from importlib.metadata import version
 
@@ -345,7 +349,7 @@ _PYRAMID_KNOWN_KWARGS = {
 }
 
 
-def _apply_shared_kwargs(params, kwargs: dict) -> None:
+def _apply_shared_kwargs(params, kwargs: Mapping[str, Any]) -> None:
     """Apply correspondence + inlier kwarg overrides shared by all registration types."""
     if "correspondences_symmetric" in kwargs:
         params.correspondences.symmetric = kwargs["correspondences_symmetric"]
@@ -363,7 +367,7 @@ def _apply_shared_kwargs(params, kwargs: dict) -> None:
         params.inliers.use_orientation = kwargs["inlier_use_orientation"]
 
 
-def _apply_transform_kwargs(params, kwargs: dict) -> None:
+def _apply_transform_kwargs(params, kwargs: Mapping[str, Any]) -> None:
     """Apply transform kwarg overrides shared by nonrigid and pyramid registration."""
     if "transform_sigma" in kwargs:
         params.transform.sigma = kwargs["transform_sigma"]
@@ -385,7 +389,7 @@ def _apply_transform_kwargs(params, kwargs: dict) -> None:
         ]
 
 
-def _apply_rigid_kwargs(params: RigidParams, kwargs: dict) -> RigidParams:
+def _apply_rigid_kwargs(params: RigidParams, kwargs: Mapping[str, Any]) -> RigidParams:
     """Apply kwarg overrides to a RigidParams struct."""
     unknown = set(kwargs) - _RIGID_KNOWN_KWARGS
     if unknown:
@@ -400,7 +404,7 @@ def _apply_rigid_kwargs(params: RigidParams, kwargs: dict) -> RigidParams:
     return params
 
 
-def _apply_nonrigid_kwargs(params: NonrigidParams, kwargs: dict) -> NonrigidParams:
+def _apply_nonrigid_kwargs(params: NonrigidParams, kwargs: Mapping[str, Any]) -> NonrigidParams:
     """Apply kwarg overrides to a NonrigidParams struct."""
     unknown = set(kwargs) - _NONRIGID_KNOWN_KWARGS
     if unknown:
@@ -415,7 +419,7 @@ def _apply_nonrigid_kwargs(params: NonrigidParams, kwargs: dict) -> NonrigidPara
 
 
 def _apply_pyramid_kwargs(
-    params: PyramidParams, kwargs: dict, explicit_kwargs: set
+    params: PyramidParams, kwargs: Mapping[str, Any], explicit_kwargs: set[str]
 ) -> PyramidParams:
     """Apply kwarg overrides to a PyramidParams struct.
 
@@ -581,7 +585,7 @@ def rigid_register(
     target_flags=None,
     normals=None,
     compute_normals_flag=False,
-    **kwargs,
+    **kwargs: Unpack[RigidKwargs],
 ) -> RigidRegResult:
     """Run rigid (SE(3)) mesh registration.
 
@@ -715,7 +719,7 @@ def nonrigid_register(
     normals=None,
     compute_normals_flag=False,
     rigid_params=None,
-    **kwargs,
+    **kwargs: Unpack[NonrigidKwargs],
 ) -> NonrigidRegResult:
     """Run nonrigid (viscoelastic) mesh registration.
 
@@ -798,7 +802,7 @@ def pyramid_register(
     normals=None,
     compute_normals_flag=False,
     rigid_params=None,
-    **kwargs,
+    **kwargs: Unpack[PyramidKwargs],
 ) -> PyramidRegResult:
     """Run pyramid (multi-resolution) nonrigid mesh registration.
 
