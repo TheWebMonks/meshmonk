@@ -602,22 +602,67 @@ def rigid_register(
             target_flags=flags_target,
         )
 
-    Parameters
-    ----------
-    floating, target:
-        trimesh.Trimesh objects, file path strings, or pathlib.Path objects.
-    floating_features, target_features:
-        (N, 6) float32 feature matrices (positions + normals).
-    floating_faces, target_faces:
-        (M, 3) int32 face index arrays.
-    floating_flags, target_flags:
-        (N,) float32 per-vertex flags (1.0 = active, 0.0 = masked).
-    normals:
-        Optional explicit (N, 3) normals for Pattern A.
-    compute_normals_flag:
-        If True, force recomputation of normals even when mesh.vertex_normals is available.
-    **kwargs:
-        Param overrides. See kwarg flattening rule in design doc.
+    Named Parameters
+    ----------------
+    Pattern A (mesh objects / file paths):
+        floating, target : Mesh | None
+            trimesh.Trimesh objects, file path strings, or pathlib.Path objects.
+
+    Pattern B (raw numpy arrays):
+        floating_features, target_features : NDArray | None
+            (N, 6) float32 feature matrices (positions + normals).
+        floating_faces, target_faces : NDArray | None
+            (M, 3) int32 face index arrays.
+        floating_flags, target_flags : NDArray | None
+            (N,) float32 per-vertex flags (1.0 = active, 0.0 = masked).
+
+    Pattern B only:
+        normals : NDArray | None
+            Explicit (N, 3) normals for the floating mesh.
+        compute_normals_flag : bool
+            Force recomputation of normals even when mesh normals are available.
+
+    nonrigid and pyramid only:
+        rigid_params : dict | None
+            kwargs for rigid pre-alignment; None skips it.
+
+    **kwargs — per-function scope
+    ------------------------------
+    The table below lists every accepted kwarg and which functions accept it
+    (Y = accepted, — = raises TypeError).
+
+    ==========================================  ================================================  =======  =========  =======
+    kwarg                                       params field                                      rigid    nonrigid   pyramid
+    ==========================================  ================================================  =======  =========  =======
+    correspondences_symmetric                   params.correspondences.symmetric                    Y          Y         Y
+    correspondences_num_neighbours              params.correspondences.num_neighbours               Y          Y         Y
+    correspondences_flag_threshold [1]          params.correspondences.flag_threshold               Y          Y         Y
+    correspondences_equalize_push_pull          params.correspondences.equalize_push_pull           Y          Y         Y
+    inlier_kappa                                params.inliers.kappa                                Y          Y         Y
+    inlier_use_orientation                      params.inliers.use_orientation                      Y          Y         Y
+    num_iterations                              params.num_iterations                               Y          Y         Y
+    use_scaling                                 params.use_scaling                                  Y          —         —
+    transform_sigma                             params.transform.sigma                              —          Y         Y
+    transform_num_viscous_iterations_start [2]  params.transform.num_viscous_iterations_start       —          Y         Y
+    transform_num_viscous_iterations_end        params.transform.num_viscous_iterations_end         —          Y         Y
+    transform_num_elastic_iterations_start [2]  params.transform.num_elastic_iterations_start       —          Y         Y
+    transform_num_elastic_iterations_end        params.transform.num_elastic_iterations_end         —          Y         Y
+    downsample_float_start                      params.downsample.float_start                       —          —         Y
+    downsample_target_start                     params.downsample.target_start                      —          —         Y
+    downsample_float_end                        params.downsample.float_end                         —          —         Y
+    downsample_target_end                       params.downsample.target_end                        —          —         Y
+    num_pyramid_layers                          params.num_pyramid_layers                           —          —         Y
+    ==========================================  ================================================  =======  =========  =======
+
+    Passing a kwarg not in the Y column for a given function raises TypeError.
+
+    [1] pyramid_register defaults correspondences_flag_threshold to 0.999
+        (MATLAB convention) when not explicitly passed. rigid/nonrigid use the
+        C++ struct default.
+    [2] pyramid_register auto-populates transform_num_viscous_iterations_start
+        and transform_num_elastic_iterations_start to num_iterations when not
+        explicitly passed. Explicit pass detected via kwargs.keys() — do not
+        refactor to .get().
 
     Returns
     -------
@@ -674,7 +719,8 @@ def nonrigid_register(
 ) -> NonrigidRegResult:
     """Run nonrigid (viscoelastic) mesh registration.
 
-    Accepts the same two call patterns as rigid_register().
+    Accepts the same two call patterns and **kwargs as rigid_register; see
+    that docstring for the full parameter table.
 
     Parameters
     ----------
@@ -756,7 +802,8 @@ def pyramid_register(
 ) -> PyramidRegResult:
     """Run pyramid (multi-resolution) nonrigid mesh registration.
 
-    Accepts the same two call patterns as rigid_register().
+    Accepts the same two call patterns and **kwargs as rigid_register; see
+    that docstring for the full parameter table.
 
     Special behaviour: viscous/elastic start iterations are auto-set to
     num_iterations when not explicitly passed (matching MATLAB convention).
