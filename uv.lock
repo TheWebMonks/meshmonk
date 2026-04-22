@@ -886,7 +886,7 @@ requires-dist = [
     { name = "trimesh", marker = "extra == 'dev'", specifier = ">=4.0" },
     { name = "trimesh", marker = "extra == 'io'", specifier = ">=4.0" },
     { name = "typer", specifier = ">=0.9" },
-    { name = "typing-extensions", specifier = ">=4.0" },
+    { name = "typing-extensions", specifier = ">=4.6" },
 ]
 provides-extras = ["io", "dev", "docs"]
 

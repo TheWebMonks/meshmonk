@@ -129,8 +129,9 @@ def test_pyramid_kwargs_fields():
 
 def test_rigid_kwargs_field_types():
     """RigidKwargs fields must have correct Python type annotations."""
+    import typing
     from meshmonk._types import RigidKwargs
-    annotations = RigidKwargs.__annotations__
+    annotations = typing.get_type_hints(RigidKwargs)
     # bool fields
     assert annotations["correspondences_symmetric"] is bool
     assert annotations["correspondences_equalize_push_pull"] is bool
@@ -146,8 +147,9 @@ def test_rigid_kwargs_field_types():
 
 def test_nonrigid_kwargs_field_types():
     """NonrigidKwargs fields must have correct Python type annotations."""
+    import typing
     from meshmonk._types import NonrigidKwargs
-    annotations = NonrigidKwargs.__annotations__
+    annotations = typing.get_type_hints(NonrigidKwargs)
     # bool fields
     assert annotations["correspondences_symmetric"] is bool
     assert annotations["correspondences_equalize_push_pull"] is bool
@@ -167,8 +169,9 @@ def test_nonrigid_kwargs_field_types():
 
 def test_pyramid_kwargs_field_types():
     """PyramidKwargs fields must have correct Python type annotations."""
+    import typing
     from meshmonk._types import PyramidKwargs
-    annotations = PyramidKwargs.__annotations__
+    annotations = typing.get_type_hints(PyramidKwargs)
     # bool fields
     assert annotations["correspondences_symmetric"] is bool
     assert annotations["correspondences_equalize_push_pull"] is bool
@@ -273,31 +276,6 @@ def test_pyramid_register_kwargs_annotation():
 # ---------------------------------------------------------------------------
 
 
-def test_rigid_register_runtime_behavior_unchanged(tmp_path):
-    """Kwargs still apply correctly at runtime after type hint changes."""
-    import meshmonk
-    import numpy as np
-    # Minimal valid Pattern B input
-    n = 10
-    feat = np.zeros((n, 6), dtype=np.float32)
-    feat[:, 0] = np.linspace(0, 1, n)
-    feat[:, 3] = 1.0  # normals
-    faces = np.array([[0, 1, 2]], dtype=np.int32)
-    # Call with some rigid kwargs - just check it doesn't crash
-    # (The type hint change must not alter runtime behavior)
-    try:
-        meshmonk.rigid_register(
-            floating_features=feat,
-            target_features=feat,
-            floating_faces=faces,
-            target_faces=faces,
-            num_iterations=5,
-            use_scaling=False,
-        )
-    except Exception:
-        pass  # Some registration errors are OK for degenerate input
-
-
 def test_pyramid_register_explicit_kwargs_detection(tmp_path):
     """_apply_pyramid_kwargs must still detect explicit vs auto-populated kwargs.
 
@@ -312,8 +290,7 @@ def test_pyramid_register_explicit_kwargs_detection(tmp_path):
     params = PyramidParams()
     params.num_iterations = 20
     kwargs = {"num_iterations": 20}
-    explicit_kwargs = set(kwargs.keys())
-    result = meshmonk._apply_pyramid_kwargs(params, kwargs, explicit_kwargs=explicit_kwargs)
+    result = meshmonk._apply_pyramid_kwargs(params, kwargs)
     # Without explicit pass, viscous/elastic start should be auto-set to num_iterations
     assert result.transform.num_viscous_iterations_start == 20
     assert result.transform.num_elastic_iterations_start == 20
@@ -322,6 +299,5 @@ def test_pyramid_register_explicit_kwargs_detection(tmp_path):
     params2 = PyramidParams()
     params2.num_iterations = 20
     kwargs2 = {"num_iterations": 20, "transform_num_viscous_iterations_start": 5}
-    explicit_kwargs2 = set(kwargs2.keys())
-    result2 = meshmonk._apply_pyramid_kwargs(params2, kwargs2, explicit_kwargs=explicit_kwargs2)
+    result2 = meshmonk._apply_pyramid_kwargs(params2, kwargs2)
     assert result2.transform.num_viscous_iterations_start == 5

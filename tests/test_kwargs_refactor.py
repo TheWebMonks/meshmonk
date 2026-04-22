@@ -80,7 +80,6 @@ class TestSharedKwargsApplyToAllTypes:
         params = meshmonk._apply_pyramid_kwargs(
             params,
             self.SHARED_KWARGS.copy(),
-            explicit_kwargs=set(self.SHARED_KWARGS.keys()),
         )
         assert not params.correspondences.symmetric
         assert params.correspondences.num_neighbours == 5
@@ -120,7 +119,6 @@ class TestTransformKwargs:
         params = meshmonk._apply_pyramid_kwargs(
             params,
             self.TRANSFORM_KWARGS.copy(),
-            explicit_kwargs=set(self.TRANSFORM_KWARGS.keys()),
         )
         assert params.transform.sigma == pytest.approx(5.0)
         assert params.transform.num_viscous_iterations_start == 100
@@ -165,14 +163,6 @@ def test_pyramid_specific_kwargs():
             "num_iterations": 10,
             "num_pyramid_layers": 3,
         },
-        explicit_kwargs={
-            "downsample_float_start",
-            "downsample_target_start",
-            "downsample_float_end",
-            "downsample_target_end",
-            "num_iterations",
-            "num_pyramid_layers",
-        },
     )
     assert params.downsample.float_start == 500
     assert params.downsample.target_start == 600
@@ -194,7 +184,6 @@ def test_pyramid_matlab_convention_auto_viscous_elastic():
     params = meshmonk._apply_pyramid_kwargs(
         params,
         {"num_iterations": 42},
-        explicit_kwargs={"num_iterations"},
     )
     assert params.num_iterations == 42
     assert params.transform.num_viscous_iterations_start == 42
@@ -207,7 +196,6 @@ def test_pyramid_matlab_convention_respects_explicit():
     params = meshmonk._apply_pyramid_kwargs(
         params,
         {"num_iterations": 42, "transform_num_viscous_iterations_start": 99},
-        explicit_kwargs={"num_iterations", "transform_num_viscous_iterations_start"},
     )
     assert params.num_iterations == 42
     assert (
@@ -237,7 +225,7 @@ def test_pyramid_unknown_kwarg_raises():
     params = PyramidParams()
     with pytest.raises(TypeError, match="unexpected keyword"):
         meshmonk._apply_pyramid_kwargs(
-            params, {"bogus_param": 1}, explicit_kwargs=set()
+            params, {"bogus_param": 1}
         )
 
 

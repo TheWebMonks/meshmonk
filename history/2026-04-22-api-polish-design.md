@@ -47,7 +47,7 @@ These are explicit signature fields, not `**kwargs`. They appear in each registe
 | `floating_features`, `target_features` | `NDArray \| None` | Pattern B, all |
 | `floating_faces`, `target_faces` | `NDArray \| None` | Pattern B, all |
 | `floating_flags`, `target_flags` | `NDArray \| None` | Pattern B, all |
-| `normals`, `compute_normals_flag` | — | Pattern B only |
+| `normals`, `compute_normals_flag` | — | Pattern A only |
 | `rigid_params` | `dict \| None` | nonrigid, pyramid |
 
 ### `**kwargs` parameters

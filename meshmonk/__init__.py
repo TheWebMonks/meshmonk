@@ -349,6 +349,7 @@ _PYRAMID_KNOWN_KWARGS = {
 }
 
 
+# Mapping[str, Any] accepts both plain dict and TypedDict; do not narrow to dict.
 def _apply_shared_kwargs(params, kwargs: Mapping[str, Any]) -> None:
     """Apply correspondence + inlier kwarg overrides shared by all registration types."""
     if "correspondences_symmetric" in kwargs:
@@ -419,18 +420,22 @@ def _apply_nonrigid_kwargs(params: NonrigidParams, kwargs: Mapping[str, Any]) ->
 
 
 def _apply_pyramid_kwargs(
-    params: PyramidParams, kwargs: Mapping[str, Any], explicit_kwargs: set[str]
+    params: PyramidParams, kwargs: Mapping[str, Any]
 ) -> PyramidParams:
     """Apply kwarg overrides to a PyramidParams struct.
 
-    Also applies the MATLAB convention: viscous/elastic start = num_iterations
-    when the user has not explicitly set them.
+    Also applies the MATLAB convention:
+    - correspondences_flag_threshold defaults to 0.999 when not explicitly passed.
+    - viscous/elastic start defaults to num_iterations when not explicitly passed.
     """
     unknown = set(kwargs) - _PYRAMID_KNOWN_KWARGS
     if unknown:
         raise TypeError(
             f"pyramid_register() got unexpected keyword arguments: {sorted(unknown)}"
         )
+    # MATLAB convention: default correspondences_flag_threshold to 0.999
+    if "correspondences_flag_threshold" not in kwargs:
+        params.correspondences.flag_threshold = 0.999
     _apply_shared_kwargs(params, kwargs)
     _apply_transform_kwargs(params, kwargs)
     if "downsample_float_start" in kwargs:
@@ -448,9 +453,9 @@ def _apply_pyramid_kwargs(
 
     # MATLAB convention: auto-populate viscous/elastic start = num_iterations
     # when the user has not explicitly set them
-    if "transform_num_viscous_iterations_start" not in explicit_kwargs:
+    if "transform_num_viscous_iterations_start" not in kwargs:
         params.transform.num_viscous_iterations_start = params.num_iterations
-    if "transform_num_elastic_iterations_start" not in explicit_kwargs:
+    if "transform_num_elastic_iterations_start" not in kwargs:
         params.transform.num_elastic_iterations_start = params.num_iterations
 
     return params
@@ -620,15 +625,11 @@ def rigid_register(
         floating_flags, target_flags : NDArray | None
             (N,) float32 per-vertex flags (1.0 = active, 0.0 = masked).
 
-    Pattern B only:
+    Pattern A only:
         normals : NDArray | None
             Explicit (N, 3) normals for the floating mesh.
         compute_normals_flag : bool
             Force recomputation of normals even when mesh normals are available.
-
-    nonrigid and pyramid only:
-        rigid_params : dict | None
-            kwargs for rigid pre-alignment; None skips it.
 
     **kwargs — per-function scope
     ------------------------------
@@ -718,7 +719,7 @@ def nonrigid_register(
     target_flags=None,
     normals=None,
     compute_normals_flag=False,
-    rigid_params=None,
+    rigid_params: RigidKwargs | None = None,
     **kwargs: Unpack[NonrigidKwargs],
 ) -> NonrigidRegResult:
     """Run nonrigid (viscoelastic) mesh registration.
@@ -728,8 +729,8 @@ def nonrigid_register(
 
     Parameters
     ----------
-    rigid_params:
-        Optional dict of kwargs passed to rigid_register() for rigid pre-alignment.
+    rigid_params : RigidKwargs | None
+        Optional RigidKwargs dict passed to rigid_register() for rigid pre-alignment.
         Pass ``{}`` to run rigid pre-alignment with defaults, or a dict with overrides
         such as ``{'num_iterations': 40}``.  ``None`` (default) skips pre-alignment.
 
@@ -801,7 +802,7 @@ def pyramid_register(
     target_flags=None,
     normals=None,
     compute_normals_flag=False,
-    rigid_params=None,
+    rigid_params: RigidKwargs | None = None,
     **kwargs: Unpack[PyramidKwargs],
 ) -> PyramidRegResult:
     """Run pyramid (multi-resolution) nonrigid mesh registration.
@@ -814,8 +815,8 @@ def pyramid_register(
 
     Parameters
     ----------
-    rigid_params:
-        Optional dict of kwargs passed to rigid_register() for rigid pre-alignment.
+    rigid_params : RigidKwargs | None
+        Optional RigidKwargs dict passed to rigid_register() for rigid pre-alignment.
         Pass ``{}`` to run rigid pre-alignment with defaults, or a dict with overrides
         such as ``{'num_iterations': 40}``.  ``None`` (default) skips pre-alignment.
 
@@ -855,15 +856,8 @@ def pyramid_register(
         )
         feat_float = rigid_result.aligned_features
 
-    # Pass the set of explicitly provided kwargs so _apply_pyramid_kwargs
-    # knows which viscous/elastic start values to auto-populate
     params = PyramidParams()
-    # Set pyramid-specific flag_threshold default (0.999 per MATLAB demo).
-    # This is done here rather than in the C++ struct to keep PyramidParams
-    # aggregate (no user-defined constructor), per ADR D6.
-    if "correspondences_flag_threshold" not in kwargs:
-        params.correspondences.flag_threshold = 0.999
-    params = _apply_pyramid_kwargs(params, kwargs, explicit_kwargs=set(kwargs.keys()))
+    params = _apply_pyramid_kwargs(params, kwargs)
 
     raw = _pyramid_registration(
         feat_float,
