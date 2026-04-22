@@ -197,6 +197,70 @@ The pre-triage Amdahl ceiling of 1.59× assumed idealized parallelization effici
 
 ---
 
+### D4 Outcome (2026-04-22): bdt closed without implementation (pre-triage failed)
+
+Per the 9f5 Outcome's `bdt` clause, a pre-triage measurement was run before any implementation. Result: **all four target loops combined account for 1.7–7.7% of nonrigid wall-clock** — well below the 50% threshold. Closing `meshmonk-modernization-bdt` without implementation.
+
+**Pre-triage methodology:** `std::chrono::steady_clock` instrumentation around the inner `for (size_t i = 0; i < _numElements; ...)` loop in each of the four target functions:
+
+1. `ViscoElasticTransformer::_update_viscously` (library/src/ViscoElasticTransformer.cpp:167)
+2. `ViscoElasticTransformer::_update_elastically` (library/src/ViscoElasticTransformer.cpp:214)
+3. `ViscoElasticTransformer::_update_outlier_transformation` (library/src/ViscoElasticTransformer.cpp:258)
+4. `InlierDetector::_smooth_inlier_weights` (library/src/InlierDetector.cpp:95)
+
+Instrumented binary run against `benchmarks/bench_nonrigid.py` at 1K/3K/7K tiers with `OMP_NUM_THREADS=1`.
+
+**Wall-clock share per tier (inner loop only, cumulative across all ~20 ICP iterations × annealed viscous/elastic/outlier subiterations):**
+
+| Tier | _numElements | Nonrigid total (6-round median, ms) | Viscous (share) | Elastic (share) | Outlier (share) | Smooth inlier (share) | **Combined 4-loop share** |
+|------|--------------|-------------------------------------|-----------------|-----------------|-----------------|----------------------|--------------------------|
+| 1K   | 1 000        | 757 ms/call                         | 6.3 ms (0.83%)  | 6.0 ms (0.79%)  | 0.28 ms (0.04%) | 0.0 (dead code)       | **1.66%**                |
+| 3K   | 3 000        | 895 ms/call                         | 18.3 ms (2.04%) | 18.4 ms (2.05%) | 0.58 ms (0.06%) | 0.0 (dead code)       | **4.16%**                |
+| 7K   | 7 000        | 1112 ms/call                        | 42.4 ms (3.81%) | 42.3 ms (3.80%) | 1.32 ms (0.12%) | 0.0 (dead code)       | **7.73%**                |
+
+**Amdahl ceiling computation (7K, the most favourable tier):**
+
+```
+upper_bound_speedup = 1 / (1 − parallelizable_share)
+                    = 1 / (1 − 0.0773)
+                    = 1.084×
+```
+
+Even with infinite cores and zero fork-join cost, `bdt` cannot exceed **1.08× on nonrigid@7K** — nowhere near the `≥1.3×` gate that 9f5 was recalibrated to, let alone the original `≥1.5×` gate bdt was scoped to. **The gate is arithmetically unreachable.**
+
+**Per-invocation work is also fine-grained (same regime that defeated 9f5):**
+
+- Viscous inner loop: 7.7 µs/invocation at 1K, 22 µs at 3K, 52 µs at 7K.
+- Elastic inner loop: essentially identical to viscous.
+- Outlier inner loop: 0.9–4.4 µs across tiers.
+
+9f5 established ~10–30 µs fork-join overhead on this host. Viscous at 1K runs *below* the overhead floor; 3K is approximately at parity; only 7K is modestly above. Total inner-loop fork-joins per `nonrigid_register` call at default annealing: ≈1800 (≈800 viscous + ≈800 elastic + ≈200 outlier). At ~15 µs overhead × 1800 joins ≈ 27 ms of pure scheduling overhead — larger than the entire 1K target workload (12.6 ms combined viscous+elastic) and comparable to the 3K workload (36.7 ms).
+
+**Structural finding: `InlierDetector::_smooth_inlier_weights` is dead code.** The function is declared in the header and defined in the .cpp, but is *never invoked* from `InlierDetector::update()` or anywhere else. It contributes 0.0% to wall-clock because it never runs. This should be noted but does not change the bdt decision; the other three loops at 7.73% combined already fail the gate.
+
+**Narrower-scope analysis:** Is there any subset of the four loops that could pay off?
+
+| Scope | Max share | Upper-bound speedup | Gate |
+|-------|-----------|---------------------|------|
+| All 4 loops                         | 7.73% | 1.084× | FAIL |
+| Viscous only                        | 3.81% | 1.040× | FAIL |
+| Elastic only                        | 3.80% | 1.040× | FAIL |
+| Viscous + elastic                   | 7.61% | 1.082× | FAIL |
+| Outlier only                        | 0.12% | 1.001× | FAIL |
+
+No narrower scope rescues the gate. Every subset fails by wide margin.
+
+**Action per D4 protocol:** Bead `meshmonk-modernization-bdt` closed (code never written — pre-triage preempted implementation). No stash entry for bdt OpenMP code; only a throwaway stash for the pre-triage `std::chrono` instrumentation remains at `stash@{0}` (9f5 OpenMP shifted to `stash@{1}`, 6a5 hoist to `stash@{2}`).
+
+**Follow-ups flagged (not part of this ADR, separate beads if pursued):**
+
+1. **Dead-code removal for `InlierDetector::_smooth_inlier_weights`** — no caller anywhere in the codebase.
+2. **~92% of nonrigid wall-clock at 7K is outside the bdt target set.** That time is spent in: `CorrespondenceFilter::update` (k-NN via NeighbourFinder — already measured in 9f5 pre-triage at 26–37% share), `InlierDetector::update` distance loop, Eigen per-row operations in `_update_viscously`'s force-field setup (lines 141–148, which precede the timed inner loop), and `_apply_transformation`. Future perf work should pre-triage these before assuming OpenMP is the right tool; 9f5 demonstrated that fine-grained parallelism on short-lived invocations does not amortize.
+
+**Deferred for future revisit:** If the D1 high-end tier gains a real 50K-vertex benchmark mesh, re-measure the smoothing shares. At 50K vertices, viscous/elastic per-invocation work would be ~370 µs (7.3× 7K cost) — well above fork-join overhead. But the *share* of total nonrigid time depends on how the correspondence filter scales; the shares could stay low even at 50K. Revisit only after the 50K mesh exists and the overall nonrigid wall-clock profile at that size is known.
+
+---
+
 ### D5: `OMP_NUM_THREADS` is the only public thread knob for v0.x
 
 **Firmness: FLEXIBLE**
