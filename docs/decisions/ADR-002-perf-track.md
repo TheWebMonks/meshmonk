@@ -169,12 +169,17 @@ If a bead can't meet its threshold, the PR is closed (not merged with caveats) a
 
 **Measured result against the recalibrated `≥1.3× on nonrigid@7K, no regression elsewhere` gate:**
 
-| Benchmark | Baseline (OMP=1) | Post (OMP=14) | Post (OMP=4) | Speedup @ best threads |
+| Benchmark | Baseline (OMP=1) | Post (OMP=14) | Post (OMP=4) | Speedup (range across OMP=4 / OMP=14) |
 |---|---|---|---|---|
-| **nonrigid@7K (gate)** | 1069 ms | 1111 ms | 1105 ms | **0.97×** (MISS vs ≥1.3×) |
-| nonrigid@1K / 3K | 725 / 847 ms | 746 / 887 ms | 772 / 911 ms | 0.93–0.94× (regression, guard violated) |
+| **nonrigid@7K (gate)** | 1069 ms | 1111 ms | 1105 ms | **0.96–0.97×** (MISS vs ≥1.3×) |
+| nonrigid@1K | 725 ms | 746 ms | 772 ms | 0.94–0.97× (regression, guard violated) |
+| nonrigid@3K | 847 ms | 887 ms | 911 ms | 0.93–0.96× (regression, guard violated) |
 | pyramid@1K / 3K / 7K | 419 / 457 / 545 ms | 433 / 485 / 565 ms | 430 / 468 / 553 ms | 0.97–0.99× (regression, guard violated) |
-| rigid@7K | 1117 ms | — | 1162 ms | 0.96× (regression, guard violated) |
+| rigid@7K | 1117 ms | — | 1162 ms | 0.96× (OMP=4 only; guard violated) |
+| rigid@1K | 770 ms (baseline) | — | not re-measured | — |
+| rigid@3K | 892 ms (baseline) | — | not re-measured | — |
+
+*rigid@1K and rigid@3K were not re-run as part of the 9f5 measurement sweep. The 9f5 speedup-gate check focused on rigid@7K (the largest tier, most exposed to fork-join overhead at absolute terms). Regression status for rigid@1K/3K is inferred from the pattern seen across nonrigid and pyramid tiers — all tiers regressed — but was not directly measured. Baseline numbers above are from `benchmarks/baseline.json`.*
 
 Both gate criteria failed: gate threshold unmet (0.97× < 1.3×), and the no-regression guard clause triggered on every non-7K-nonrigid benchmark.
 
@@ -197,7 +202,7 @@ The pre-triage Amdahl ceiling of 1.59× assumed idealized parallelization effici
 
 **Implications for `bdt`:** The same fork-join overhead concern applies to any OpenMP pragma on an inner loop of a multi-iteration registration. `bdt` targets the nonrigid smoothing/viscoelastic-transform loop. Before implementation, `bdt` must pre-triage the smoothing-loop wall-clock share against the fixed harness (same pattern as 9f5's 2026-04-22 pre-triage) and verify the per-invocation parallelisable work is large enough to amortize OpenMP fork-join cost at current mesh tiers. If pre-triage shows the same pattern as 9f5 (share <50%, fine-grained invocation), `bdt` should be closed or deferred without implementation.
 
-**Deferred for future revisit:** When the D1 high-end tier gains a real 50K-vertex benchmark mesh, re-run 9f5 (unstash, rebuild, measure). At 50K points split across 14 threads ≈ 3600 pts/thread, compute-per-invocation should clear the fork-join break-even. The gate to clear at that point is the original `≥2×` target, not the 7K-tier recalibration.
+**Deferred for future revisit:** When the D1 high-end tier gains a real 50K-vertex benchmark mesh, re-run 9f5 (unstash, rebuild, measure). At 50K points split across 14 threads ≈ 3600 pts/thread, compute-per-invocation should clear the fork-join break-even. The gate to clear at that point is the original `≥2×` target, **conditional on re-measuring that `NeighbourFinder::update` consumes >=50% of nonrigid wall-clock at 50K** — otherwise Amdahl still bounds the attainable speedup below 2× and the gate must be recalibrated again.
 
 ---
 
@@ -216,11 +221,13 @@ Instrumented binary run against `benchmarks/bench_nonrigid.py` at 1K/3K/7K tiers
 
 **Wall-clock share per tier (inner loop only, cumulative across all ~20 ICP iterations × annealed viscous/elastic/outlier subiterations):**
 
-| Tier | _numElements | Nonrigid total (6-round median, ms) | Viscous (share) | Elastic (share) | Outlier (share) | Smooth inlier (share) | **Combined 4-loop share** |
-|------|--------------|-------------------------------------|-----------------|-----------------|-----------------|----------------------|--------------------------|
-| 1K   | 1 000        | 757 ms/call                         | 6.3 ms (0.83%)  | 6.0 ms (0.79%)  | 0.28 ms (0.04%) | 0.0 (dead code)       | **1.66%**                |
-| 3K   | 3 000        | 895 ms/call                         | 18.3 ms (2.04%) | 18.4 ms (2.05%) | 0.58 ms (0.06%) | 0.0 (dead code)       | **4.16%**                |
-| 7K   | 7 000        | 1112 ms/call                        | 42.4 ms (3.81%) | 42.3 ms (3.80%) | 1.32 ms (0.12%) | 0.0 (dead code)       | **7.73%**                |
+| Tier | _numElements | Nonrigid total† (6-round median, ms) | Viscous (share) | Elastic (share) | Outlier (share) | Smooth inlier (share) | **Combined 4-loop share** |
+|------|--------------|--------------------------------------|-----------------|-----------------|-----------------|----------------------|--------------------------|
+| 1K   | 1 000        | 757 ms/call                          | 6.3 ms (0.83%)  | 6.0 ms (0.79%)  | 0.28 ms (0.04%) | 0.0 (dead code)       | **1.66%**                |
+| 3K   | 3 000        | 895 ms/call                          | 18.3 ms (2.04%) | 18.4 ms (2.05%) | 0.58 ms (0.06%) | 0.0 (dead code)       | **4.16%**                |
+| 7K   | 7 000        | 1112 ms/call                         | 42.4 ms (3.81%) | 42.3 ms (3.80%) | 1.32 ms (0.12%) | 0.0 (dead code)       | **7.73%**                |
+
+† Instrumented-binary wall-clock; `std::chrono::steady_clock` probes add ~30–50 ms vs the un-instrumented baseline in `benchmarks/baseline.json`. The share columns are unaffected because both numerator and denominator come from the same instrumented run.
 
 **Amdahl ceiling computation (7K, the most favourable tier):**
 
@@ -262,6 +269,15 @@ No narrower scope rescues the gate. Every subset fails by wide margin.
 2. **~92% of nonrigid wall-clock at 7K is outside the bdt target set.** That time is spent in: `CorrespondenceFilter::update` (k-NN via NeighbourFinder — already measured in 9f5 pre-triage at 26–37% share), `InlierDetector::update` distance loop, Eigen per-row operations in `_update_viscously`'s force-field setup (lines 141–148, which precede the timed inner loop), and `_apply_transformation`. Future perf work should pre-triage these before assuming OpenMP is the right tool; 9f5 demonstrated that fine-grained parallelism on short-lived invocations does not amortize.
 
 **Deferred for future revisit:** If the D1 high-end tier gains a real 50K-vertex benchmark mesh, re-measure the smoothing shares. At 50K vertices, viscous/elastic per-invocation work would be ~370 µs (7.3× 7K cost) — well above fork-join overhead. But the *share* of total nonrigid time depends on how the correspondence filter scales; the shares could stay low even at 50K. Revisit only after the 50K mesh exists and the overall nonrigid wall-clock profile at that size is known.
+
+---
+
+### D4 Track Summary (2026-04-22)
+
+- **Three beads attempted, zero merged:** `6a5` (allocation hoist), `9f5` (OpenMP on NeighbourFinder), `bdt` (OpenMP on smoothing/viscoelastic loops). See the three D4 Outcome sections above for per-bead detail.
+- **Common structural reasons for closure:** allocation-hoist wins shrink as compute grows faster than allocation with mesh size (6a5); fork-join overhead exceeds compute savings at fine-grained OpenMP invocation rates on benchmark-reachable meshes (9f5); Amdahl ceiling from the measured parallel share leaves the gate arithmetically unreachable before any code is written (bdt).
+- **Pre-triage-first is the template:** measure the parallelisable share (and per-invocation workload vs fork-join break-even) against the gate *before* writing optimization code. bdt applied this correctly and avoided wasted implementation effort. Future perf beads in this area should follow the same pattern.
+- **The durable deliverable is the harness, not any optimization:** `benchmarks/` bench files, `baseline.json`, the xdist guard, and OMP pinning all landed and stay. They provide the measurement infrastructure for the next engineer who works on MeshMonk performance — even if no optimization shipped from this track.
 
 ---
 
