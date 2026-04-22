@@ -11,10 +11,14 @@ uv sync --all-extras
 # Smoke run (minimal rounds, verbose)
 OMP_NUM_THREADS=1 uv run pytest benchmarks/ --benchmark-only --benchmark-min-rounds=2 -v
 
-# Full baseline capture (5K scenarios only — committed as baseline.json)
+# Full baseline capture (all tiers — committed as baseline.json).
+# Note: tiers implemented are 1K/3K/7K; there is no 5K label. Use no -k
+# filter (or filter on actual tier labels like "1K or 3K or 7K").
 OMP_NUM_THREADS=1 uv run pytest benchmarks/ --benchmark-only \
-    --benchmark-json=benchmarks/baseline.json -k "5K" \
+    --benchmark-json=benchmarks/baseline.json \
     --benchmark-min-rounds=5
+# Review autonomous fold-in 2026-04-22: previous example used -k "5K"
+# which selects zero scenarios since no tier uses that label.
 
 # Compare against baseline (simulate what nightly CI runs)
 OMP_NUM_THREADS=1 uv run pytest benchmarks/ --benchmark-only \
@@ -48,10 +52,20 @@ The cap-at-7K approach was chosen because:
 - **3K** (~3,000 vertices): obtained by iterative downsampling.
 - **7K** (7,160 vertices): full Template.obj, used as-is.
 
-Downsampling uses `meshmonk.downsample_mesh` with deterministic ratios
-(ratio = target_n / current_n, clamped to 0.5 minimum step). The fixed
-ratio is deterministic given the same input mesh, so benchmark inputs are
-reproducible across machines.
+Downsampling uses `meshmonk.downsample_mesh` with deterministic ratios.
+Note: `meshmonk.downsample_mesh(ratio)` interprets `ratio` as the fraction
+of vertices to **remove** (i.e. number of edge collapses / current vertex
+count), not the fraction to keep. The harness computes
+`ratio_to_remove = 1.0 - target_n / current_n` clamped to a **maximum of
+0.5 per step** (never remove more than half the mesh in a single pass) and
+iterates until the target is reached or decimation stalls. This matches
+the implementation in `benchmarks/_harness.py::downsample_to` and the
+ratio-semantics fix from bead 03i.1. The ratio is deterministic given the
+same input mesh, so benchmark inputs are reproducible across machines.
+<!-- Review autonomous fold-in 2026-04-22: previous wording described the
+     pre-03i.1 broken semantics ("ratio = target_n / current_n, clamped to
+     0.5 minimum step"). Updated to match actual _harness.py behaviour. -->
+
 
 ### The committed baseline (baseline.json)
 

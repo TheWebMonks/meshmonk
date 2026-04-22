@@ -189,7 +189,11 @@ Both gate criteria failed: gate threshold unmet (0.97× < 1.3×), and the no-reg
 
 The pre-triage Amdahl ceiling of 1.59× assumed idealized parallelization efficiency (zero fork-join cost, linear scaling inside the region). Reality on this workload mix: the k-NN path consumes 26–37% of wall-clock, but parallelising it introduced more overhead than it saved on the benchmark meshes.
 
-**Action per D4 protocol:** Bead `meshmonk-modernization-9f5` closed (code not merged). Working-tree changes preserved in `git stash` labeled "9f5 OpenMP NeighbourFinder — closed below D4 recalibrated gate 2026-04-22 (see ADR-002 D4 Outcome 9f5)" — stash index currently `stash@{0}` (6a5 hoist code shifted to `stash@{1}`). Code kept rather than destroyed in case future benchmark coverage (a real 50K mesh, or a workload with larger N per NeighbourFinder invocation) reopens the question.
+**Action per D4 protocol:** Bead `meshmonk-modernization-9f5` closed (code not merged). Working-tree changes preserved in `git stash` labeled "9f5 OpenMP NeighbourFinder — closed below D4 recalibrated gate 2026-04-22 (see ADR-002 D4 Outcome 9f5)". Stash index at time of writing was `stash@{0}`; it subsequently shifted to `stash@{1}` when the bdt pre-triage instrumentation was stashed (see bdt Outcome below for the final index map). The stash **label** is the durable identifier — prefer `git stash list` + grep on the label over a fixed index. Code kept rather than destroyed in case future benchmark coverage (a real 50K mesh, or a workload with larger N per NeighbourFinder invocation) reopens the question.
+<!-- Review autonomous fold-in 2026-04-22: corrected stash-index reference
+     to match post-bdt stash list ordering; pointed readers to the stash
+     label for a durable lookup. -->
+
 
 **Implications for `bdt`:** The same fork-join overhead concern applies to any OpenMP pragma on an inner loop of a multi-iteration registration. `bdt` targets the nonrigid smoothing/viscoelastic-transform loop. Before implementation, `bdt` must pre-triage the smoothing-loop wall-clock share against the fixed harness (same pattern as 9f5's 2026-04-22 pre-triage) and verify the per-invocation parallelisable work is large enough to amortize OpenMP fork-join cost at current mesh tiers. If pre-triage shows the same pattern as 9f5 (share <50%, fine-grained invocation), `bdt` should be closed or deferred without implementation.
 
