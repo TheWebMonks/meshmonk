@@ -219,3 +219,219 @@ class TestNonrigidAnnealingGuard:
             "produces Inf/NaN (undefined behaviour). Add the same guard that "
             "PyramidNonrigidRegistration.cpp has at lines 75-78."
         )
+
+
+# ---------------------------------------------------------------------------
+# New edge-case tests (bead meshmonk-modernization-ald)
+# ---------------------------------------------------------------------------
+
+
+class TestZeroIterations:
+    """Document behavior of num_iterations=0 across registration functions.
+
+    Current behavior (documented, not fixed here):
+    - rigid_register: returns unchanged input (iterations_run=0)
+    - nonrigid_register: raises MeshMonkError(DegenerateInput)
+    - pyramid_register: raises MeshMonkError(DegenerateInput)
+
+    The divergence between rigid and nonrigid/pyramid is surprising;
+    see bead meshmonk-modernization-ald for context.
+    """
+
+    def test_rigid_zero_iterations_returns_unchanged_input(self):
+        """rigid_register with num_iterations=0 returns input unchanged (iterations_run=0)."""
+        feat, faces, flags = _make_features()
+        result = meshmonk.rigid_register(
+            floating_features=feat,
+            target_features=feat,
+            floating_faces=faces,
+            target_faces=faces,
+            floating_flags=flags,
+            target_flags=flags,
+            num_iterations=0,
+        )
+        assert result.iterations_run == 0
+        np.testing.assert_array_equal(result.aligned_features, feat)
+
+    @pytest.mark.parametrize(
+        "register_fn, fn_name",
+        [
+            (meshmonk.nonrigid_register, "nonrigid_register"),
+            (meshmonk.pyramid_register, "pyramid_register"),
+        ],
+    )
+    def test_nonrigid_pyramid_zero_iterations_raises_degenerate_input(
+        self, register_fn, fn_name
+    ):
+        """nonrigid/pyramid_register with num_iterations=0 raises MeshMonkError(DegenerateInput).
+
+        Current behavior: the C++ layer raises DegenerateInput when num_iterations=0
+        for nonrigid and pyramid — unlike rigid, which silently returns unchanged input.
+        """
+        feat, faces, flags = _make_features()
+        with pytest.raises(meshmonk.MeshMonkError, match="DegenerateInput"):
+            register_fn(
+                floating_features=feat,
+                target_features=feat,
+                floating_faces=faces,
+                target_faces=faces,
+                floating_flags=flags,
+                target_flags=flags,
+                num_iterations=0,
+            )
+
+
+class TestDegenerateMeshes:
+    """Document behavior of degenerate mesh inputs.
+
+    All tested via rigid_register (the lightest pipeline).
+    """
+
+    def test_single_vertex_raises_degenerate_input(self):
+        """A single-vertex floating mesh raises MeshMonkError(DegenerateInput)."""
+        feat, faces, flags = _make_features()
+        single_vert = np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 1.0]], dtype=np.float32)
+        single_flags = np.ones(1, dtype=np.float32)
+        empty_faces = np.zeros((0, 3), dtype=np.int32)
+        with pytest.raises(meshmonk.MeshMonkError, match="DegenerateInput"):
+            meshmonk.rigid_register(
+                floating_features=single_vert,
+                target_features=feat,
+                floating_faces=empty_faces,
+                target_faces=faces,
+                floating_flags=single_flags,
+                target_flags=flags,
+            )
+
+    def test_empty_vertex_raises_degenerate_input(self):
+        """A zero-row floating mesh raises MeshMonkError(DegenerateInput)."""
+        feat, faces, flags = _make_features()
+        empty_feat = np.zeros((0, 6), dtype=np.float32)
+        empty_flags = np.zeros(0, dtype=np.float32)
+        empty_faces = np.zeros((0, 3), dtype=np.int32)
+        with pytest.raises(meshmonk.MeshMonkError, match="DegenerateInput"):
+            meshmonk.rigid_register(
+                floating_features=empty_feat,
+                target_features=feat,
+                floating_faces=empty_faces,
+                target_faces=faces,
+                floating_flags=empty_flags,
+                target_flags=flags,
+            )
+
+    def test_single_face_mesh_raises_insufficient_inliers(self):
+        """A 3-vertex / 1-face floating mesh raises MeshMonkError(InsufficientInliers).
+
+        The C++ ICP correspondences require >=4 inlier vertices; 3 is too few.
+        """
+        feat, faces, flags = _make_features()
+        rng = np.random.RandomState(42)
+        sv = rng.randn(3, 3).astype(np.float32)
+        sn = rng.randn(3, 3).astype(np.float32)
+        # Normalize normals so they are non-degenerate
+        sn /= np.linalg.norm(sn, axis=1, keepdims=True)
+        sf = np.hstack([sv, sn])
+        sfac = np.array([[0, 1, 2]], dtype=np.int32)
+        sfl = np.ones(3, dtype=np.float32)
+        with pytest.raises(meshmonk.MeshMonkError, match="InsufficientInliers"):
+            meshmonk.rigid_register(
+                floating_features=sf,
+                target_features=feat,
+                floating_faces=sfac,
+                target_faces=faces,
+                floating_flags=sfl,
+                target_flags=flags,
+            )
+
+
+class TestNonFiniteNormals:
+    """Document behavior when the features matrix contains NaN or inf normals.
+
+    Current behavior: the C++ layer eventually raises MeshMonkError(DecompositionFailed)
+    after running many failed eigenvector decompositions — no early validation at the
+    Python boundary.
+
+    FIXME(meshmonk-modernization-2ke): non-finite normals should be caught at the Python
+    boundary in _prepare_arrays and raise a clear ValueError instead of letting the C++
+    layer spam warning lines and raise DecompositionFailed.
+    """
+
+    @pytest.mark.parametrize(
+        "nonfinite_value, label",
+        [
+            (np.nan, "NaN"),
+            (np.inf, "inf"),
+        ],
+    )
+    def test_nonfinite_normals_raises_decomposition_failed(
+        self, nonfinite_value, label
+    ):
+        """NaN or inf normals in floating_features raise MeshMonkError(DecompositionFailed).
+
+        FIXME(meshmonk-modernization-2ke): current behavior — the C++ layer raises
+        DecompositionFailed after many failed eigenvector decompositions instead of
+        the Python boundary validating and raising ValueError early.
+        """
+        feat, faces, flags = _make_features()
+        bad_feat = feat.copy()
+        bad_feat[:, 3:] = nonfinite_value  # corrupt normals columns only
+        with pytest.raises(meshmonk.MeshMonkError, match="DecompositionFailed"):
+            meshmonk.rigid_register(
+                floating_features=bad_feat,
+                target_features=feat,
+                floating_faces=faces,
+                target_faces=faces,
+                floating_flags=flags,
+                target_flags=flags,
+            )
+
+
+class TestDtypeCoercion:
+    """Document silent dtype coercion in _prepare_arrays (Pattern B).
+
+    Current behavior: float64 features/flags and int64 faces are silently coerced
+    to float32/int32 via np.asarray(..., dtype=...) with no warning emitted.
+    The output is always float32 regardless of input dtype.
+    """
+
+    @pytest.mark.parametrize(
+        "feat_dtype, faces_dtype, flags_dtype",
+        [
+            (np.float64, np.int32, np.float32),   # float64 features only
+            (np.float32, np.int64, np.float32),   # int64 faces only
+            (np.float32, np.int32, np.float64),   # float64 flags only
+            (np.float64, np.int64, np.float64),   # all wider dtypes
+        ],
+    )
+    def test_dtype_coercion_succeeds_silently(
+        self, feat_dtype, faces_dtype, flags_dtype
+    ):
+        """Wider dtypes are silently coerced to float32/int32 without warning or error.
+
+        Current behavior: np.asarray(x, dtype=float32/int32) coerces silently —
+        no DeprecationWarning, no TypeError raised.
+        """
+        import warnings
+
+        feat, faces, flags = _make_features()
+        feat_in = feat.astype(feat_dtype)
+        faces_in = faces.astype(faces_dtype)
+        flags_in = flags.astype(flags_dtype)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            result = meshmonk.rigid_register(
+                floating_features=feat_in,
+                target_features=feat_in,
+                floating_faces=faces_in,
+                target_faces=faces_in,
+                floating_flags=flags_in,
+                target_flags=flags_in,
+            )
+
+        # No warnings should be emitted for dtype coercion
+        dtype_warnings = [x for x in w if "dtype" in str(x.message).lower()]
+        assert dtype_warnings == [], f"Unexpected dtype warnings: {dtype_warnings}"
+
+        # Output is always float32 regardless of input dtype
+        assert result.aligned_features.dtype == np.float32
