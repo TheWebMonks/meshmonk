@@ -72,14 +72,15 @@ CMake `option(MESHMONK_PROFILING ... OFF)` in `library/CMakeLists.txt`. Propagat
 
 ---
 
-### D4: Four-function Python binding surface with peek/dump split
+### D4: Five-function Python binding surface with peek/dump split + calibrate
 
 **Firmness: FLEXIBLE**
 
-`profiling_reset()`, `profiling_peek() → dict`, `profiling_dump() → dict`, `profiling_enabled() → bool` are always compiled into the nanobind extension. When `MESHMONK_PROFILING` is not set they are no-ops / return empty. The Python driver controls the profiling lifecycle.
+`profiling_reset()`, `profiling_peek() → dict`, `profiling_dump() → dict`, `profiling_enabled() → bool`, `profiling_calibrate(n: int) → int` are always compiled into the nanobind extension. When `MESHMONK_PROFILING` is not set they are no-ops / return empty / return 0. The Python driver controls the profiling lifecycle.
 
 - `peek()` returns the accumulator snapshot without side-effects (safe to call multiple times)
 - `dump()` returns the snapshot AND resets (the reset side-effect is in the name for clarity)
+- `calibrate(n)` runs `n` empty `ScopedTimer` scopes in C++ and returns measured ns/scope, so the driver records real empty-timer overhead on the target host rather than a Python-side estimate
 
 **Rationale:** Python-side control keeps the profiling driver simple — reset, run, dump, analyse. No file path coupling between C++ and Python. `profiling_enabled()` lets the driver fail fast with a clear message if the extension was built without the flag. The `peek`/`dump` split prevents a common footgun — a mid-run progress print calling `dump()` would silently consume the accumulator; ad-hoc callers use `peek()` for read-only snapshots while the driver uses the `reset → run → dump` contract.
 

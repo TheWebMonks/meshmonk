@@ -70,14 +70,15 @@ The `PUBLIC` scope on `meshmonk_lib` propagates `MESHMONK_PROFILING` transitivel
 
 ## Python Bindings Surface
 
-Four functions always compiled into the extension (no-ops when `MESHMONK_PROFILING` not set):
+Five functions always compiled into the extension (no-ops when `MESHMONK_PROFILING` not set):
 
 - `meshmonk.profiling_reset()` — clear accumulator
 - `meshmonk.profiling_peek() → dict` — return `{label: {total_us, count}}` without reset; safe to call multiple times
 - `meshmonk.profiling_dump() → dict` — return `{label: {total_us, count}}` AND reset accumulator (equivalent to `peek()` then `reset()`); the reset side-effect is in the name for clarity
 - `meshmonk.profiling_enabled() → bool` — check build flag
+- `meshmonk.profiling_calibrate(n: int = 1_000_000) → int` — run n empty `ScopedTimer` scopes and return measured nanoseconds per scope (returns 0 when built without `MESHMONK_PROFILING`)
 
-The `peek` / `dump` split prevents a common footgun: if a mid-registration progress print calls `dump()`, the final `dump()` sees near-empty data. The driver uses `reset → run → dump` (single-dump contract). Ad-hoc callers use `peek` for read-only snapshots.
+The `peek` / `dump` split prevents a common footgun: if a mid-registration progress print calls `dump()`, the final `dump()` sees near-empty data. The driver uses `reset → run → dump` (single-dump contract). Ad-hoc callers use `peek` for read-only snapshots. The `calibrate` function measures true empty-`ScopedTimer` overhead in C++ so the driver doesn't have to estimate it from Python-side timings.
 
 ## Profiling Driver
 
