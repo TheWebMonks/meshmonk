@@ -18,7 +18,8 @@ dependencies = [
 
 [project.optional-dependencies]
 io = ["trimesh>=4.0"]
-dev = ["pytest", "pre-commit", "ruff", "pyright", "meshio", "scipy>=1.11", "pyyaml", "tomli>=2.0; python_version < '3.11'", "pytest-benchmark>=4.0", "trimesh>=4.0"]
+dev = ["pytest", "pre-commit", "ruff", "pyright", "meshio", "scipy>=1.11", "pyyaml", "tomli>=2.0; python_version < '3.11'", "pytest-benchmark>=4.0", "trimesh>=4.0", "fast-simplification>=0.1"]
+profiling = ["trimesh>=4.0", "fast-simplification>=0.1"]
 docs = ["mkdocs-material", "mkdocstrings[python]"]
 
 [project.scripts]

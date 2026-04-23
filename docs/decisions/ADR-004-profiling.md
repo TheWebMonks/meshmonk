@@ -12,13 +12,13 @@ Three failed perf beads (6a5, 9f5, bdt) shared a common failure mode: pre-triage
 
 ## Decisions
 
-### D1: Subdivide + downsample for 10K/100K meshes
+### D1: Subdivide + downsample for all tiers (1K / 10K / 100K)
 
 **Firmness: FIRM**
 
-Loop subdivision via trimesh scales Template.obj (7160 verts) and demoFace.obj to ~28K (one pass) and ~112K (two passes), then downsampled to the target tier. Generated once, committed to `data/` as `Template_10K.obj`, `Template_100K.obj`, `DemoFace_10K.obj`, `DemoFace_100K.obj`.
+Loop subdivision via trimesh scales Template.obj (7160 verts) and demoFace.obj to ~28K (one pass) and ~112K (two passes), then downsampled to the target tier. **All three tiers share this subdivision-then-downsample pedigree** — the 1K tier is generated via one subdivision pass then downsample to 1K, not by downsampling the raw 7160-vert Template directly. Generated once, committed to `data/` as `Template_1K.obj`, `Template_10K.obj`, `Template_100K.obj`, `DemoFace_1K.obj`, `DemoFace_10K.obj`, `DemoFace_100K.obj`.
 
-**Rationale:** Subdivision preserves mesh topology and produces geometry with realistic face density. No dependency on external scan datasets. Template+DemoFace pairs preserve the shape difference present in production workloads. Both meshes matched at each scale tier so k-NN cost has one variable (n) and scaling exponents are clean.
+**Rationale:** Subdivision preserves mesh topology and produces geometry with realistic face density. No dependency on external scan datasets. Template+DemoFace pairs preserve the shape difference present in production workloads. Both meshes matched at each scale tier so k-NN cost has one variable (n) and scaling exponents are clean. Using a single pedigree for all three tiers (rather than downsampling 1K from the raw Template while generating 10K/100K from subdivisions) keeps the "one variable per tier" claim honest — mixing pedigrees would change local density distribution at 1K and produce a spurious scaling-curve discontinuity.
 
 **Alternatives considered:**
 
@@ -72,19 +72,23 @@ CMake `option(MESHMONK_PROFILING ... OFF)` in `library/CMakeLists.txt`. Propagat
 
 ---
 
-### D4: Three-function Python binding surface
+### D4: Four-function Python binding surface with peek/dump split
 
 **Firmness: FLEXIBLE**
 
-`profiling_reset()`, `profiling_dump() → dict`, `profiling_enabled() → bool` are always compiled into the nanobind extension. When `MESHMONK_PROFILING` is not set they are no-ops / return empty. The Python driver controls the profiling lifecycle.
+`profiling_reset()`, `profiling_peek() → dict`, `profiling_dump() → dict`, `profiling_enabled() → bool` are always compiled into the nanobind extension. When `MESHMONK_PROFILING` is not set they are no-ops / return empty. The Python driver controls the profiling lifecycle.
 
-**Rationale:** Python-side control keeps the profiling driver simple — reset, run, dump, analyse. No file path coupling between C++ and Python. `profiling_enabled()` lets the driver fail fast with a clear message if the extension was built without the flag.
+- `peek()` returns the accumulator snapshot without side-effects (safe to call multiple times)
+- `dump()` returns the snapshot AND resets (the reset side-effect is in the name for clarity)
+
+**Rationale:** Python-side control keeps the profiling driver simple — reset, run, dump, analyse. No file path coupling between C++ and Python. `profiling_enabled()` lets the driver fail fast with a clear message if the extension was built without the flag. The `peek`/`dump` split prevents a common footgun — a mid-run progress print calling `dump()` would silently consume the accumulator; ad-hoc callers use `peek()` for read-only snapshots while the driver uses the `reset → run → dump` contract.
 
 **Alternatives considered:**
 
 | Approach | Pros | Cons |
 |---|---|---|
-| **Python binding surface (chosen)** | No file I/O, Python controls lifecycle | Requires new bindings in bindings.cpp |
+| **peek + dump split (chosen)** | Read-only snapshots are safe; reset semantics named explicitly | Four bindings instead of three |
+| Single `dump()` with reset side-effect | Three bindings instead of four | Silent footgun when called twice |
 | C++ writes JSON to file directly | No new bindings | File path coupling; harder to test |
 
 **What would invalidate this:** If profiling is needed from a context without Python (e.g. a C++ benchmark binary) — at that point a `dump_to_file()` C++ method is the right addition.
