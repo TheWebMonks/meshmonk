@@ -70,15 +70,16 @@ inline ScopedTimer Profiler::scoped(const std::string& label) {
 
 // Run n empty ScopedTimer scopes and return nanoseconds-per-scope.
 // Uses wall time of the full loop divided by n.
-// The '__calibration__' entries are erased from the accumulator before
-// returning so the calibration loop does not pollute profile data.
+// Operates on a local Profiler so the real g_profiler accumulator is
+// not polluted — pure function with zero side-effects on the caller.
 inline uint64_t Profiler::calibrate(size_t n) {
+  if (n == 0) return 0;
+  Profiler tmp;
   auto t0 = std::chrono::steady_clock::now();
   for (size_t i = 0; i < n; ++i) {
-    ScopedTimer t("__calibration__", *this);
+    ScopedTimer t("__calibration__", tmp);
   }
   auto t1 = std::chrono::steady_clock::now();
-  entries_.erase("__calibration__");
   auto total_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
       t1 - t0).count();
   return static_cast<uint64_t>(

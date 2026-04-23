@@ -16,11 +16,16 @@ See docs/decisions/ADR-004-profiling.md and
 history/2026-04-23-profiling-design.md for design context.
 """
 
+# Pin threading env vars FIRST — before any import that might initialise a
+# BLAS thread pool (numpy/OpenBLAS/MKL reads OMP_NUM_THREADS at import time).
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["EIGEN_DONT_PARALLELIZE"] = "1"
+
 # Top-level imports (module level — no meshmonk import yet)
 import argparse
 import datetime
 import hashlib
-import os
 import platform
 import subprocess
 import sys
@@ -291,8 +296,10 @@ def fit_scaling_exponent(
 ) -> float:
     """Fit a log-log scaling exponent for a label across 1K/10K/100K tiers.
 
-    Uses numpy.polyfit(log10(ns), log10(ys), 1) where ns are vertex counts
-    and ys are corrected total times.
+    Uses numpy.polyfit(log10(ns), log10(ms_per_call), 1) where ns are vertex
+    counts and ms_per_call is the corrected per-call latency in milliseconds.
+    Fitting per-call values (not total wall-clock) gives true per-call
+    complexity and avoids conflating invocation-count scaling with time scaling.
 
     Parameters
     ----------
@@ -320,7 +327,7 @@ def fit_scaling_exponent(
         label_stats = stats_by_tier_mode[key]
         if label not in label_stats:
             continue
-        val = label_stats[label].get("corrected_total_us", 0.0)
+        val = label_stats[label].get("ms_per_call", 0.0)
         if val <= 0:
             continue
         xs.append(tier_n_map[tier])
@@ -336,13 +343,19 @@ def fit_scaling_exponent(
 
 
 def _complexity_bucket(k: float) -> str:
-    """Assign a complexity bucket label given scaling exponent k."""
+    """Assign a complexity bucket label given scaling exponent k.
+
+    Buckets are labeled with the approximate per-call growth-rate class.
+    k≈1.0 = linear per call, k≈1.16 = n·log(n) per call, k≈2.0 = quadratic
+    per call. The O(n^k) notation is avoided since the exponent is fitted from
+    three-point data and cannot reliably discriminate between these classes.
+    """
     if np.isnan(k):
         return "n/a (insufficient tiers)"
-    candidates = [1.0, 1.16, 2.0]
-    for c in candidates:
+    candidates = [(1.0, "k≈1.0 (linear)"), (1.16, "k≈1.16 (n·log n)"), (2.0, "k≈2.0 (quadratic)")]
+    for c, label in candidates:
         if abs(k - c) < 0.2:
-            return f"≈O(n^{c})"
+            return label
     return f"other (k={k:.2f})"
 
 
@@ -381,6 +394,7 @@ def generate_report(
     overhead_ns: int,
     stats_by_tier_mode: dict,
     scaling_exponents: dict,
+    cal_runs: list = None,
 ) -> str:
     """Generate the full markdown profiling report.
 
@@ -389,11 +403,14 @@ def generate_report(
     args:
         Parsed argparse.Namespace from parse_args().
     overhead_ns:
-        Empty-ScopedTimer overhead in nanoseconds (from profiling_calibrate).
+        Empty-ScopedTimer overhead in nanoseconds (median of cal_runs).
     stats_by_tier_mode:
         Dict keyed by (tier, mode) -> {label -> stats_dict}.
     scaling_exponents:
         Dict keyed by (label, mode) -> float k (or NaN).
+    cal_runs:
+        List of 3 individual calibration measurements in ns/scope (optional).
+        When provided, all 3 values + median are recorded in Methodology.
 
     Returns
     -------
@@ -482,7 +499,7 @@ def generate_report(
 - **EIGEN_DONT_PARALLELIZE**: {os.environ.get("EIGEN_DONT_PARALLELIZE", "not set")}
 - **Run command**: `{run_cmd}`
 - **Seed**: {args.seed}
-- **ScopedTimer overhead**: {overhead_ns} ns/scope (measured via profiling_calibrate(1_000_000))
+- **ScopedTimer overhead**: {overhead_ns} ns/scope (median of 3 × profiling_calibrate(1_000_000); individual: {cal_runs[0] if cal_runs else "?"}, {cal_runs[1] if cal_runs else "?"}, {cal_runs[2] if cal_runs else "?"} ns/scope)
 - **Repetitions per (tier, mode)**: warmup={args.warmup}, runs={args.runs}, median selected
 
 ### Mesh SHA-256
@@ -548,7 +565,7 @@ are noted inline.
                 f"{table_rows}\n\n"
                 f"{reconcile_warning}"
                 f"*UNRELIABLE = ms/call < 5× timer overhead"
-                f" ({overhead_ns} ns/scope = {overhead_ns / 1e6:.4f} ms)."
+                f" ({overhead_ns} ns/scope = {overhead_ns / 1e6:.6f} ms)."
                 f" Excluded from recommendations.*\n"
             )
 
@@ -595,6 +612,10 @@ are noted inline.
     below_threshold = []
     excluded_unreliable = []
 
+    # Labels that are reference-only (superset of children) and should not be
+    # listed as independent optimization candidates in pyramid mode.
+    _PYRAMID_REFERENCE_LABELS = {"PyramidNonrigidRegistration::update"}
+
     for tier in args.tiers:
         for mode in args.modes:
             key = (tier, mode)
@@ -602,6 +623,10 @@ are noted inline.
                 continue
             stats = stats_by_tier_mode[key]
             for label, v in stats.items():
+                # In pyramid mode, skip the outer superset label — it double-counts
+                # time already covered by the /layerN and leaf labels.
+                if mode == "pyramid" and label in _PYRAMID_REFERENCE_LABELS:
+                    continue
                 if v["unreliable"]:
                     excluded_unreliable.append((label, mode, tier, v))
                 elif v["share_pct"] > 5.0 and v["ms_per_call"] > 0.03:
@@ -672,9 +697,15 @@ are noted inline.
 
     recommendation_section = f"""## Recommendations
 
+> **Note:** In pyramid mode, `PyramidNonrigidRegistration::update` is a
+> reference-only label (superset of its `/layerN` children). It is excluded
+> from the candidates list to avoid double-counting. Optimization candidates
+> are the inner `/layerN` and leaf labels.
+
 ### Candidates for optimization
 
 Labels meeting all of: share > 5%, ms/call > 0.03 ms, NOT UNRELIABLE.
+In pyramid mode, `PyramidNonrigidRegistration::update` is excluded (reference-only).
 
 {candidates_md}
 
@@ -687,7 +718,7 @@ fork-join overhead exceeding potential speedup (reference: beads 9f5, bdt).
 
 ### Excluded (UNRELIABLE)
 
-Labels with ms/call < 5× timer overhead ({overhead_ns} ns/scope = {overhead_ns / 1e6:.4f} ms).
+Labels with ms/call < 5× timer overhead ({overhead_ns} ns/scope = {overhead_ns / 1e6:.6f} ms).
 Corrected values unreliable — cannot meaningfully distinguish measurement noise from actual cost.
 
 {unreliable_table}
@@ -709,9 +740,8 @@ Corrected values unreliable — cannot meaningfully distinguish measurement nois
 
 def main() -> None:
     """Main entry point for the profiling driver."""
-    # Step 0: Pin env vars BEFORE importing meshmonk — C++ reads them at load time
-    os.environ["OMP_NUM_THREADS"] = "1"
-    os.environ["EIGEN_DONT_PARALLELIZE"] = "1"
+    # Step 0: Env vars already pinned at module level (OMP_NUM_THREADS=1,
+    # EIGEN_DONT_PARALLELIZE=1) — import meshmonk after env is set.
     import meshmonk  # deferred import — env vars must be set first
 
     args = parse_args()
@@ -725,11 +755,16 @@ def main() -> None:
         )
         sys.exit(2)
 
-    # Step 2: Calibration
+    # Step 2: Calibration — run 3 times and take the median to reduce sensitivity
+    # to transient OS scheduling events during any single measurement window.
     N_CAL = 1_000_000
-    overhead_ns = meshmonk.profiling_calibrate(N_CAL)
+    cal_runs = [int(meshmonk.profiling_calibrate(N_CAL)) for _ in range(3)]
+    overhead_ns = int(np.median(cal_runs))
     overhead_us = overhead_ns / 1000.0
-    print(f"ScopedTimer overhead: {overhead_ns} ns/scope ({overhead_us:.3f} us/scope)")
+    print(
+        f"ScopedTimer overhead: {cal_runs[0]}, {cal_runs[1]}, {cal_runs[2]} ns/scope"
+        f" → median {overhead_ns} ns/scope ({overhead_us:.3f} us/scope)"
+    )
 
     # Step 3 + 4 + 5: Mesh loading and measurement loop
     stats_by_tier_mode = {}
@@ -773,7 +808,7 @@ def main() -> None:
 
     # Step 7: Generate report
     print("\nGenerating report ...")
-    report_md = generate_report(args, overhead_ns, stats_by_tier_mode, scaling_exponents)
+    report_md = generate_report(args, overhead_ns, stats_by_tier_mode, scaling_exponents, cal_runs=cal_runs)
 
     # Step 8: Write report to file
     if args.out:

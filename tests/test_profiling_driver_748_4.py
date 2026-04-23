@@ -593,19 +593,23 @@ class TestMainStepZeroGuard:
     """main() must exit with code 2 when profiling_enabled() returns False."""
 
     def test_exits_with_code_2_when_profiling_disabled(self):
+        """Call rp.main() with mocked args and meshmonk; assert exit code 2."""
         mock_mm = MagicMock()
         mock_mm.profiling_enabled.return_value = False
 
+        mock_args = MagicMock()
+        mock_args.tiers = ["1k"]
+        mock_args.modes = ["rigid"]
+        mock_args.runs = 1
+        mock_args.warmup = 0
+        mock_args.seed = 42
+        mock_args.out = None
+
         with patch.dict("sys.modules", {"meshmonk": mock_mm}):
-            with pytest.raises(SystemExit) as exc_info:
-                # Simulate step-0 check inline (same logic as main())
-                if not mock_mm.profiling_enabled():
-                    import sys
-                    print(
-                        "ERROR: meshmonk was not built with -DMESHMONK_PROFILING=ON",
-                        file=sys.stderr,
-                    )
-                    sys.exit(2)
+            with patch.object(rp, "parse_args", return_value=mock_args):
+                with pytest.raises(SystemExit) as exc_info:
+                    rp.main()
+
         assert exc_info.value.code == 2
 
 

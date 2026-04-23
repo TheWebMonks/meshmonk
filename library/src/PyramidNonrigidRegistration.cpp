@@ -123,10 +123,6 @@ void PyramidNonrigidRegistration::update() {
 
   // # Start Pyramid Nonrigid Registration
   for (size_t i = 0; i < _numPyramidLayers; i++) {
-#ifdef MESHMONK_PROFILING
-    auto _tlayer = g_profiler.scoped(
-        "NonrigidRegistration::update/layer" + std::to_string(i));
-#endif
 
     // # Downsample Floating Mesh
     // ## Determine the downsample ratio for the current pyramid layer
@@ -190,7 +186,13 @@ void PyramidNonrigidRegistration::update() {
         _transformSigma, _viscousIterationsIntervals[i],
         _viscousIterationsIntervals[i + 1], _elasticIterationsIntervals[i],
         _elasticIterationsIntervals[i + 1]);
-    nonrigidRegistration.update();
+    {
+#ifdef MESHMONK_PROFILING
+      auto _tlayer = g_profiler.scoped(
+          "NonrigidRegistration::update/layer" + std::to_string(i));
+#endif
+      nonrigidRegistration.update();
+    }
 
     // # Copy the result in temporary variables for use in the next pyramid
     // scale

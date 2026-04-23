@@ -14,8 +14,58 @@ the full profiling functionality.
 Tests are designed to pass in BOTH build variants.
 """
 
+from pathlib import Path
+
 import meshmonk
+import numpy as np
 import pytest
+
+
+# ---------------------------------------------------------------------------
+# Helper: populate the accumulator via a real (fast) registration
+# ---------------------------------------------------------------------------
+
+_DATA_DIR = Path("/workspace/data")
+_TEMPLATE_1K = _DATA_DIR / "Template_1K.obj"
+_DEMOFACE_1K = _DATA_DIR / "DemoFace_1K.obj"
+
+
+def _populate_accumulator_with_registration():
+    """Run a rigid registration with 1K meshes to populate the accumulator.
+
+    Requires Template_1K.obj and DemoFace_1K.obj to exist in /workspace/data/.
+    Skips via pytest.skip() if the mesh files are not present.
+    Returns the snap dict from profiling_peek() after the run (for assertion).
+    """
+    import trimesh
+
+    if not _TEMPLATE_1K.exists():
+        pytest.skip(f"Template_1K.obj not found at {_TEMPLATE_1K}")
+    if not _DEMOFACE_1K.exists():
+        pytest.skip(f"DemoFace_1K.obj not found at {_DEMOFACE_1K}")
+
+    m1 = trimesh.load(str(_TEMPLATE_1K), process=False)
+    m2 = trimesh.load(str(_DEMOFACE_1K), process=False)
+
+    vf = np.asarray(m1.vertices, dtype=np.float32)
+    ff = np.asarray(m1.faces, dtype=np.int32)
+    vt = np.asarray(m2.vertices, dtype=np.float32)
+    ft = np.asarray(m2.faces, dtype=np.int32)
+
+    feat_f = meshmonk.features_from_vertices(vf, ff)
+    feat_t = meshmonk.features_from_vertices(vt, ft)
+    flags_f = np.ones(len(vf), dtype=np.float32)
+    flags_t = np.ones(len(vt), dtype=np.float32)
+
+    meshmonk.profiling_reset()
+    meshmonk.rigid_register(
+        floating_features=feat_f,
+        target_features=feat_t,
+        floating_faces=ff,
+        target_faces=ft,
+        floating_flags=flags_f,
+        target_flags=flags_t,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -141,26 +191,40 @@ class TestOnBuildSemantics:
         assert meshmonk.profiling_peek() == {}
 
     def test_on_build_peek_does_not_reset(self):
-        """Two consecutive peeks must return identical data (peek has no side effects)."""
+        """Two consecutive peeks must return identical data (peek has no side effects).
+
+        Populates the accumulator via a real registration before checking — an
+        empty accumulator would make the test trivially pass even if peek secretly
+        reset, since {} == {} always.
+        """
         if not meshmonk.profiling_enabled():
             pytest.skip("This test only applies to ON builds")
 
-        # Use calibrate to populate the accumulator (it uses ScopedTimer internally
-        # but erases __calibration__ entries — that's fine, we just need some data).
-        # Actually, calibrate erases its own entries. Use a different approach:
-        # just check that peek/peek gives the same dict (even if both are empty).
-        meshmonk.profiling_reset()
+        # Populate accumulator with real registration data
+        _populate_accumulator_with_registration()
+
+        # Both peeks must return the same non-empty dict
         snap1 = meshmonk.profiling_peek()
         snap2 = meshmonk.profiling_peek()
+        assert len(snap1) > 0, "Expected non-empty accumulator after registration"
         assert snap1 == snap2, "peek must not reset the accumulator: two consecutive peeks differ"
 
     def test_on_build_dump_resets_accumulator(self):
-        """dump() must return the current snapshot AND reset the accumulator."""
+        """dump() must return the current snapshot AND reset the accumulator.
+
+        Populates the accumulator via a real registration before checking — an
+        empty accumulator would make the test trivially pass even if dump did not
+        reset, since the post-dump check would also see {}.
+        """
         if not meshmonk.profiling_enabled():
             pytest.skip("This test only applies to ON builds")
-        meshmonk.profiling_reset()
-        # Get pre-dump snapshot via peek
+
+        # Populate accumulator with real registration data
+        _populate_accumulator_with_registration()
+
+        # Get pre-dump snapshot via peek (must be non-empty)
         pre_dump = meshmonk.profiling_peek()
+        assert len(pre_dump) > 0, "Expected non-empty accumulator after registration"
         # dump must return same data
         dumped = meshmonk.profiling_dump()
         assert dumped == pre_dump, "dump must return same data as peek before it"
@@ -169,12 +233,20 @@ class TestOnBuildSemantics:
         assert post_dump == {}, "dump must reset the accumulator"
 
     def test_on_build_peek_peek_dump_pattern(self):
-        """The full peek-peek-dump pattern: peek is idempotent, dump resets."""
+        """The full peek-peek-dump pattern: peek is idempotent, dump resets.
+
+        Populates the accumulator via a real registration so the assertions are
+        non-trivial (i.e., they catch a secret reset in peek).
+        """
         if not meshmonk.profiling_enabled():
             pytest.skip("This test only applies to ON builds")
-        meshmonk.profiling_reset()
+
+        # Populate accumulator with real registration data
+        _populate_accumulator_with_registration()
+
         snap1 = meshmonk.profiling_peek()
         snap2 = meshmonk.profiling_peek()
+        assert len(snap1) > 0, "Expected non-empty accumulator after registration"
         assert snap1 == snap2, "two peeks must return identical data"
         snap3 = meshmonk.profiling_dump()
         assert snap3 == snap1, "dump must match peek before dump"
@@ -190,14 +262,20 @@ class TestOnBuildSemantics:
         assert 10 <= ns <= 5000, f"calibrate() returned implausible {ns} ns/scope"
 
     def test_on_build_calibrate_does_not_pollute_accumulator(self):
-        """calibrate() must not leave __calibration__ entries in the accumulator."""
+        """calibrate() must not pollute the global accumulator with any entries.
+
+        After the refactor (local Profiler inside calibrate), the global
+        accumulator must remain completely untouched — no __calibration__ key
+        and no other keys inserted by the calibration loop.
+        """
         if not meshmonk.profiling_enabled():
             pytest.skip("This test only applies to ON builds")
         meshmonk.profiling_reset()
         meshmonk.profiling_calibrate(1000)
         snap = meshmonk.profiling_peek()
-        assert "__calibration__" not in snap, \
-            "calibrate must erase its own entries from the accumulator"
+        # Accumulator must be completely empty — calibrate uses a local Profiler
+        assert snap == {}, \
+            "calibrate must not touch the global accumulator (uses local Profiler)"
 
     def test_on_build_peek_dict_shape(self):
         """When accumulator has data, peek returns {label: {total_us, count}} shape."""
@@ -225,27 +303,20 @@ class TestOnBuildSemantics:
 # ---------------------------------------------------------------------------
 
 class TestProfilingRoundtrip:
-    """Roundtrip test that populates the accumulator via actual registration."""
+    """Roundtrip test that populates the accumulator via actual registration.
 
-    def test_reset_peek_peek_dump_roundtrip_with_registration(self, mesh_data_dir):
+    Uses Template_1K.obj + DemoFace_1K.obj which are committed to data/ as part
+    of bead meshmonk-modernization-748.3. The skip condition only requires those
+    files to exist — it does NOT require the larger Template.obj/demoFace.obj.
+    """
+
+    def test_reset_peek_peek_dump_roundtrip_with_registration(self):
         """Full reset->run->peek->peek->dump roundtrip with real registration data."""
         if not meshmonk.profiling_enabled():
             pytest.skip("This test only applies to ON builds")
 
-        import trimesh
-
-        template_path = mesh_data_dir / "Template.obj"
-        demoface_path = mesh_data_dir / "demoFace.obj"
-        if not template_path.exists():
-            pytest.skip(f"Template.obj not found: {template_path}")
-        if not demoface_path.exists():
-            pytest.skip(f"demoFace.obj not found: {demoface_path}")
-
-        m1 = trimesh.load(str(template_path), process=False)
-        m2 = trimesh.load(str(demoface_path), process=False)
-
-        meshmonk.profiling_reset()
-        meshmonk.rigid_register(floating=m1, target=m2)
+        # Populate accumulator via the shared helper (skips if 1K meshes absent)
+        _populate_accumulator_with_registration()
 
         snap1 = meshmonk.profiling_peek()
         snap2 = meshmonk.profiling_peek()
