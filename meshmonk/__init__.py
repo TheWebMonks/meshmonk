@@ -571,6 +571,20 @@ def _prepare_arrays(
             feat_target = feat_target.copy()
             feat_target[:, 3:] = normals_r
 
+    # Reject non-finite values before dispatching to C++. Without this, NaN/inf in
+    # positions or normals causes the eigenvector decomposer to spam-fail once per
+    # iteration before eventually raising MeshMonkError(DecompositionFailed).
+    if not np.isfinite(feat_float).all():
+        raise ValueError(
+            "floating features contain non-finite values (NaN or inf); "
+            "registration requires finite positions and normals."
+        )
+    if not np.isfinite(feat_target).all():
+        raise ValueError(
+            "target features contain non-finite values (NaN or inf); "
+            "registration requires finite positions and normals."
+        )
+
     return feat_float, feat_target, faces_float, faces_target, flags_float, flags_target
 
 

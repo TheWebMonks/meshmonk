@@ -344,16 +344,12 @@ class TestDegenerateMeshes:
             )
 
 
-class TestNonFiniteNormals:
-    """Document behavior when the features matrix contains NaN or inf normals.
+class TestNonFiniteFeatures:
+    """Non-finite values (NaN / inf) in features are rejected at the Python boundary.
 
-    Current behavior: the C++ layer eventually raises MeshMonkError(DecompositionFailed)
-    after running many failed eigenvector decompositions — no early validation at the
-    Python boundary.
-
-    FIXME(meshmonk-modernization-2ke): non-finite normals should be caught at the Python
-    boundary in _prepare_arrays and raise a clear ValueError instead of letting the C++
-    layer spam warning lines and raise DecompositionFailed.
+    Without this validation, NaN/inf causes the C++ eigenvector decomposer to fail
+    once per iteration before eventually raising MeshMonkError(DecompositionFailed).
+    _prepare_arrays intercepts and raises a clear ValueError instead.
     """
 
     @pytest.mark.parametrize(
@@ -363,22 +359,44 @@ class TestNonFiniteNormals:
             (np.inf, "inf"),
         ],
     )
-    def test_nonfinite_normals_raises_decomposition_failed(
+    def test_nonfinite_floating_normals_raises_value_error(
         self, nonfinite_value, label
     ):
-        """NaN or inf normals in floating_features raise MeshMonkError(DecompositionFailed).
-
-        FIXME(meshmonk-modernization-2ke): current behavior — the C++ layer raises
-        DecompositionFailed after many failed eigenvector decompositions instead of
-        the Python boundary validating and raising ValueError early.
-        """
         feat, faces, flags = _make_features()
         bad_feat = feat.copy()
         bad_feat[:, 3:] = nonfinite_value  # corrupt normals columns only
-        with pytest.raises(meshmonk.MeshMonkError, match="DecompositionFailed"):
+        with pytest.raises(ValueError, match="floating features contain non-finite"):
             meshmonk.rigid_register(
                 floating_features=bad_feat,
                 target_features=feat,
+                floating_faces=faces,
+                target_faces=faces,
+                floating_flags=flags,
+                target_flags=flags,
+            )
+
+    def test_nonfinite_floating_positions_raises_value_error(self):
+        feat, faces, flags = _make_features()
+        bad_feat = feat.copy()
+        bad_feat[0, 0] = np.nan  # corrupt a position value
+        with pytest.raises(ValueError, match="floating features contain non-finite"):
+            meshmonk.rigid_register(
+                floating_features=bad_feat,
+                target_features=feat,
+                floating_faces=faces,
+                target_faces=faces,
+                floating_flags=flags,
+                target_flags=flags,
+            )
+
+    def test_nonfinite_target_raises_value_error(self):
+        feat, faces, flags = _make_features()
+        bad_feat = feat.copy()
+        bad_feat[:, 3:] = np.inf
+        with pytest.raises(ValueError, match="target features contain non-finite"):
+            meshmonk.rigid_register(
+                floating_features=feat,
+                target_features=bad_feat,
                 floating_faces=faces,
                 target_faces=faces,
                 floating_flags=flags,
