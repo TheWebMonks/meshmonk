@@ -30,4 +30,5 @@ nav:
     - Types: api/types.md
     - Errors: api/errors.md
   - CLI Reference: cli.md
+  - Gotchas: gotchas.md
   - Decisions: decisions/ADR-001-meshmonk-modernization.md
