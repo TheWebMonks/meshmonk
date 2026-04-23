@@ -73,6 +73,8 @@ build4/
 build_verify/
 build_bench/
 build_venv/
+build_off_new/
+build_verify_off/
 
 # Generated demo outputs
 demo/e2e_output.obj
