@@ -134,15 +134,100 @@ build with OMP_NUM_THREADS=1 is safe and expected**. A separate profiling run
 with `OMP_NUM_THREADS` unset (or set to the hardware thread count) is needed to
 measure the actual parallel speedup.
 
-## Benchmark Verification Gate
+## Validation
 
-Speedup is measured via the existing benchmark harness (`bench_pyramid.py` /
-`bench_nonrigid.py`) under the ADR-002 perf-track protocol:
-- Build with OpenMP linked, `OMP_NUM_THREADS` at hardware count
-- Compare to `baseline.json` wall-clock
-- Gate: ≥5% improvement at the tier(s) where the label had >5% share
+### Step 1 — Correctness: existing test suite (bitwise identical)
 
-Expected ceiling from Amdahl at 100K nonrigid: 1/(1−0.53) ≈ 2.1× if the three
-correspondence labels are fully parallelized. Real speedup will be lower due to
-serial ICP overhead and fork-join cost, but fork-join cost is negligible at the
-per-call times measured (ms range vs 15µs fork-join).
+Because the parallelized loop has no floating-point reductions — each thread
+writes to distinct rows of `_outNeighbourIndices` and
+`_outNeighbourSquaredDistances` and reads only from the shared read-only
+KD-tree — results must be **bitwise identical** to the serial build, not just
+within tolerance.
+
+Run the standard test suite (excluding golden, which is nightly-only):
+
+```
+pytest tests/ -q --ignore=tests/test_golden.py
+```
+
+A single failing test is a correctness regression. There is no tolerance budget
+here: any divergence means the parallelization introduced a bug (most likely a
+shared-buffer race from a buffer accidentally left outside the loop).
+
+### Step 2 — Thread safety: ThreadSanitizer
+
+Build with TSAN and run the fast integration tests:
+
+```
+cmake -DCMAKE_CXX_FLAGS="-fsanitize=thread -g -O1" ...
+pytest tests/test_registration_e2e.py tests/test_e2e.py -q
+```
+
+TSAN reports data races at runtime. Any TSAN report is a blocker — a race that
+doesn't manifest in correctness testing on a given run can manifest under load
+or on a different scheduler. Common false positive: Eigen's internal thread-local
+state; those can be suppressed with a TSAN suppression file if confirmed
+benign, but should be investigated first.
+
+TSAN and OpenMP interact: use `libomp` (LLVM) rather than `libgomp` (GCC) for
+TSAN builds, or GCC with `-fsanitize=thread` and `OMP_NUM_THREADS=N` explicitly
+set, since TSAN doesn't fully understand GCC's OpenMP runtime internals on all
+platforms.
+
+### Step 3 — Performance: profiling rerun
+
+Run the profiling driver with `OMP_NUM_THREADS` set to the hardware thread count
+(unpin from the driver's default of 1):
+
+```
+OMP_NUM_THREADS=$(nproc) python -m profiling.run_profile \
+  --tiers 1k,10k,100k \
+  --modes nonrigid,pyramid \
+  --runs 5 --warmup 1 --seed 42 \
+  --out docs/perf/hotspot-profile-YYYYMMDD-<sha>-parallel.md
+```
+
+Compare the new `NeighbourFinder::update` ms/call and share against
+`hotspot-profile-20260423-0e3072f.md`. The correspondence labels should shrink
+proportionally to the thread count (up to the Amdahl ceiling). If they do not
+shrink — or share actually stays the same — the OpenMP linkage is likely missing
+(the `#pragma` was silently ignored).
+
+To confirm OpenMP is active at runtime, add a one-liner check to the driver or
+verify via:
+```python
+import meshmonk
+# or from C++ side: omp_get_max_threads() > 1
+```
+
+### Step 4 — Performance gate: benchmark harness
+
+Run the benchmark harness against `baseline.json` under the ADR-002 perf-track
+protocol:
+
+```
+OMP_NUM_THREADS=$(nproc) python benchmarks/bench_nonrigid.py
+OMP_NUM_THREADS=$(nproc) python benchmarks/bench_pyramid.py
+```
+
+Gate: ≥5% wall-clock improvement at one or more mesh sizes compared to
+`baseline.json`. The baseline was captured without OpenMP (serial build), so any
+measurable parallel speedup should exceed 5% at 10K+ vertices given the
+correspondence labels' combined 50–65% share.
+
+If the gate is not met — possible if the test machine has only 2 physical cores
+or if fork-join overhead dominates at 1K — document the result in the bead
+notes and reassess the schedule strategy (D3 in ADR-005).
+
+### Step 5 — Update baseline
+
+If the benchmark gate passes, update `baseline.json` to capture the new
+parallel-build wall-clock as the reference for future perf beads:
+
+```
+python benchmarks/bench_nonrigid.py --update-baseline
+python benchmarks/bench_pyramid.py --update-baseline
+```
+
+The new baseline represents a parallelized build. All future perf beads must
+build with OpenMP linked to produce comparable numbers.
