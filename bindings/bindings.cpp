@@ -21,11 +21,13 @@
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/tuple.h>
+#include <nanobind/stl/unordered_map.h>
 #include <nanobind/stl/vector.h>
 
 #include <meshmonk/logger.hpp>
 #include <meshmonk/meshmonk.hpp>
 #include <meshmonk/params.hpp>
+#include <meshmonk/profiling.hpp>
 #include <meshmonk/result.hpp>
 #include <meshmonk/transform.hpp>
 
@@ -402,4 +404,62 @@ NB_MODULE(_meshmonk_core, m) {
       "set_log_level",
       [](meshmonk::LogLevel level) { meshmonk::set_log_level(level); },
       "level"_a);
+
+  // -----------------------------------------------------------------------
+  // Profiling bindings (always compiled — no-ops when MESHMONK_PROFILING OFF)
+  // -----------------------------------------------------------------------
+  m.def("profiling_reset", []() {
+#ifdef MESHMONK_PROFILING
+    g_profiler.reset();
+#endif
+  });
+
+  m.def("profiling_peek",
+    []() -> std::unordered_map<std::string,
+                                std::unordered_map<std::string, uint64_t>> {
+#ifdef MESHMONK_PROFILING
+      auto raw = g_profiler.snapshot();
+      std::unordered_map<std::string,
+                         std::unordered_map<std::string, uint64_t>> out;
+      for (auto& [k, v] : raw) {
+        out[k] = {{"total_us", v.total_us}, {"count", v.count}};
+      }
+      return out;
+#else
+      return {};
+#endif
+    });
+
+  m.def("profiling_dump",
+    []() -> std::unordered_map<std::string,
+                                std::unordered_map<std::string, uint64_t>> {
+#ifdef MESHMONK_PROFILING
+      auto raw = g_profiler.snapshot();
+      std::unordered_map<std::string,
+                         std::unordered_map<std::string, uint64_t>> out;
+      for (auto& [k, v] : raw) {
+        out[k] = {{"total_us", v.total_us}, {"count", v.count}};
+      }
+      g_profiler.reset();
+      return out;
+#else
+      return {};
+#endif
+    });
+
+  m.def("profiling_enabled", []() -> bool {
+#ifdef MESHMONK_PROFILING
+    return true;
+#else
+    return false;
+#endif
+  });
+
+  m.def("profiling_calibrate", [](size_t n) -> uint64_t {
+#ifdef MESHMONK_PROFILING
+    return g_profiler.calibrate(n);
+#else
+    return 0;
+#endif
+  }, nb::arg("n") = static_cast<size_t>(1'000'000));
 }

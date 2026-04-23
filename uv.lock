@@ -374,6 +374,28 @@ wheels = [
 ]
 
 [[package]]
+name = "fast-simplification"
+version = "0.1.13"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e1/c7/e000571f3f271fb88b92f2bf0fbe48a12993c77cde8093c490997df46a6d/fast_simplification-0.1.13.tar.gz", hash = "sha256:5e95c966ad4ddf04b0a49013c92e5a06a3b888c6e02bb3c7ab3817fc8ba0f03f", size = 27136, upload-time = "2025-12-19T16:57:40.269Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3f/97/812aa10436c0d0d397ad9738cd4c98cf185438b9eccc4f6e53c19a7019e7/fast_simplification-0.1.13-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:3c95bd92a4817eb96d994e792df38ead3457ea01d58a095d81d53cb0fb4e1578", size = 247902, upload-time = "2025-12-19T16:57:23.639Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/6b/0de466b754eab24c04ced934ac5912e780a7ea2bd07e7ecd328a4dae115e/fast_simplification-0.1.13-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:9fad0599c569fc8d56429a42812431f51f732cd56046b06f5e061f8cb6e7a54d", size = 235507, upload-time = "2025-12-19T16:57:24.918Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/1c/c596ad29a46665ce8f77579446fae46df2a23a8ac7f8bb62bf104fb24643/fast_simplification-0.1.13-cp310-cp310-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:da89a8787fdc76ed5dea5d373dc95f941044e658dce65e23fca32a624ce5d440", size = 1702166, upload-time = "2025-12-19T16:57:26.767Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/4c/5fbce7b06b15815be0e8f54cc9456e1ada9a26f5c4df236526c0d7344dea/fast_simplification-0.1.13-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:a6c82a25fff7892b39eb4147b6286fea4ff42dd62d1137591197d0b6b2f68a78", size = 1725700, upload-time = "2025-12-19T16:57:28.617Z" },
+    { url = "https://files.pythonhosted.org/packages/89/68/745d696cdffa34a383a388d0b0f2e73ed7e43dedfe9c423a64cdf2f4f91d/fast_simplification-0.1.13-cp310-cp310-win_amd64.whl", hash = "sha256:c57db49c27452168a60b00c6ab643ff8ed97b8ebb2d121315ec2553992adc6c0", size = 388224, upload-time = "2025-12-19T16:57:30.279Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/81/ea0026164dd9dbaf6904176dbc716b8361548bbff7c0a273c14e2137ed27/fast_simplification-0.1.13-cp311-abi3-macosx_10_9_x86_64.whl", hash = "sha256:4a89d1d0ecbb547528048ab6333bf2287767dbba727fa0553b18a138802d9b61", size = 225697, upload-time = "2025-12-19T16:57:31.776Z" },
+    { url = "https://files.pythonhosted.org/packages/49/1c/ea8c057ebf02a3b24eddc79619bdc1c844a2354dbdf66176d86750755846/fast_simplification-0.1.13-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:f3bcd10b5de2a85fe41d4ba27ccdf3adc723c2a0f5a1afb47f01e95c6c158651", size = 221602, upload-time = "2025-12-19T16:57:32.941Z" },
+    { url = "https://files.pythonhosted.org/packages/34/64/4ecbf504f3207a36e7713013b473d40fb56d1b665b7d6ee80ffd3b217f81/fast_simplification-0.1.13-cp311-abi3-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:3ed45b1f07d718832aec76ae92c91ab8e84001d935055379ce0089b0cfb87870", size = 1613145, upload-time = "2025-12-19T16:57:34.13Z" },
+    { url = "https://files.pythonhosted.org/packages/8c/44/ae0b556d62ed6a8c6f290435f4764fae9944f6857171b60613ab35f0f1a7/fast_simplification-0.1.13-cp311-abi3-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c694f0f0bbafbaf29acf7043de603b4c85259f2eae7b802d4946d47976e9959d", size = 1638154, upload-time = "2025-12-19T16:57:35.609Z" },
+    { url = "https://files.pythonhosted.org/packages/33/44/3208d9c3f76b5cadcc43b96a0db21c62926b3aa35be2cf16deb88cc7d4d1/fast_simplification-0.1.13-cp311-abi3-win_amd64.whl", hash = "sha256:94565811e708828f77c0a30eb8f05278e8f5826f2cbf1791cc470f6471dd0dce", size = 378277, upload-time = "2025-12-19T16:57:38.783Z" },
+]
+
+[[package]]
 name = "filelock"
 version = "3.28.0"
 source = { registry = "https://pypi.org/simple" }
@@ -849,6 +871,7 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
+    { name = "fast-simplification" },
     { name = "meshio" },
     { name = "pre-commit" },
     { name = "pyright" },
@@ -868,9 +891,15 @@ docs = [
 io = [
     { name = "trimesh" },
 ]
+profiling = [
+    { name = "fast-simplification" },
+    { name = "trimesh" },
+]
 
 [package.metadata]
 requires-dist = [
+    { name = "fast-simplification", marker = "extra == 'dev'", specifier = ">=0.1" },
+    { name = "fast-simplification", marker = "extra == 'profiling'", specifier = ">=0.1" },
     { name = "meshio", marker = "extra == 'dev'" },
     { name = "mkdocs-material", marker = "extra == 'docs'" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'" },
@@ -885,10 +914,11 @@ requires-dist = [
     { name = "tomli", marker = "python_full_version < '3.11' and extra == 'dev'", specifier = ">=2.0" },
     { name = "trimesh", marker = "extra == 'dev'", specifier = ">=4.0" },
     { name = "trimesh", marker = "extra == 'io'", specifier = ">=4.0" },
+    { name = "trimesh", marker = "extra == 'profiling'", specifier = ">=4.0" },
     { name = "typer", specifier = ">=0.9" },
     { name = "typing-extensions", specifier = ">=4.6" },
 ]
-provides-extras = ["io", "dev", "docs"]
+provides-extras = ["io", "dev", "profiling", "docs"]
 
 [[package]]
 name = "meshmonk-demo"
