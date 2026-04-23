@@ -1,10 +1,30 @@
 # ADR-005: NeighbourFinder OpenMP Parallelization
 
-**Status:** Accepted
+**Status:** Superseded — not implemented
 **Date:** 2026-04-23
 **Design:** [NeighbourFinder OpenMP design doc](../../history/2026-04-23-neighbourfinder-openmp-design.md)
 **Parent:** [ADR-001 meshmonk-modernization](./ADR-001-meshmonk-modernization.md)
 **Evidence:** [Hotspot profile 20260423](../../docs/perf/hotspot-profile-20260423-0e3072f.md)
+
+## Outcome
+
+**This ADR was not implemented.** After the design was written, a prior attempt
+(bead `9f5`) was found that added the identical `#pragma omp parallel for` to
+the same loop and measured a regression (0.93–0.99×) on the 7K benchmark
+harness. The design didn't account for this.
+
+The Amdahl ceiling is also lower than the design implied: the three correspondence
+labels are a composition stack, not additive — the parallelizable leaf is ~15%
+of runtime, giving a realistic ceiling of ~1.17× at 100K. The project then
+shifted focus to higher-ROI algorithmic approaches (see ADR-006 and its
+successors): line-of-sight profiling at 100K, neighbour caching across ICP
+iterations, and batched SIMD queries.
+
+**Prior art:** bead `9f5` — closed 2026-04-22 below ≥5% gate (was ≥2× per
+ADR-002 D6 at the time). Revisit OpenMP only if production workload shifts
+solidly to 100K+ meshes AND algorithmic wins are exhausted.
+
+---
 
 ## Context
 
