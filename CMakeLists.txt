@@ -37,6 +37,7 @@ endif()
 find_package(nanobind CONFIG REQUIRED)
 
 # --- Subdirectories ---
+option(MESHMONK_PROFILING "Enable registration profiling instrumentation" OFF)
 add_subdirectory(library)
 
 # --- nanobind extension module ---

@@ -1,4 +1,5 @@
 #include "PyramidNonrigidRegistration.hpp"
+#include "meshmonk/profiling.hpp"
 
 namespace registration {
 
@@ -102,6 +103,9 @@ void PyramidNonrigidRegistration::set_parameters(
 } // end set_parameters()
 
 void PyramidNonrigidRegistration::update() {
+#ifdef MESHMONK_PROFILING
+  auto _t = g_profiler.scoped("PyramidNonrigidRegistration::update");
+#endif
 
   // # Initialize the floating features, their original indices and the faces.
   /*
@@ -119,6 +123,10 @@ void PyramidNonrigidRegistration::update() {
 
   // # Start Pyramid Nonrigid Registration
   for (size_t i = 0; i < _numPyramidLayers; i++) {
+#ifdef MESHMONK_PROFILING
+    auto _tlayer = g_profiler.scoped(
+        "NonrigidRegistration::update/layer" + std::to_string(i));
+#endif
 
     // # Downsample Floating Mesh
     // ## Determine the downsample ratio for the current pyramid layer

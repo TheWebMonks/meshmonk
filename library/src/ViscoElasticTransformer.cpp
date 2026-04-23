@@ -1,5 +1,6 @@
 #include "ViscoElasticTransformer.hpp"
 #include "meshmonk/logger.hpp"
+#include "meshmonk/profiling.hpp"
 
 namespace registration {
 
@@ -64,6 +65,9 @@ void ViscoElasticTransformer::_update_neighbours() {
 
 // ## Update the weights used for smoothing
 void ViscoElasticTransformer::_update_smoothing_weights() {
+#ifdef MESHMONK_PROFILING
+  auto _t = g_profiler.scoped("ViscoElasticTransformer::_update_smoothing_weights");
+#endif
   /*
   The smoothing weights are the weights assigned to each vertex neighbour which
   will be used during the smoothing of the vector fields.
@@ -120,6 +124,9 @@ void ViscoElasticTransformer::_update_smoothing_weights() {
 } // end _update_smoothing_weights()
 
 void ViscoElasticTransformer::_update_viscously() {
+#ifdef MESHMONK_PROFILING
+  auto _t = g_profiler.scoped("ViscoElasticTransformer::_update_viscously");
+#endif
   /*
   Viscosity is obtained by incrementing the displacement field with a
   regularized force field.
@@ -200,6 +207,9 @@ void ViscoElasticTransformer::_update_viscously() {
 }
 
 void ViscoElasticTransformer::_update_elastically() {
+#ifdef MESHMONK_PROFILING
+  auto _t = g_profiler.scoped("ViscoElasticTransformer::_update_elastically");
+#endif
 
   // # Get the neighbour indices
   Vec3Mat unregulatedDisplacementField;
@@ -240,6 +250,9 @@ void ViscoElasticTransformer::_update_elastically() {
 }
 
 void ViscoElasticTransformer::_update_outlier_transformation() {
+#ifdef MESHMONK_PROFILING
+  auto _t = g_profiler.scoped("ViscoElasticTransformer::_update_outlier_transformation");
+#endif
   // # The transformation for the outliers is updated via a diffusion process.
   // ## The transformation field for inliers is kept the same, but diffuses into
   // ## outlier areas via diffusion.
@@ -305,6 +318,9 @@ void ViscoElasticTransformer::_update_transformation() {
 }
 
 void ViscoElasticTransformer::_apply_transformation() {
+#ifdef MESHMONK_PROFILING
+  auto _t = g_profiler.scoped("ViscoElasticTransformer::_apply_transformation");
+#endif
   // # Displace each current floating position by the difference between
   // # the old and new displacement fields.
   for (size_t i = 0; i < _numElements; i++) {

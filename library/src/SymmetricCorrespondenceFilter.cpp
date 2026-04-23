@@ -1,4 +1,5 @@
 #include "SymmetricCorrespondenceFilter.hpp"
+#include "meshmonk/profiling.hpp"
 
 namespace registration {
 
@@ -66,6 +67,9 @@ void SymmetricCorrespondenceFilter::_update_push_and_pull() {
 } // end wknn_affinity()
 
 void SymmetricCorrespondenceFilter::update() {
+#ifdef MESHMONK_PROFILING
+  auto _t = g_profiler.scoped("SymmetricCorrespondenceFilter::update");
+#endif
   // # Update the I/O for the push- and pull-filters
   _pushFilter.set_floating_input(_inFloatingFeatures, _inFloatingFlags);
   _pushFilter.set_target_input(_inTargetFeatures, _inTargetFlags);

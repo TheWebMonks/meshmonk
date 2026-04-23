@@ -23,6 +23,11 @@ add_subdirectory(../vendor/OpenMesh-11.0.0
 # --- Define the meshmonk_lib Library ---
 add_library(meshmonk_lib STATIC ${MESHMONK_SOURCES})
 
+option(MESHMONK_PROFILING "Enable registration profiling instrumentation" OFF)
+if(MESHMONK_PROFILING)
+  target_compile_definitions(meshmonk_lib PUBLIC MESHMONK_PROFILING)
+endif()
+
 # MSVC does not expose M_PI from <cmath> unless _USE_MATH_DEFINES is set before
 # <cmath> is included. src/ uses M_PI.
 if(MSVC)

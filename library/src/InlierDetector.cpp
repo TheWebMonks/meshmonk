@@ -1,5 +1,6 @@
 #include "InlierDetector.hpp"
 #include "meshmonk/logger.hpp"
+#include "meshmonk/profiling.hpp"
 
 namespace registration {
 
@@ -26,6 +27,9 @@ void InlierDetector::set_parameters(const float kappa,
 }
 
 void InlierDetector::update() {
+#ifdef MESHMONK_PROFILING
+  auto _t = g_profiler.scoped("InlierDetector::update");
+#endif
 
   //    _parameterList["jos"] = 2.0f;
   //    _parameterList.insert(std::make_pair("ljkewqr", 3));

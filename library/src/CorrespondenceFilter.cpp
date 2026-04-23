@@ -1,4 +1,5 @@
 #include "CorrespondenceFilter.hpp"
+#include "meshmonk/profiling.hpp"
 
 namespace registration {
 
@@ -123,6 +124,9 @@ void CorrespondenceFilter::_update_affinity() {
 } // end wknn_affinity()
 
 void CorrespondenceFilter::update() {
+#ifdef MESHMONK_PROFILING
+  auto _t = g_profiler.scoped("CorrespondenceFilter::update");
+#endif
 
   // # Update the neighbour indices and distances
   _neighbourFinder.set_queried_points(_inFloatingFeatures);

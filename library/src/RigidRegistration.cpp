@@ -1,4 +1,5 @@
 #include "RigidRegistration.hpp"
+#include "meshmonk/profiling.hpp"
 #include <memory>
 
 namespace registration {
@@ -29,6 +30,9 @@ void RigidRegistration::set_parameters(bool symmetric, size_t numNeighbours,
 } // end set_parameters()
 
 void RigidRegistration::update() {
+#ifdef MESHMONK_PROFILING
+  auto _t = g_profiler.scoped("RigidRegistration::update");
+#endif
 
   // # Initializes
   size_t numFloatingVertices = _ioFloatingFeatures->rows();

@@ -1,4 +1,5 @@
 #include "NonrigidRegistration.hpp"
+#include "meshmonk/profiling.hpp"
 #include <memory>
 
 namespace registration {
@@ -53,6 +54,9 @@ void NonrigidRegistration::set_parameters(
 } // end set_parameters()
 
 void NonrigidRegistration::update() {
+#ifdef MESHMONK_PROFILING
+  auto _t = g_profiler.scoped("NonrigidRegistration::update");
+#endif
 
   // # Initializes
   size_t numFloatingVertices = _ioFloatingFeatures->rows();

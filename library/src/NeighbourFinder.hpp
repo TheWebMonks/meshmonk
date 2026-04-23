@@ -2,6 +2,7 @@
 #define NEIGHBOURFINDER_HPP
 
 #include "meshmonk/global.hpp"
+#include "meshmonk/profiling.hpp"
 #include <Eigen/Dense>
 #include <nanoflann.hpp>
 
@@ -142,6 +143,9 @@ void NeighbourFinder<VecMatType>::set_parameters(const size_t numNeighbours) {
 }
 
 template <typename VecMatType> void NeighbourFinder<VecMatType>::update() {
+#ifdef MESHMONK_PROFILING
+  auto _t = g_profiler.scoped("NeighbourFinder::update");
+#endif
 
   // # Query the kd-tree
   // ## Loop over the queried features
