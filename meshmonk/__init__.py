@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 from typing_extensions import Unpack
+from numpy.typing import NDArray
 from meshmonk._types import RigidKwargs, NonrigidKwargs, PyramidKwargs
 
 try:
@@ -117,12 +118,12 @@ __all__ = [
 class RigidRegResult:
     """Result of rigid_register()."""
 
-    aligned_features: np.ndarray  # (N, 6) float32 — positions + normals
+    aligned_features: NDArray[np.float32]  # shape: (N, 6) — positions + normals
     transform: RigidTransform  # 4x4 SE(3) rigid transform
     iterations_run: int
 
     @property
-    def aligned_vertices(self) -> np.ndarray:
+    def aligned_vertices(self) -> NDArray[np.float32]:
         """(N, 3) float32 — aligned positions only."""
         return self.aligned_features[:, :3]
 
@@ -131,13 +132,13 @@ class RigidRegResult:
 class NonrigidRegResult:
     """Result of nonrigid_register()."""
 
-    aligned_features: np.ndarray  # (N, 6) float32
-    final_inlier_weights: np.ndarray  # (N,) float32
-    displacement_field: np.ndarray  # (N, 3) float32
+    aligned_features: NDArray[np.float32]  # shape: (N, 6)
+    final_inlier_weights: NDArray[np.float32]  # shape: (N,)
+    displacement_field: NDArray[np.float32]  # shape: (N, 3)
     iterations_run: int
 
     @property
-    def aligned_vertices(self) -> np.ndarray:
+    def aligned_vertices(self) -> NDArray[np.float32]:
         """(N, 3) float32 — aligned positions only."""
         return self.aligned_features[:, :3]
 
@@ -146,13 +147,13 @@ class NonrigidRegResult:
 class PyramidRegResult:
     """Result of pyramid_register()."""
 
-    aligned_features: np.ndarray  # (N, 6) float32
-    final_inlier_weights: np.ndarray  # (N,) float32
-    displacement_field: np.ndarray  # (N, 3) float32
+    aligned_features: NDArray[np.float32]  # shape: (N, 6)
+    final_inlier_weights: NDArray[np.float32]  # shape: (N,)
+    displacement_field: NDArray[np.float32]  # shape: (N, 3)
     per_layer_iterations: list[int]
 
     @property
-    def aligned_vertices(self) -> np.ndarray:
+    def aligned_vertices(self) -> NDArray[np.float32]:
         """(N, 3) float32 — aligned positions only."""
         return self.aligned_features[:, :3]
 
