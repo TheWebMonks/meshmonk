@@ -130,13 +130,18 @@ void NeighbourFinder<VecMatType>::set_source_points(
 
   // # Update internal data structures
   // ## The kd-tree has to be rebuilt.
-  if (_kdTree != NULL) {
-    delete _kdTree;
-    _kdTree = NULL;
+  {
+#ifdef MESHMONK_PROFILING
+    auto _t_build = g_profiler.scoped("NeighbourFinder::build_kdtree");
+#endif
+    if (_kdTree != NULL) {
+      delete _kdTree;
+      _kdTree = NULL;
+    }
+    _kdTree = new nanoflann::KDTreeEigenMatrixAdaptor<VecMatType>(
+        *_inSourcePoints, _leafSize);
+    _kdTree->index->buildIndex();
   }
-  _kdTree = new nanoflann::KDTreeEigenMatrixAdaptor<VecMatType>(
-      *_inSourcePoints, _leafSize);
-  _kdTree->index->buildIndex();
 }
 
 template <typename VecMatType>
