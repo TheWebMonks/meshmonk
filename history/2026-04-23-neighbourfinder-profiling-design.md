@@ -4,6 +4,7 @@
 **Date:** 2026-04-23
 **Bead:** `meshmonk-modernization-5jf`
 **Parent infra:** [ADR-004 profiling](../docs/decisions/ADR-004-profiling.md)
+**Decisions:** [ADR-006](../docs/decisions/ADR-006-neighbourfinder-profiling.md)
 
 ## What We're Building
 

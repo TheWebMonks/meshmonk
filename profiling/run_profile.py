@@ -33,6 +33,7 @@ from pathlib import Path
 
 import numpy as np
 
+REPO_ROOT = Path(__file__).parent.parent.resolve()
 
 # meshmonk is imported INSIDE main() after env vars are set — see Step 0.
 
@@ -137,7 +138,7 @@ def load_mesh_tier(tier: str) -> tuple:
     import trimesh
     import meshmonk
 
-    DATA = Path("/workspace/data")
+    DATA = REPO_ROOT / "data"
     tier_map = {
         "1k": ("Template_1K.obj", "DemoFace_1K.obj"),
         "10k": ("Template_10K.obj", "DemoFace_10K.obj"),
@@ -445,10 +446,10 @@ def generate_report(
 
     try:
         git_sha = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd="/workspace"
+            ["git", "rev-parse", "HEAD"], cwd=str(REPO_ROOT)
         ).strip().decode()
         git_short = subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"], cwd="/workspace"
+            ["git", "rev-parse", "--short", "HEAD"], cwd=str(REPO_ROOT)
         ).strip().decode()
     except Exception:
         git_sha = "unknown"
@@ -460,7 +461,7 @@ def generate_report(
         "Template_1K", "Template_10K", "Template_100K",
         "DemoFace_1K", "DemoFace_10K", "DemoFace_100K",
     ]:
-        p = Path(f"/workspace/data/{name}.obj")
+        p = REPO_ROOT / "data" / f"{name}.obj"
         if p.exists():
             mesh_sha[name] = sha256_file(p)
         else:
@@ -816,12 +817,12 @@ def main() -> None:
     else:
         try:
             git_short = subprocess.check_output(
-                ["git", "rev-parse", "--short", "HEAD"], cwd="/workspace"
+                ["git", "rev-parse", "--short", "HEAD"], cwd=str(REPO_ROOT)
             ).strip().decode()
         except Exception:
             git_short = "unknown"
         today = datetime.date.today().strftime("%Y%m%d")
-        out_dir = Path("/workspace/docs/perf")
+        out_dir = REPO_ROOT / "docs" / "perf"
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / f"hotspot-profile-{today}-{git_short}.md"
 

@@ -149,8 +149,8 @@ template <typename VecMatType> void NeighbourFinder<VecMatType>::update() {
 
   // # Query the kd-tree
   // ## Loop over the queried features
-  // ### Hoist buffers above loop (D2): separates first-allocation from
-  // ### per-iteration cost. resize()/reinit inside the loop.
+  // ### Hoist buffers above loop (D2): first allocation happens here;
+  // ### resize() inside the loop is a no-op after iteration 0.
   unsigned int i = 0;
   unsigned int j = 0;
   std::vector<float> queriedFeature;
@@ -160,33 +160,22 @@ template <typename VecMatType> void NeighbourFinder<VecMatType>::update() {
 
   // ### Execute loop
   for (; i < _numQueriedElements; ++i) {
-    // Bucket 1: buffer_alloc — resize/reinit per-iteration buffers
-    {
-#ifdef MESHMONK_PROFILING
-      auto _t_alloc = g_profiler.scoped("NeighbourFinder::buffer_alloc");
-#endif
-      queriedFeature.resize(_numDimensions);
-      neighbourIndices.resize(_numNeighbours);
-      neighbourSquaredDistances.resize(_numNeighbours);
-      knnResultSet = nanoflann::KNNResultSet<float>(_numNeighbours);
+    // resize() is a no-op after iteration 0 (vectors stay at target capacity)
+    queriedFeature.resize(_numDimensions);
+    neighbourIndices.resize(_numNeighbours);
+    neighbourSquaredDistances.resize(_numNeighbours);
+    knnResultSet = nanoflann::KNNResultSet<float>(_numNeighbours);
+
+    // ### Initiliaze the knnResultSet
+    knnResultSet.init(&neighbourIndices[0], &neighbourSquaredDistances[0]);
+
+    // ### convert input features to 'queriedFeature' std::vector structure
+    // ### (required by nanoflann's kd-tree).
+    for (j = 0; j < _numDimensions; ++j) {
+      queriedFeature[j] = (*_inQueriedPoints)(i, j);
     }
 
-    // Bucket 2: query_setup — feature extraction + knnResultSet.init()
-    {
-#ifdef MESHMONK_PROFILING
-      auto _t_setup = g_profiler.scoped("NeighbourFinder::query_setup");
-#endif
-      // ### Initiliaze the knnResultSet
-      knnResultSet.init(&neighbourIndices[0], &neighbourSquaredDistances[0]);
-
-      // ### convert input features to 'queriedFeature' std::vector structure
-      // ### (required by nanoflann's kd-tree).
-      for (j = 0; j < _numDimensions; ++j) {
-        queriedFeature[j] = (*_inQueriedPoints)(i, j);
-      }
-    }
-
-    // Bucket 3: tree_query — kd-tree nearest-neighbour search
+    // tree_query — kd-tree nearest-neighbour search (dominant cost bucket)
     {
 #ifdef MESHMONK_PROFILING
       auto _t_query = g_profiler.scoped("NeighbourFinder::tree_query");
@@ -196,15 +185,9 @@ template <typename VecMatType> void NeighbourFinder<VecMatType>::update() {
           nanoflann::SearchParams(32, 0.0001 /*eps*/, true));
     }
 
-    // Bucket 4: result_copy — copy indices/distances to output matrices
-    {
-#ifdef MESHMONK_PROFILING
-      auto _t_copy = g_profiler.scoped("NeighbourFinder::result_copy");
-#endif
-      for (j = 0; j < _numNeighbours; ++j) {
-        _outNeighbourIndices(i, j) = neighbourIndices[j];
-        _outNeighbourSquaredDistances(i, j) = neighbourSquaredDistances[j];
-      }
+    for (j = 0; j < _numNeighbours; ++j) {
+      _outNeighbourIndices(i, j) = neighbourIndices[j];
+      _outNeighbourSquaredDistances(i, j) = neighbourSquaredDistances[j];
     }
   }
 } // end k_nearest_neighbours()
