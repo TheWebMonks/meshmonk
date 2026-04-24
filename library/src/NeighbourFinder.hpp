@@ -15,6 +15,13 @@ typedef Eigen::Matrix<float, Eigen::Dynamic, 3> Vec3Mat;
 
 namespace registration {
 
+// Process-wide default for the NeighbourFinder warm-start cache
+// (ADR-007). Each instance copies this value on construction, so
+// callers must set it BEFORE invoking register functions. Tests flip
+// it to false to verify cached and uncached paths give identical
+// output.
+extern bool g_neighbour_caching_default;
+
 template <typename VecMatType> class NeighbourFinder {
   /*
   GOAL
@@ -47,6 +54,10 @@ public:
   void set_parameters(const size_t numNeighbours);
   void update();
 
+  // Disable the cross-iteration warm-start cache. Used in tests to verify
+  // cached and uncached code paths produce identical results.
+  void set_caching_enabled(bool enabled) { _cachingEnabled = enabled; }
+
 protected:
 private:
   // # Inputs
@@ -60,6 +71,12 @@ private:
 
   // # Internal Data structures
   nanoflann::KDTreeEigenMatrixAdaptor<VecMatType> *_kdTree = NULL;
+
+  // # Warm-start cache across update() calls (ADR-007 D1)
+  MatDynInt _cachedNeighbourIndices;
+  const VecMatType *_cachedSourcePtr = NULL;
+  size_t _cachedNumSourceElements = 0;
+  bool _cachingEnabled = g_neighbour_caching_default;
 
   // # Interal parameters
   size_t _numDimensions = 0;
@@ -91,6 +108,19 @@ template <typename VecMatType> NeighbourFinder<VecMatType>::~NeighbourFinder() {
 template <typename VecMatType>
 void NeighbourFinder<VecMatType>::set_source_points(
     const VecMatType *const inSourcePoints) {
+  // # Cache invalidation (ADR-007 D3): same pointer + same row count ⇒
+  // retain cache; cached indices still refer to the same mesh vertices
+  // whose positions may have changed in place. Any other change drops
+  // the cache to avoid dereferencing stale indices.
+  const size_t newNumSourceElements =
+      static_cast<size_t>(inSourcePoints->rows());
+  if (inSourcePoints != _cachedSourcePtr ||
+      newNumSourceElements != _cachedNumSourceElements) {
+    _cachedNeighbourIndices.resize(0, 0);
+  }
+  _cachedSourcePtr = inSourcePoints;
+  _cachedNumSourceElements = newNumSourceElements;
+
   // # Set input
   _inSourcePoints = inSourcePoints;
 
@@ -139,6 +169,8 @@ void NeighbourFinder<VecMatType>::set_parameters(const size_t numNeighbours) {
   if (parameterChanged == true) {
     _outNeighbourIndices.setZero(_numQueriedElements, _numNeighbours);
     _outNeighbourSquaredDistances.setZero(_numQueriedElements, _numNeighbours);
+    // Cache shape is numQueried × old-k; invalidate on k change.
+    _cachedNeighbourIndices.resize(0, 0);
   }
 }
 
@@ -146,6 +178,16 @@ template <typename VecMatType> void NeighbourFinder<VecMatType>::update() {
 #ifdef MESHMONK_PROFILING
   auto _t = g_profiler.scoped("NeighbourFinder::update");
 #endif
+
+  // # Warm-start cache (ADR-007): cache is usable iff it was written by
+  // a prior update() with the same shape. Fresh-search path on mismatch.
+  const bool useCache =
+      _cachingEnabled &&
+      static_cast<size_t>(_cachedNeighbourIndices.rows()) == _numQueriedElements &&
+      static_cast<size_t>(_cachedNeighbourIndices.cols()) == _numNeighbours;
+
+  // ADR-007 D2 — must match the eps passed to SearchParams below.
+  const float searchEps = 0.0001f;
 
   // # Query the kd-tree
   // ## Loop over the queried features
@@ -175,6 +217,31 @@ template <typename VecMatType> void NeighbourFinder<VecMatType>::update() {
       queriedFeature[j] = (*_inQueriedPoints)(i, j);
     }
 
+    // ### Warm-start: compute the max distance from the query to the
+    // previous iteration's neighbour indices at CURRENT positions. This
+    // is a valid upper bound on the true k-th distance (ADR-007 D1).
+    // Overwrite the worstDist slot set by init() — safe because
+    // KNNResultSet::addPoint only reads dists[0..count-1] while
+    // count < capacity; dists[capacity-1] is the worstDist sentinel
+    // until count reaches capacity.
+    if (useCache) {
+      float ceiling = 0.0f;
+      for (size_t c = 0; c < _numNeighbours; ++c) {
+        const int cachedIdx = _cachedNeighbourIndices(i, c);
+        float d = 0.0f;
+        for (size_t dim = 0; dim < _numDimensions; ++dim) {
+          const float diff = queriedFeature[dim] -
+                             (*_inSourcePoints)(cachedIdx, dim);
+          d += diff * diff;
+        }
+        if (d > ceiling) {
+          ceiling = d;
+        }
+      }
+      neighbourSquaredDistances[_numNeighbours - 1] =
+          ceiling * (1.0f + searchEps);
+    }
+
     // tree_query — kd-tree nearest-neighbour search (dominant cost bucket)
     {
 #ifdef MESHMONK_PROFILING
@@ -182,13 +249,17 @@ template <typename VecMatType> void NeighbourFinder<VecMatType>::update() {
 #endif
       _kdTree->index->findNeighbors(
           knnResultSet, &queriedFeature[0],
-          nanoflann::SearchParams(32, 0.0001 /*eps*/, true));
+          nanoflann::SearchParams(32, searchEps, true));
     }
 
     for (j = 0; j < _numNeighbours; ++j) {
       _outNeighbourIndices(i, j) = neighbourIndices[j];
       _outNeighbourSquaredDistances(i, j) = neighbourSquaredDistances[j];
     }
+  }
+
+  if (_cachingEnabled) {
+    _cachedNeighbourIndices = _outNeighbourIndices;
   }
 } // end k_nearest_neighbours()
 

@@ -47,8 +47,8 @@ nanobind_add_module(_meshmonk_core STABLE_ABI bindings/bindings.cpp)
 target_link_libraries(_meshmonk_core PRIVATE meshmonk_lib)
 target_include_directories(
   _meshmonk_core
-  PRIVATE ${CMAKE_SOURCE_DIR}/library/include ${CMAKE_SOURCE_DIR}/vendor
-          ${CMAKE_SOURCE_DIR}/vendor/tl)
+  PRIVATE ${CMAKE_SOURCE_DIR}/library/include ${CMAKE_SOURCE_DIR}/library/src
+          ${CMAKE_SOURCE_DIR}/vendor ${CMAKE_SOURCE_DIR}/vendor/tl)
 install(TARGETS _meshmonk_core LIBRARY DESTINATION meshmonk)
 
 # --- Type stubs (PEP 561) ---

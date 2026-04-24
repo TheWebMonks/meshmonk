@@ -56,6 +56,11 @@ from meshmonk._meshmonk_core import (  # noqa: E402
     profiling_dump,
     profiling_enabled,
     profiling_calibrate,
+    # bead 729: NeighbourFinder cache toggle (underscore-prefixed — used by
+    # the correctness test that compares cached and uncached code paths;
+    # not part of the stable public API).
+    _set_neighbour_caching,
+    _get_neighbour_caching,
 )
 
 # ---------------------------------------------------------------------------

@@ -24,6 +24,7 @@
 #include <nanobind/stl/unordered_map.h>
 #include <nanobind/stl/vector.h>
 
+#include "NeighbourFinder.hpp"
 #include <meshmonk/logger.hpp>
 #include <meshmonk/meshmonk.hpp>
 #include <meshmonk/params.hpp>
@@ -462,4 +463,14 @@ NB_MODULE(_meshmonk_core, m) {
     return 0;
 #endif
   }, nb::arg("n") = static_cast<size_t>(1'000'000));
+
+  // bead 729: global toggle for the NeighbourFinder warm-start cache.
+  // Used by the correctness test that compares cached and uncached
+  // paths; set before calling any register function.
+  m.def("_set_neighbour_caching", [](bool enabled) {
+    registration::g_neighbour_caching_default = enabled;
+  });
+  m.def("_get_neighbour_caching", []() -> bool {
+    return registration::g_neighbour_caching_default;
+  });
 }
