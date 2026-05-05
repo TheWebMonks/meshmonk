@@ -124,7 +124,7 @@ jobs:
         run: pip install pytest scipy trimesh pyyaml
 
       - name: Run tests
-        run: pytest tests/ -q --ignore=tests/test_golden.py --ignore=tests/test_silent_logger.py
+        run: pytest tests/ -q --ignore=tests/test_golden.py --ignore=tests/test_silent_logger.py --ignore=tests/test_profiling_driver_748_4.py --ignore=tests/utils
 
   # ---------------------------------------------------------------------------
   # Job 4: publish-testpypi

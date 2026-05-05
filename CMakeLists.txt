@@ -49,6 +49,11 @@ target_include_directories(
   _meshmonk_core
   PRIVATE ${CMAKE_SOURCE_DIR}/library/include ${CMAKE_SOURCE_DIR}/library/src
           ${CMAKE_SOURCE_DIR}/vendor ${CMAKE_SOURCE_DIR}/vendor/tl)
+# bindings.cpp transitively includes nanoflann.hpp; MSVC needs
+# _USE_MATH_DEFINES at the translation-unit level for M_PI.
+if(MSVC)
+  target_compile_definitions(_meshmonk_core PRIVATE _USE_MATH_DEFINES)
+endif()
 install(TARGETS _meshmonk_core LIBRARY DESTINATION meshmonk)
 
 # --- Type stubs (PEP 561) ---

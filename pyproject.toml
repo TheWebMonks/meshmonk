@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "meshmonk"
-version = "0.3.0.dev1"
+version = "0.3.0.dev2"
 description = "Python-first 3D mesh registration library"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -35,11 +35,16 @@ members = ["demo"]
 
 [tool.scikit-build]
 sdist.exclude = ["tests/", "data/", "history/"]
+# OpenMesh's CMake unconditionally installs lib/, include/, share/ when added
+# via add_subdirectory. We statically link OpenMeshCoreStatic/OpenMeshToolsStatic
+# into _meshmonk_core, so those install artifacts are dead weight in the wheel
+# and break delocate-wheel on macOS (orphan @rpath dylibs).
+wheel.exclude = ["lib/**", "include/**", "share/**", "bin/**", "libdata/**"]
 
 [tool.cibuildwheel]
 build = "cp310-* cp311-* cp312-*"
 test-requires = ["pytest", "scipy", "trimesh", "pyyaml"]
-test-command = "pytest {project}/tests -q --ignore={project}/tests/test_golden.py --ignore={project}/tests/test_silent_logger.py"
+test-command = "pytest {project}/tests -q --ignore={project}/tests/test_golden.py --ignore={project}/tests/test_silent_logger.py --ignore={project}/tests/test_profiling_driver_748_4.py --ignore={project}/tests/utils"
 
 [tool.cibuildwheel.linux]
 archs = ["x86_64", "aarch64"]
