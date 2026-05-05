@@ -70,12 +70,13 @@ def test_cmake_stable_abi():
 
 
 def test_pyproject_version_bump():
-    """pyproject.toml must have version 0.3.0.dev0."""
+    """pyproject.toml must be on a 0.3.0 dev/rc/final track."""
     with open(WORKSPACE / "pyproject.toml", "rb") as f:
         data = tomllib.load(f)
-    assert (
-        data["project"]["version"] == "0.3.0.dev0"
-    ), f"Expected version 0.3.0.dev0, got {data['project']['version']}"
+    version = data["project"]["version"]
+    assert version.startswith(
+        "0.3.0"
+    ), f"Expected version on 0.3.0 track, got {version}"
 
 
 def test_pyproject_has_pyyaml():

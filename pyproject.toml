@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "meshmonk"
-version = "0.3.0.dev0"
+version = "0.3.0.dev1"
 description = "Python-first 3D mesh registration library"
 readme = "README.md"
 license = { text = "Apache-2.0" }
