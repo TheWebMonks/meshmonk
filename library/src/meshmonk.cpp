@@ -219,8 +219,6 @@ nonrigid_registration(Eigen::Ref<const FeatureMat> floating_features,
       target_features.col(1).maxCoeff() == target_features.col(1).minCoeff() &&
       target_features.col(2).maxCoeff() == target_features.col(2).minCoeff())
     return tl::unexpected{RegistrationError::DegenerateInput};
-  if (params.num_iterations < 2)
-    return tl::unexpected{RegistrationError::DegenerateInput};
 
   //-------------------------------------------------------------------------
   // Make mutable copies
@@ -233,6 +231,22 @@ nonrigid_registration(Eigen::Ref<const FeatureMat> floating_features,
 
   // Save original positions BEFORE update() for displacement_field computation
   Vec3Mat original_positions = floating_copy.leftCols(3);
+
+  //-------------------------------------------------------------------------
+  // Zero-iterations pass-through: skip registration loop entirely
+  //-------------------------------------------------------------------------
+  if (params.num_iterations == 0) {
+    VecDynFloat final_weights = run_final_inlier_pass(
+        floating_copy, target_copy, floating_flags_copy, target_flags_copy,
+        params.correspondences, params.inliers);
+    NonrigidResult result;
+    result.aligned_features = floating_copy;
+    result.final_inlier_weights = final_weights;
+    result.displacement_field =
+        Vec3Mat::Zero(floating_copy.rows(), 3);
+    result.iterations_run = 0;
+    return result;
+  }
 
   //-------------------------------------------------------------------------
   // Run nonrigid registration — ALWAYS use set_parameters() explicitly
@@ -315,12 +329,6 @@ pyramid_registration(Eigen::Ref<const FeatureMat> floating_features,
     return tl::unexpected{RegistrationError::DegenerateInput};
   if (params.num_pyramid_layers < 1)
     return tl::unexpected{RegistrationError::DegenerateInput};
-  {
-    int iters_per_layer = (int)std::round((float)params.num_iterations /
-                                          (float)params.num_pyramid_layers);
-    if (iters_per_layer < 2)
-      return tl::unexpected{RegistrationError::DegenerateInput};
-  }
 
   //-------------------------------------------------------------------------
   // Make mutable copies
@@ -331,6 +339,30 @@ pyramid_registration(Eigen::Ref<const FeatureMat> floating_features,
   FacesMat target_faces_copy = target_faces;
   VecDynFloat floating_flags_copy = floating_flags;
   VecDynFloat target_flags_copy = target_flags;
+
+  //-------------------------------------------------------------------------
+  // Zero-iterations pass-through: skip pyramid loop entirely
+  //-------------------------------------------------------------------------
+  if (params.num_iterations == 0) {
+    VecDynFloat final_weights = run_final_inlier_pass(
+        floating_copy, target_copy, floating_flags_copy, target_flags_copy,
+        params.correspondences, params.inliers);
+    PyramidResult result;
+    result.aligned_features = floating_copy;
+    result.final_inlier_weights = final_weights;
+    result.displacement_field =
+        Vec3Mat::Zero(floating_copy.rows(), 3);
+    result.per_layer_iterations =
+        std::vector<int>(params.num_pyramid_layers, 0);
+    return result;
+  }
+
+  {
+    int iters_per_layer = (int)std::round((float)params.num_iterations /
+                                          (float)params.num_pyramid_layers);
+    if (iters_per_layer < 2)
+      return tl::unexpected{RegistrationError::DegenerateInput};
+  }
 
   // Save original positions BEFORE update() for displacement_field computation
   Vec3Mat original_positions = floating_copy.leftCols(3);

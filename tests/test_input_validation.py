@@ -229,13 +229,13 @@ class TestNonrigidAnnealingGuard:
 class TestZeroIterations:
     """Document behavior of num_iterations=0 across registration functions.
 
-    Current behavior (documented, not fixed here):
-    - rigid_register: returns unchanged input (iterations_run=0)
-    - nonrigid_register: raises MeshMonkError(DegenerateInput)
-    - pyramid_register: raises MeshMonkError(DegenerateInput)
+    Uniform behavior (all three):
+    - rigid_register:    returns unchanged input (iterations_run=0)
+    - nonrigid_register: returns unchanged input (iterations_run=0, displacement_field=zeros)
+    - pyramid_register:  returns unchanged input (iterations_run=0)
 
-    The divergence between rigid and nonrigid/pyramid is surprising;
-    see bead meshmonk-modernization-ald for context.
+    The C++ wrapper performs the pass-through before invoking the loop,
+    so allocation / normal-recomputation / round-trip still occurs.
     """
 
     def test_rigid_zero_iterations_returns_unchanged_input(self):
@@ -253,32 +253,49 @@ class TestZeroIterations:
         assert result.iterations_run == 0
         np.testing.assert_array_equal(result.aligned_features, feat)
 
-    @pytest.mark.parametrize(
-        "register_fn, fn_name",
-        [
-            (meshmonk.nonrigid_register, "nonrigid_register"),
-            (meshmonk.pyramid_register, "pyramid_register"),
-        ],
-    )
-    def test_nonrigid_pyramid_zero_iterations_raises_degenerate_input(
-        self, register_fn, fn_name
-    ):
-        """nonrigid/pyramid_register with num_iterations=0 raises MeshMonkError(DegenerateInput).
-
-        Current behavior: the C++ layer raises DegenerateInput when num_iterations=0
-        for nonrigid and pyramid — unlike rigid, which silently returns unchanged input.
-        """
+    def test_nonrigid_zero_iterations_returns_unchanged_input(self):
+        """nonrigid_register with num_iterations=0 returns input unchanged (iterations_run=0)."""
         feat, faces, flags = _make_features()
-        with pytest.raises(meshmonk.MeshMonkError, match="DegenerateInput"):
-            register_fn(
-                floating_features=feat,
-                target_features=feat,
-                floating_faces=faces,
-                target_faces=faces,
-                floating_flags=flags,
-                target_flags=flags,
-                num_iterations=0,
-            )
+        result = meshmonk.nonrigid_register(
+            floating_features=feat,
+            target_features=feat,
+            floating_faces=faces,
+            target_faces=faces,
+            floating_flags=flags,
+            target_flags=flags,
+            num_iterations=0,
+        )
+        assert result.iterations_run == 0
+        np.testing.assert_array_equal(result.aligned_features, feat)
+
+    def test_nonrigid_zero_iterations_displacement_field_is_zero(self):
+        """nonrigid_register with num_iterations=0 returns all-zero displacement_field."""
+        feat, faces, flags = _make_features()
+        result = meshmonk.nonrigid_register(
+            floating_features=feat,
+            target_features=feat,
+            floating_faces=faces,
+            target_faces=faces,
+            floating_flags=flags,
+            target_flags=flags,
+            num_iterations=0,
+        )
+        assert np.all(result.displacement_field == 0.0)
+
+    def test_pyramid_zero_iterations_returns_unchanged_input(self):
+        """pyramid_register with num_iterations=0 returns input unchanged (per_layer_iterations=[0,...])."""
+        feat, faces, flags = _make_features()
+        result = meshmonk.pyramid_register(
+            floating_features=feat,
+            target_features=feat,
+            floating_faces=faces,
+            target_faces=faces,
+            floating_flags=flags,
+            target_flags=flags,
+            num_iterations=0,
+        )
+        np.testing.assert_array_equal(result.aligned_features, feat)
+        assert all(i == 0 for i in result.per_layer_iterations)
 
 
 class TestDegenerateMeshes:
