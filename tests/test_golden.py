@@ -5,20 +5,22 @@ Tier 3: human-approved visual goldens (captured 2026-04-18).
   - test_rigid_golden
   - test_nonrigid_golden
   - test_pyramid_golden
+  Goldens live at tests/golden/{rigid,nonrigid,pyramid}.npz and are committed.
 
 Tier 3.5 (advisory): scientific equivalence against legacy baseline from
-  tests/golden/legacy_baseline/rigid_transform.txt and the registered goldens
-  (rigid_output.npz). These run only in the nightly workflow; the entire
-  test_golden.py file is excluded from PR CI via:
-    pytest tests/ -q --ignore=tests/test_golden.py
-
-Usage:
-  pytest tests/test_golden.py -v                    # all golden tests
-  pytest tests/test_golden.py -v -m advisory        # only advisory
+  tests/golden/legacy_baseline/rigid_transform.txt. Per the per-test
+  docstring this is advisory — it reports drift but does not gate CI.
 
 CI configuration:
-  - PR CI: --ignore=tests/test_golden.py  (this file excluded entirely)
-  - Nightly workflow: pytest tests/test_golden.py -v
+  - PR CI: --ignore=tests/test_golden.py  (this file excluded entirely; slow)
+  - Nightly workflow:
+      gating step:  pytest tests/test_golden.py -v -m "not advisory"
+      report step:  pytest tests/test_golden.py -v -m advisory  (continue-on-error)
+
+Usage (local):
+  pytest tests/test_golden.py -v                    # all golden tests
+  pytest tests/test_golden.py -v -m advisory        # only advisory
+  pytest tests/test_golden.py -v -m "not advisory"  # only gating
 """
 
 from pathlib import Path

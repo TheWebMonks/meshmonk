@@ -37,9 +37,19 @@ jobs:
             echo "No .npz golden files found in tests/golden/ — skipping golden comparison tests"
           fi
 
-      - name: Run golden tests
+      # Tier 3 (gating): visual goldens — these MUST pass.
+      - name: Run gating golden tests (Tier 3, non-advisory)
         if: steps.check_goldens.outputs.goldens_exist == 'true'
-        run: pytest tests/test_golden.py -v
+        run: pytest tests/test_golden.py -v -m "not advisory"
+
+      # Tier 3.5 (advisory): legacy-baseline scientific equivalence. Per the
+      # test's own docstring, this "reports discrepancies but does not gate" —
+      # cross-platform FP drift makes the 1e-2 tolerance unrealistic on Linux
+      # x86_64. Run for visibility, do not fail the workflow on its result.
+      - name: Run advisory golden tests (Tier 3.5, non-blocking)
+        if: steps.check_goldens.outputs.goldens_exist == 'true'
+        continue-on-error: true
+        run: pytest tests/test_golden.py -v -m advisory --tb=short
 
       - name: Skip message (no goldens)
         if: steps.check_goldens.outputs.goldens_exist == 'false'
