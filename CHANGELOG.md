@@ -26,6 +26,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pattern A/B validation consolidated into `_prepare_arrays`; the three
   `register` functions no longer duplicate the 18-line guard ([ADR-003]).
 
+### Fixed
+
+- `nonrigid_register` and `pyramid_register` now accept `num_iterations=0`
+  as a pass-through (matches `rigid_register`); previously raised
+  `DegenerateInput`.
+
 ---
 
 ## [0.3.1] — 2026-04-19
