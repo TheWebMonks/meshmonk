@@ -1,26 +1,26 @@
 # MeshMonk: High-Performance 3D Mesh Registration
 
 > **MATLAB users:** The MATLAB MEX interface has been removed from this repository as part of the Python-first rewrite.
-> For MATLAB support, use the university fork at https://github.com/TheWebMonks/meshmonk
+> For MATLAB support, use the KU Leuven MIRC fork at https://gitlab.kuleuven.be/mirc/meshmonk
 
 MeshMonk is a C++20 library with Python bindings for high-performance 3D mesh registration. It provides rigid, non-rigid, and pyramid-based registration via a clean Python API backed by a battle-tested C++ algorithmic core.
 
 ## Overview
 
-MeshMonk v0.1 is a Python-first redesign. The library can be used:
+MeshMonk is a Python-first 3D mesh registration library. It can be used:
 
 - **As a Python library:** `pip install 'meshmonk[io]'` — then `import meshmonk`
 - **As a CLI tool:** `meshmonk rigid Template.obj demoFace.obj --out result.obj`
 
 ## Installation
 
-**From PyPI** (when available):
+**From PyPI:**
 
 ```bash
 pip install 'meshmonk[io]'
 ```
 
-**From source** (current method):
+**From source** (for development):
 
 ```bash
 git clone https://github.com/jsnyde0/meshmonk.git
@@ -94,4 +94,4 @@ pytest tests/
 
 The MATLAB MEX interface has been removed in v0.1 as part of the Python-first rewrite (see [ADR-001 D3](docs/decisions/ADR-001-meshmonk-modernization.md)).
 
-For MATLAB support, use the university fork: https://github.com/TheWebMonks/meshmonk
+For MATLAB support, use the KU Leuven MIRC fork: https://gitlab.kuleuven.be/mirc/meshmonk

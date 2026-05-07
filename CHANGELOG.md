@@ -13,48 +13,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added
-
-- `TypedDict` + `Unpack` type hints on all three `register` functions
-  (`RigidKwargs`, `NonrigidKwargs`, `PyramidKwargs` in `meshmonk._types`)
-  — gives IDE autocomplete and pyright coverage at call sites across Python
-  3.10–3.13 without raising the language-version floor ([ADR-003]).
-- `NDArray[np.float32]` dtype annotations on result dataclass fields.
-
-### Changed
-
-- Pattern A/B validation consolidated into `_prepare_arrays`; the three
-  `register` functions no longer duplicate the 18-line guard ([ADR-003]).
-
-### Fixed
-
-- `nonrigid_register` and `pyramid_register` now accept `num_iterations=0`
-  as a pass-through (matches `rigid_register`); previously raised
-  `DegenerateInput`.
-
 ---
 
-## [0.3.1] — 2026-04-19
-
-Pre-merge housekeeping before the `meshmonk-modernization → master` PR.
-
-### Added
-
-- pyright type-checking CI job (`typecheck` in `ci.yml`).
-- GitHub Pages deployment step for the MkDocs docs site.
-
-### Fixed
-
-- `ci.yml` GitHub Actions pinned to exact commit SHAs (supply-chain
-  consistency with `release.yml`).
-- Stale `TODO (v0.3)` comments in `library/src/meshmonk.cpp` relabelled
-  `TODO (v0.4)` — convergence criterion deferred past v0.3.
-- Pre-commit `files:` regex expanded to exclude vendored/build dirs from
-  pyright and ruff scans.
-
----
-
-## [0.3.0] — 2026-04-19
+## [0.3.0] — 2026-05-07
 
 First PyPI-ready release. `pip install meshmonk` works globally.
 
@@ -68,6 +29,8 @@ First PyPI-ready release. `pip install meshmonk` works globally.
   wheel covers Python 3.12 and 3.13+.
 - MkDocs-material documentation site (`mkdocs.yml`) with API reference and
   migration guide.
+- GitHub Pages deployment step for the MkDocs docs site.
+- pyright type-checking CI job (`typecheck` in `ci.yml`).
 - Cross-cutting integration tests covering rigid + nonrigid + pyramid
   pipelines end-to-end.
 - `demo --download` wired to GitHub Release assets (conditional on demo-data
@@ -76,6 +39,11 @@ First PyPI-ready release. `pip install meshmonk` works globally.
   not extracted from the transformer internals).
 - `importlib.metadata` version management — `meshmonk.__version__` is now
   read from the installed package metadata, eliminating dual maintenance.
+- `TypedDict` + `Unpack` type hints on all three `register` functions
+  (`RigidKwargs`, `NonrigidKwargs`, `PyramidKwargs` in `meshmonk._types`)
+  — gives IDE autocomplete and pyright coverage at call sites across Python
+  3.10–3.13 without raising the language-version floor ([ADR-003]).
+- `NDArray[np.float32]` dtype annotations on result dataclass fields.
 
 ### Changed
 
@@ -83,6 +51,8 @@ First PyPI-ready release. `pip install meshmonk` works globally.
   (AlmaLinux 8) for both CI smoke test and release builds.
 - ADR-001 D2 amended: wheel count is 12 (not 6), abi3 floor is Python 3.12
   (not 3.10), musllinux and macOS x86_64 dropped.
+- Pattern A/B validation consolidated into `_prepare_arrays`; the three
+  `register` functions no longer duplicate the 18-line guard ([ADR-003]).
 
 ### Fixed
 
@@ -97,6 +67,15 @@ First PyPI-ready release. `pip install meshmonk` works globally.
 - `RigidTransform` API docs corrected — removed non-existent `.rotation`,
   `.translation`, `.scale` attributes; documented actual `.matrix`, `.apply()`,
   `.compose()`, `.inverse()` surface.
+- `ci.yml` GitHub Actions pinned to exact commit SHAs (supply-chain
+  consistency with `release.yml`).
+- Stale `TODO (v0.3)` comments in `library/src/meshmonk.cpp` relabelled
+  `TODO (v0.4)` — convergence criterion deferred past v0.3.
+- Pre-commit `files:` regex expanded to exclude vendored/build dirs from
+  pyright and ruff scans.
+- `nonrigid_register` and `pyramid_register` now accept `num_iterations=0`
+  as a pass-through (matches `rigid_register`); previously raised
+  `DegenerateInput`.
 
 ---
 
@@ -264,8 +243,7 @@ Scaffolding and reality capture. No library changes; no code deletions.
 
 ---
 
-[Unreleased]: https://github.com/jsnyde0/meshmonk/compare/v0.3.1...HEAD
-[0.3.1]: https://github.com/jsnyde0/meshmonk/compare/v0.3.0...v0.3.1
+[Unreleased]: https://github.com/jsnyde0/meshmonk/compare/v0.3.0...HEAD
 [0.3.0]: https://github.com/jsnyde0/meshmonk/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jsnyde0/meshmonk/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jsnyde0/meshmonk/compare/v0.0...v0.1.0
