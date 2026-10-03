@@ -96,6 +96,17 @@ def _find_demo_meshes():
     return None
 
 
+def _run_and_save(trimesh, register_fn, floating, target, out, **kwargs) -> None:
+    """Load FLOATING and TARGET, run *register_fn* with *kwargs*, save to *out*, echo."""
+    floating_mesh = _load_mesh(trimesh, floating)
+    target_mesh = _load_mesh(trimesh, target)
+
+    result = register_fn(floating=floating_mesh, target=target_mesh, **kwargs)
+
+    _save_mesh(trimesh, result.aligned_vertices, floating_mesh.faces, out)
+    typer.echo(f"Saved result to {out}")
+
+
 # ---------------------------------------------------------------------------
 # rigid subcommand
 # ---------------------------------------------------------------------------
@@ -121,20 +132,17 @@ def rigid(
     trimesh = _require_trimesh()
     import meshmonk  # noqa: PLC0415
 
-    floating_mesh = _load_mesh(trimesh, floating)
-    target_mesh = _load_mesh(trimesh, target)
-
-    result = meshmonk.rigid_register(
-        floating=floating_mesh,
-        target=target_mesh,
+    _run_and_save(
+        trimesh,
+        meshmonk.rigid_register,
+        floating,
+        target,
+        out,
         num_iterations=iterations,
         use_scaling=use_scaling,
         inlier_kappa=kappa,
         correspondences_num_neighbours=num_neighbours,
     )
-
-    _save_mesh(trimesh, result.aligned_vertices, floating_mesh.faces, out)
-    typer.echo(f"Saved result to {out}")
 
 
 # ---------------------------------------------------------------------------
@@ -157,19 +165,16 @@ def nonrigid(
     trimesh = _require_trimesh()
     import meshmonk  # noqa: PLC0415
 
-    floating_mesh = _load_mesh(trimesh, floating)
-    target_mesh = _load_mesh(trimesh, target)
-
-    result = meshmonk.nonrigid_register(
-        floating=floating_mesh,
-        target=target_mesh,
+    _run_and_save(
+        trimesh,
+        meshmonk.nonrigid_register,
+        floating,
+        target,
+        out,
         num_iterations=iterations,
         inlier_kappa=kappa,
         correspondences_num_neighbours=num_neighbours,
     )
-
-    _save_mesh(trimesh, result.aligned_vertices, floating_mesh.faces, out)
-    typer.echo(f"Saved result to {out}")
 
 
 # ---------------------------------------------------------------------------
@@ -195,20 +200,17 @@ def pyramid(
     trimesh = _require_trimesh()
     import meshmonk  # noqa: PLC0415
 
-    floating_mesh = _load_mesh(trimesh, floating)
-    target_mesh = _load_mesh(trimesh, target)
-
-    result = meshmonk.pyramid_register(
-        floating=floating_mesh,
-        target=target_mesh,
+    _run_and_save(
+        trimesh,
+        meshmonk.pyramid_register,
+        floating,
+        target,
+        out,
         num_iterations=iterations,
         num_pyramid_layers=layers,
         inlier_kappa=kappa,
         correspondences_num_neighbours=num_neighbours,
     )
-
-    _save_mesh(trimesh, result.aligned_vertices, floating_mesh.faces, out)
-    typer.echo(f"Saved result to {out}")
 
 
 # ---------------------------------------------------------------------------
