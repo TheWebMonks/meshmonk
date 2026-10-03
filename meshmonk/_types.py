@@ -6,8 +6,8 @@ from typing import TypedDict
 class RigidKwargs(TypedDict, total=False):
     """TypedDict for **kwargs accepted by rigid_register().
 
-    All fields are optional (total=False).  Fields match _RIGID_KNOWN_KWARGS
-    in meshmonk/__init__.py.
+    All fields are optional (total=False).  The runtime allowlist _RIGID_KNOWN_KWARGS
+    in meshmonk/__init__.py is derived from these keys.
     """
 
     correspondences_symmetric: bool
@@ -23,8 +23,8 @@ class RigidKwargs(TypedDict, total=False):
 class NonrigidKwargs(TypedDict, total=False):
     """TypedDict for **kwargs accepted by nonrigid_register().
 
-    All fields are optional (total=False).  Fields match _NONRIGID_KNOWN_KWARGS
-    in meshmonk/__init__.py.
+    All fields are optional (total=False).  The runtime allowlist _NONRIGID_KNOWN_KWARGS
+    in meshmonk/__init__.py is derived from these keys.
     """
 
     correspondences_symmetric: bool
@@ -44,8 +44,8 @@ class NonrigidKwargs(TypedDict, total=False):
 class PyramidKwargs(TypedDict, total=False):
     """TypedDict for **kwargs accepted by pyramid_register().
 
-    All fields are optional (total=False).  Fields match _PYRAMID_KNOWN_KWARGS
-    in meshmonk/__init__.py.
+    All fields are optional (total=False).  The runtime allowlist _PYRAMID_KNOWN_KWARGS
+    in meshmonk/__init__.py is derived from these keys.
     """
 
     correspondences_symmetric: bool

@@ -320,51 +320,9 @@ def _mesh_to_arrays(mesh_or_path, normals_override=None, force_recompute=False):
     return features, F, flags
 
 
-_RIGID_KNOWN_KWARGS = {
-    "correspondences_symmetric",
-    "correspondences_num_neighbours",
-    "correspondences_flag_threshold",
-    "correspondences_equalize_push_pull",
-    "inlier_kappa",
-    "inlier_use_orientation",
-    "num_iterations",
-    "use_scaling",
-}
-
-_NONRIGID_KNOWN_KWARGS = {
-    "correspondences_symmetric",
-    "correspondences_num_neighbours",
-    "correspondences_flag_threshold",
-    "correspondences_equalize_push_pull",
-    "inlier_kappa",
-    "inlier_use_orientation",
-    "transform_sigma",
-    "transform_num_viscous_iterations_start",
-    "transform_num_viscous_iterations_end",
-    "transform_num_elastic_iterations_start",
-    "transform_num_elastic_iterations_end",
-    "num_iterations",
-}
-
-_PYRAMID_KNOWN_KWARGS = {
-    "correspondences_symmetric",
-    "correspondences_num_neighbours",
-    "correspondences_flag_threshold",
-    "correspondences_equalize_push_pull",
-    "inlier_kappa",
-    "inlier_use_orientation",
-    "transform_sigma",
-    "transform_num_viscous_iterations_start",
-    "transform_num_viscous_iterations_end",
-    "transform_num_elastic_iterations_start",
-    "transform_num_elastic_iterations_end",
-    "downsample_float_start",
-    "downsample_target_start",
-    "downsample_float_end",
-    "downsample_target_end",
-    "num_iterations",
-    "num_pyramid_layers",
-}
+_RIGID_KNOWN_KWARGS = RigidKwargs.__optional_keys__
+_NONRIGID_KNOWN_KWARGS = NonrigidKwargs.__optional_keys__
+_PYRAMID_KNOWN_KWARGS = PyramidKwargs.__optional_keys__
 
 
 # Mapping[str, Any] accepts both plain dict and TypedDict; do not narrow to dict.
