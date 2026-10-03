@@ -210,6 +210,14 @@ def set_log_level(level: str) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _pack_features(V: np.ndarray, N: np.ndarray) -> np.ndarray:
+    """Pack positions *V* and normals *N* into an (N, 6) float32 feature matrix."""
+    features = np.empty((V.shape[0], 6), dtype=np.float32)
+    features[:, :3] = V
+    features[:, 3:] = N
+    return features
+
+
 def features_from_vertices(V: np.ndarray, F: np.ndarray) -> np.ndarray:
     """Build a (N, 6) feature matrix from positions and face topology.
 
@@ -231,10 +239,7 @@ def features_from_vertices(V: np.ndarray, F: np.ndarray) -> np.ndarray:
     V = np.asarray(V, dtype=np.float32)
     F = np.asarray(F, dtype=np.int32)
     normals = np.asarray(compute_normals(V, F), dtype=np.float32)
-    features = np.empty((V.shape[0], 6), dtype=np.float32)
-    features[:, :3] = V
-    features[:, 3:] = normals
-    return features
+    return _pack_features(V, normals)
 
 
 # ---------------------------------------------------------------------------
@@ -314,10 +319,7 @@ def _mesh_to_arrays(mesh_or_path, normals_override=None, force_recompute=False):
     else:
         N = np.asarray(compute_normals(V, F), dtype=np.float32)
 
-    features = np.empty((V.shape[0], 6), dtype=np.float32)
-    features[:, :3] = V
-    features[:, 3:] = N
-    return features, F, flags
+    return _pack_features(V, N), F, flags
 
 
 _RIGID_KNOWN_KWARGS = RigidKwargs.__optional_keys__
