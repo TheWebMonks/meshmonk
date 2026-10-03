@@ -325,6 +325,17 @@ _NONRIGID_KNOWN_KWARGS = NonrigidKwargs.__optional_keys__
 _PYRAMID_KNOWN_KWARGS = PyramidKwargs.__optional_keys__
 
 
+def _check_known_kwargs(
+    kwargs: Mapping[str, Any], known: frozenset[str], fn_name: str
+) -> None:
+    """Raise TypeError if *kwargs* holds keys outside *known*."""
+    unknown = set(kwargs) - known
+    if unknown:
+        raise TypeError(
+            f"{fn_name}() got unexpected keyword arguments: {sorted(unknown)}"
+        )
+
+
 # Mapping[str, Any] accepts both plain dict and TypedDict; do not narrow to dict.
 def _apply_shared_kwargs(params, kwargs: Mapping[str, Any]) -> None:
     """Apply correspondence + inlier kwarg overrides shared by all registration types."""
@@ -368,11 +379,7 @@ def _apply_transform_kwargs(params, kwargs: Mapping[str, Any]) -> None:
 
 def _apply_rigid_kwargs(params: RigidParams, kwargs: Mapping[str, Any]) -> RigidParams:
     """Apply kwarg overrides to a RigidParams struct."""
-    unknown = set(kwargs) - _RIGID_KNOWN_KWARGS
-    if unknown:
-        raise TypeError(
-            f"rigid_register() got unexpected keyword arguments: {sorted(unknown)}"
-        )
+    _check_known_kwargs(kwargs, _RIGID_KNOWN_KWARGS, "rigid_register")
     _apply_shared_kwargs(params, kwargs)
     if "num_iterations" in kwargs:
         params.num_iterations = kwargs["num_iterations"]
@@ -383,11 +390,7 @@ def _apply_rigid_kwargs(params: RigidParams, kwargs: Mapping[str, Any]) -> Rigid
 
 def _apply_nonrigid_kwargs(params: NonrigidParams, kwargs: Mapping[str, Any]) -> NonrigidParams:
     """Apply kwarg overrides to a NonrigidParams struct."""
-    unknown = set(kwargs) - _NONRIGID_KNOWN_KWARGS
-    if unknown:
-        raise TypeError(
-            f"nonrigid_register() got unexpected keyword arguments: {sorted(unknown)}"
-        )
+    _check_known_kwargs(kwargs, _NONRIGID_KNOWN_KWARGS, "nonrigid_register")
     _apply_shared_kwargs(params, kwargs)
     _apply_transform_kwargs(params, kwargs)
     if "num_iterations" in kwargs:
@@ -404,11 +407,7 @@ def _apply_pyramid_kwargs(
     - correspondences_flag_threshold defaults to 0.999 when not explicitly passed.
     - viscous/elastic start defaults to num_iterations when not explicitly passed.
     """
-    unknown = set(kwargs) - _PYRAMID_KNOWN_KWARGS
-    if unknown:
-        raise TypeError(
-            f"pyramid_register() got unexpected keyword arguments: {sorted(unknown)}"
-        )
+    _check_known_kwargs(kwargs, _PYRAMID_KNOWN_KWARGS, "pyramid_register")
     # MATLAB convention: default correspondences_flag_threshold to 0.999
     if "correspondences_flag_threshold" not in kwargs:
         params.correspondences.flag_threshold = 0.999
