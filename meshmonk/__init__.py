@@ -696,6 +696,35 @@ def rigid_register(
     )
 
 
+def _maybe_prealign_rigid(
+    feat_float,
+    feat_target,
+    faces_float,
+    faces_target,
+    flags_float,
+    flags_target,
+    rigid_params,
+):
+    """Return floating features rigidly pre-aligned via *rigid_params* (unchanged if None)."""
+    if rigid_params is not None:
+        if not isinstance(rigid_params, dict):
+            raise TypeError(
+                f"rigid_params must be a dict or None, got {type(rigid_params).__name__}"
+            )
+        _rigid_kw = rigid_params
+        rigid_result = rigid_register(
+            floating_features=feat_float,
+            target_features=feat_target,
+            floating_faces=faces_float,
+            target_faces=faces_target,
+            floating_flags=flags_float,
+            target_flags=flags_target,
+            **_rigid_kw,
+        )
+        feat_float = rigid_result.aligned_features
+    return feat_float
+
+
 def nonrigid_register(
     floating=None,
     target=None,
@@ -742,22 +771,15 @@ def nonrigid_register(
         )
     )
 
-    if rigid_params is not None:
-        if not isinstance(rigid_params, dict):
-            raise TypeError(
-                f"rigid_params must be a dict or None, got {type(rigid_params).__name__}"
-            )
-        _rigid_kw = rigid_params
-        rigid_result = rigid_register(
-            floating_features=feat_float,
-            target_features=feat_target,
-            floating_faces=faces_float,
-            target_faces=faces_target,
-            floating_flags=flags_float,
-            target_flags=flags_target,
-            **_rigid_kw,
-        )
-        feat_float = rigid_result.aligned_features
+    feat_float = _maybe_prealign_rigid(
+        feat_float,
+        feat_target,
+        faces_float,
+        faces_target,
+        flags_float,
+        flags_target,
+        rigid_params,
+    )
 
     params = NonrigidParams()
     params = _apply_nonrigid_kwargs(params, kwargs)
@@ -828,22 +850,15 @@ def pyramid_register(
         )
     )
 
-    if rigid_params is not None:
-        if not isinstance(rigid_params, dict):
-            raise TypeError(
-                f"rigid_params must be a dict or None, got {type(rigid_params).__name__}"
-            )
-        _rigid_kw = rigid_params
-        rigid_result = rigid_register(
-            floating_features=feat_float,
-            target_features=feat_target,
-            floating_faces=faces_float,
-            target_faces=faces_target,
-            floating_flags=flags_float,
-            target_flags=flags_target,
-            **_rigid_kw,
-        )
-        feat_float = rigid_result.aligned_features
+    feat_float = _maybe_prealign_rigid(
+        feat_float,
+        feat_target,
+        faces_float,
+        faces_target,
+        flags_float,
+        flags_target,
+        rigid_params,
+    )
 
     params = PyramidParams()
     params = _apply_pyramid_kwargs(params, kwargs)
