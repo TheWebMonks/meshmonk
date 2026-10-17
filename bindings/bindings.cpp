@@ -322,13 +322,11 @@ NB_MODULE(_meshmonk_core, m) {
   // -----------------------------------------------------------------------
   // Low-level primitives (GIL released — safe for the same reason as above)
   // -----------------------------------------------------------------------
-  m.def(
-      "compute_correspondences",
-      &meshmonk::compute_correspondences,
-      "floating_features"_a, "target_features"_a, "floating_flags"_a,
-      "target_flags"_a, "symmetric"_a = true, "num_neighbours"_a = 3,
-      "flag_threshold"_a = 0.9f, "equalize_push_pull"_a = false,
-      nb::call_guard<nb::gil_scoped_release>());
+  m.def("compute_correspondences", &meshmonk::compute_correspondences,
+        "floating_features"_a, "target_features"_a, "floating_flags"_a,
+        "target_flags"_a, "symmetric"_a = true, "num_neighbours"_a = 3,
+        "flag_threshold"_a = 0.9f, "equalize_push_pull"_a = false,
+        nb::call_guard<nb::gil_scoped_release>());
 
   m.def(
       "compute_inlier_weights",
@@ -344,31 +342,23 @@ NB_MODULE(_meshmonk_core, m) {
       "corresponding_flags"_a, "kappa"_a = 12.0f, "use_orientation"_a = true,
       nb::call_guard<nb::gil_scoped_release>());
 
-  m.def(
-      "compute_rigid_transform",
-      &meshmonk::compute_rigid_transform,
-      "floating_features"_a, "corresponding_features"_a, "weights"_a,
-      "use_scaling"_a = false, nb::call_guard<nb::gil_scoped_release>());
+  m.def("compute_rigid_transform", &meshmonk::compute_rigid_transform,
+        "floating_features"_a, "corresponding_features"_a, "weights"_a,
+        "use_scaling"_a = false, nb::call_guard<nb::gil_scoped_release>());
 
-  m.def(
-      "compute_nonrigid_transform",
-      &meshmonk::compute_nonrigid_transform,
-      "floating_features"_a, "corresponding_features"_a, "floating_faces"_a,
-      "floating_flags"_a, "weights"_a, "num_smoothing_neighbours"_a = 10,
-      "sigma"_a = 3.0f, "num_viscous_iterations"_a = 50,
-      "num_elastic_iterations"_a = 50,
-      nb::call_guard<nb::gil_scoped_release>());
+  m.def("compute_nonrigid_transform", &meshmonk::compute_nonrigid_transform,
+        "floating_features"_a, "corresponding_features"_a, "floating_faces"_a,
+        "floating_flags"_a, "weights"_a, "num_smoothing_neighbours"_a = 10,
+        "sigma"_a = 3.0f, "num_viscous_iterations"_a = 50,
+        "num_elastic_iterations"_a = 50,
+        nb::call_guard<nb::gil_scoped_release>());
 
-  m.def(
-      "downsample_mesh",
-      &meshmonk::downsample_mesh,
-      "features"_a, "faces"_a, "flags"_a, "downsample_ratio"_a = 0.8f,
-      nb::call_guard<nb::gil_scoped_release>());
+  m.def("downsample_mesh", &meshmonk::downsample_mesh, "features"_a, "faces"_a,
+        "flags"_a, "downsample_ratio"_a = 0.8f,
+        nb::call_guard<nb::gil_scoped_release>());
 
-  m.def(
-      "compute_normals",
-      &meshmonk::compute_normals,
-      "positions"_a, "faces"_a, nb::call_guard<nb::gil_scoped_release>());
+  m.def("compute_normals", &meshmonk::compute_normals, "positions"_a, "faces"_a,
+        nb::call_guard<nb::gil_scoped_release>());
 
   m.def("set_log_level", &meshmonk::set_log_level, "level"_a);
 
@@ -407,13 +397,16 @@ NB_MODULE(_meshmonk_core, m) {
 #endif
   });
 
-  m.def("profiling_calibrate", [](size_t n) -> uint64_t {
+  m.def(
+      "profiling_calibrate",
+      [](size_t n) -> uint64_t {
 #ifdef MESHMONK_PROFILING
-    return g_profiler.calibrate(n);
+        return g_profiler.calibrate(n);
 #else
-    return 0;
+        return 0;
 #endif
-  }, nb::arg("n") = static_cast<size_t>(1'000'000));
+      },
+      nb::arg("n") = static_cast<size_t>(1'000'000));
 
   // bead 729: global toggle for the NeighbourFinder warm-start cache.
   // Used by the correctness test that compares cached and uncached
@@ -421,7 +414,6 @@ NB_MODULE(_meshmonk_core, m) {
   m.def("_set_neighbour_caching", [](bool enabled) {
     registration::g_neighbour_caching_default = enabled;
   });
-  m.def("_get_neighbour_caching", []() -> bool {
-    return registration::g_neighbour_caching_default;
-  });
+  m.def("_get_neighbour_caching",
+        []() -> bool { return registration::g_neighbour_caching_default; });
 }
