@@ -23,7 +23,7 @@ Key invariants enforced here:
 
 Shared harness utilities (load_full_mesh, downsample_to) live in
 ``benchmarks/_harness.py`` and are imported by all bench files and
-test_harness_sizing.py.
+scripts/generate_profiling_meshes.py.
 """
 
 from __future__ import annotations
