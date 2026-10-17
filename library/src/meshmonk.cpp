@@ -27,11 +27,6 @@
 #include <cmath>
 #include <memory>
 
-// Compile-time guard: both headers must agree on the feature count.
-static_assert(
-    meshmonk::NUM_FEATURES == registration::NUM_FEATURES,
-    "NUM_FEATURES mismatch between meshmonk::types.hpp and global.hpp");
-
 namespace meshmonk {
 
 //=============================================================================

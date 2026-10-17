@@ -7,7 +7,6 @@
 #include <iostream>
 #include <stdio.h>
 
-typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>
     MatDynFloat; // matrix MxN of type float
 typedef Eigen::Matrix<float, Eigen::Dynamic, registration::NUM_FEATURES>

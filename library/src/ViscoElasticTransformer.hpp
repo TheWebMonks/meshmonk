@@ -9,7 +9,6 @@
 #include <iostream>
 
 typedef Eigen::Vector3f Vec3Float;
-typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix<float, Eigen::Dynamic, 3>
     Vec3Mat; // matrix Mx3 of type float
 typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> MatDynFloat;

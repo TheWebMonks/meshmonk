@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <time.h>
 
-typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix<float, Eigen::Dynamic, registration::NUM_FEATURES>
     FeatureMat; // matrix Mx6 of type float
 typedef Eigen::Matrix<int, Eigen::Dynamic, 3> FacesMat;

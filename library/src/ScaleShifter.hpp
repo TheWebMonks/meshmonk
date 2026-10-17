@@ -9,7 +9,6 @@
 #include <iostream>
 
 typedef Eigen::Vector3f Vec3Float;
-typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::VectorXi VecDynInt;
 typedef Eigen::Matrix<float, Eigen::Dynamic, 3> Vec3Mat;
 typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> IntegerMat;

@@ -17,7 +17,6 @@ typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>
     MatDynInt; // matrix MxN of type unsigned int
 typedef Eigen::Matrix<int, Eigen::Dynamic, 3>
     FacesMat; // matrix Mx3 of type unsigned int
-typedef Eigen::VectorXf VecDynFloat;
 typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>
     MatDynFloat; // matrix MxN of type float
 typedef Eigen::Matrix<float, Eigen::Dynamic, registration::NUM_FEATURES>
