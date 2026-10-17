@@ -89,3 +89,21 @@ def empty_registration_kwargs():
         floating_flags=flags,
         target_flags=flags,
     )
+
+
+@pytest.fixture(scope="module")
+def meshes():
+    """Template.obj (floating) and demoFace.obj (target) as float32/int32 arrays, once per module."""
+    trimesh = pytest.importorskip("trimesh")
+    template = DATA_DIR / "Template.obj"
+    demoface = DATA_DIR / "demoFace.obj"
+    if not template.exists() or not demoface.exists():
+        pytest.skip(f"OBJ data missing in {DATA_DIR}")
+    floating = trimesh.load(str(template), process=False)
+    target = trimesh.load(str(demoface), process=False)
+    return {
+        "floating_v": np.asarray(floating.vertices, dtype=np.float32),
+        "floating_f": np.asarray(floating.faces, dtype=np.int32),
+        "target_v": np.asarray(target.vertices, dtype=np.float32),
+        "target_f": np.asarray(target.faces, dtype=np.int32),
+    }

@@ -84,20 +84,6 @@ def test_pyramid_register_with_rigid_params():
     assert result.aligned_features.shape[0] == len(m.vertices)
 
 
-def test_nonrigid_register_with_rigid_params():
-    pytest.importorskip("trimesh")
-    import trimesh
-
-    m = trimesh.creation.icosphere(subdivisions=0)
-    result = meshmonk.nonrigid_register(
-        floating=m,
-        target=m,
-        rigid_params={},
-        num_iterations=3,
-    )
-    assert result.aligned_features.shape[1] == 6
-
-
 # ---- rigid_params TypeError validation ----
 
 

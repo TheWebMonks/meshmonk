@@ -9,34 +9,10 @@ Skipped if the data files are missing or trimesh is not installed.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import numpy as np
 import pytest
 
 import meshmonk
-
-from tests.conftest import DATA_DIR
-TEMPLATE_OBJ = DATA_DIR / "Template.obj"
-DEMOFACE_OBJ = DATA_DIR / "demoFace.obj"
-
-
-@pytest.fixture(scope="module")
-def meshes():
-    """Load Template.obj (floating) and demoFace.obj (target) once per module."""
-    trimesh = pytest.importorskip("trimesh")
-    if not TEMPLATE_OBJ.exists() or not DEMOFACE_OBJ.exists():
-        pytest.skip(f"OBJ data missing in {DATA_DIR}")
-
-    floating = trimesh.load(str(TEMPLATE_OBJ), process=False)
-    target = trimesh.load(str(DEMOFACE_OBJ), process=False)
-
-    return {
-        "floating_v": np.asarray(floating.vertices, dtype=np.float32),
-        "floating_f": np.asarray(floating.faces, dtype=np.int32),
-        "target_v": np.asarray(target.vertices, dtype=np.float32),
-        "target_f": np.asarray(target.faces, dtype=np.int32),
-    }
 
 
 @pytest.fixture(scope="module")

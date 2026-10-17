@@ -225,7 +225,6 @@ class TestRigidParamsKwarg:
         result_explicit_none = meshmonk.nonrigid_register(
             floating=mesh, target=mesh, rigid_params=None, num_iterations=3
         )
-        assert (
-            result_default.aligned_features.shape
-            == result_explicit_none.aligned_features.shape
+        np.testing.assert_array_equal(
+            result_default.aligned_features, result_explicit_none.aligned_features
         )
