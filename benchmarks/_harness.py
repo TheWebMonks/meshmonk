@@ -102,3 +102,32 @@ def downsample_to(feat, faces, flags, target_n: int):
             break
         current_n = new_n
     return feat, faces, flags
+
+
+def build_prealigned_inputs(target_n: int):
+    """Build inputs for nonrigid/pyramid: floating pre-aligned via rigid (not timed), target at full res."""
+    float_v, float_f, target_v, target_f = load_full_mesh()
+
+    full_n = float_v.shape[0]
+    float_feat = meshmonk.features_from_vertices(float_v, float_f)
+    float_flags = np.ones(full_n, dtype=np.float32)
+    target_feat = meshmonk.features_from_vertices(target_v, target_f)
+
+    if target_n < full_n:
+        float_feat, float_f, float_flags = downsample_to(
+            float_feat, float_f, float_flags, target_n
+        )
+
+    # Pre-align with rigid (not timed) so nonrigid starts from a realistic pose
+    meshmonk.set_log_level("silent")
+    rigid_result = meshmonk.rigid_register(
+        floating_features=float_feat,
+        target_features=target_feat,
+        floating_faces=float_f,
+        target_faces=target_f,
+        num_iterations=20,
+        use_scaling=True,
+    )
+    aligned_feat = rigid_result.aligned_features
+
+    return aligned_feat, float_f, target_feat, target_f

@@ -84,7 +84,7 @@ def pin_threads():
 
 
 def pytest_configure(config):
-    """Register benchmark markers and enforce minimum rounds in CI mode."""
+    """Register the ``benchmark`` marker (rounds are enforced by the CI CLI flag, not here)."""
     config.addinivalue_line(
         "markers",
         "benchmark: mark a test as a benchmark (run with --benchmark-only)",
