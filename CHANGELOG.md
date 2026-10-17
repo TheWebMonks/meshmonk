@@ -13,6 +13,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+
+- `meshmonk.scale_shift_mesh` (Python binding and C++ wrapper). It passed an
+  uninitialised output buffer that `ScaleShifter` reads before writing, and
+  had no callers. `ScaleShifter` itself stays; `pyramid_register` uses it
+  directly (dotpi-kcjb.10).
+
 ---
 
 ## [0.3.0] — 2026-05-07

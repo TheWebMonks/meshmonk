@@ -382,18 +382,6 @@ NB_MODULE(_meshmonk_core, m) {
       nb::call_guard<nb::gil_scoped_release>());
 
   m.def(
-      "scale_shift_mesh",
-      [](Eigen::Ref<const meshmonk::FeatureMat> previous_features,
-         Eigen::Ref<const Eigen::VectorXi> previous_indices,
-         Eigen::Ref<const Eigen::VectorXi> new_indices)
-          -> meshmonk::FeatureMat {
-        return meshmonk::scale_shift_mesh(previous_features, previous_indices,
-                                          new_indices);
-      },
-      "previous_features"_a, "previous_indices"_a, "new_indices"_a,
-      nb::call_guard<nb::gil_scoped_release>());
-
-  m.def(
       "compute_normals",
       [](Eigen::Ref<const meshmonk::Vec3Mat> positions,
          Eigen::Ref<const meshmonk::FacesMat> faces) -> meshmonk::Vec3Mat {

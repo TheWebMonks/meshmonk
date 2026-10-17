@@ -18,7 +18,6 @@
 #include "PyramidNonrigidRegistration.hpp"
 #include "RigidRegistration.hpp"
 #include "RigidTransformer.hpp"
-#include "ScaleShifter.hpp"
 #include "SymmetricCorrespondenceFilter.hpp"
 #include "ViscoElasticTransformer.hpp"
 #include "helper_functions.hpp"
@@ -552,23 +551,6 @@ downsample_mesh(Eigen::Ref<const FeatureMat> features,
   downsampler.update();
 
   return {out_features, out_faces, out_flags, out_indices};
-}
-
-FeatureMat scale_shift_mesh(Eigen::Ref<const FeatureMat> previous_features,
-                            Eigen::Ref<const Eigen::VectorXi> previous_indices,
-                            Eigen::Ref<const Eigen::VectorXi> new_indices) {
-  FeatureMat prev_features_copy = previous_features;
-  Eigen::VectorXi prev_indices_copy = previous_indices;
-  Eigen::VectorXi new_indices_copy = new_indices;
-
-  FeatureMat out_features(new_indices_copy.size(), registration::NUM_FEATURES);
-
-  registration::ScaleShifter scaler;
-  scaler.set_input(prev_features_copy, prev_indices_copy, new_indices_copy);
-  scaler.set_output(out_features);
-  scaler.update();
-
-  return out_features;
 }
 
 Vec3Mat compute_normals(Eigen::Ref<const Vec3Mat> positions,
