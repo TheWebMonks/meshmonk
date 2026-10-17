@@ -58,7 +58,3 @@ else()
   target_link_libraries(meshmonk_lib PRIVATE OpenMeshCoreStatic
                                              OpenMeshToolsStatic)
 endif()
-
-# Optional: Set properties if needed, e.g., C++ standard (already set at root,
-# but can be target-specific) set_target_properties(meshmonk_shared PROPERTIES
-# CXX_STANDARD ${CMAKE_CXX_STANDARD})
