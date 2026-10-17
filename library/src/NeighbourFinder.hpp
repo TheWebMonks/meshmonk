@@ -36,7 +36,6 @@ template <typename VecMatType> class NeighbourFinder {
 
   PARAMETERS
   -numNeighbours(= 3): number of nearest neighbours
-  -leafSize(= 15): should be between 5 and 50 or so
 
   OUTPUT
   -outNeighbourIndices
@@ -47,16 +46,12 @@ public:
   // NeighbourFinder();
   ~NeighbourFinder(); // destructor
 
-  void set_source_points(const VecMatType *const inQueriedPoints);
-  void set_queried_points(const VecMatType *const _inSourcePoints);
+  void set_source_points(const VecMatType *const inSourcePoints);
+  void set_queried_points(const VecMatType *const inQueriedPoints);
   MatDynInt get_indices() const { return _outNeighbourIndices; }
   MatDynFloat get_distances() const { return _outNeighbourSquaredDistances; }
   void set_parameters(const size_t numNeighbours);
   void update();
-
-  // Disable the cross-iteration warm-start cache. Used in tests to verify
-  // cached and uncached code paths produce identical results.
-  void set_caching_enabled(bool enabled) { _cachingEnabled = enabled; }
 
 protected:
 private:
