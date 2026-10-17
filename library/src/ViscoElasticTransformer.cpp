@@ -16,6 +16,8 @@ void ViscoElasticTransformer::set_input(
                          // smoothing weights.
 } // end set_input()
 
+// Precondition: set_input() must have been called first (dereferences
+// _inFloatingFaces to build the mesh); also resets displacement fields.
 void ViscoElasticTransformer::set_output(FeatureMat *const ioFloatingFeatures) {
   _ioFloatingFeatures = ioFloatingFeatures;
   _neighboursOutdated =

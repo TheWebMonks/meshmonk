@@ -12,14 +12,14 @@ enum class RegistrationError {
                        // all-zero flags
   DecompositionFailed, // RigidTransformer eigendecomposition fails (Horn method
                        // / SelfAdjointEigenSolver)
-  NonConvergence,      // v0.2+ only — NOT raised in v0.1
+  NonConvergence,      // reserved; no producer yet (see TODO v0.4)
   InsufficientInliers, // fewer than 4 non-zero inlier weights after
                        // InlierDetector
 };
 
 struct RigidResult {
   FeatureMat aligned_features; // (N,6) positions + normals
-  RigidTransform transform;    // 4x4 SE(3)
+  RigidTransform transform;    // 4x4 rigid, or similarity if use_scaling
   int iterations_run = 0;
 };
 

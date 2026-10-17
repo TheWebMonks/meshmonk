@@ -14,9 +14,9 @@
 typedef OpenMesh::TriMesh_ArrayKernelT<> TriMesh;
 typedef Eigen::SparseMatrix<float, 0, int> SparseMat;
 typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>
-    MatDynInt; // matrix MxN of type unsigned int
+    MatDynInt; // matrix MxN of type int (signed)
 typedef Eigen::Matrix<int, Eigen::Dynamic, 3>
-    FacesMat; // matrix Mx3 of type unsigned int
+    FacesMat; // matrix Mx3 of type int (signed)
 typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>
     MatDynFloat; // matrix MxN of type float
 typedef Eigen::Matrix<float, Eigen::Dynamic, registration::NUM_FEATURES>

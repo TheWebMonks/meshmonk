@@ -30,13 +30,9 @@ class NonrigidRegistration {
   -inFloatingFlags
   -inTargetFlags
 
-  # PARAMETERS
-  -numNeighbours(=3):
-  number of nearest neighbours
-
   # OUTPUT
-  -outCorrespondingFeatures
-  -outCorrespondingFlags
+  Results are written in place to ioFloatingFeatures. Parameters: see
+  set_parameters().
   */
 
 public:

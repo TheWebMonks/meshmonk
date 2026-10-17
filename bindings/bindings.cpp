@@ -5,9 +5,10 @@
 //
 // Boundary-copy note:
 //   numpy arrays are row-major by default; Eigen is column-major.
-//   nanobind performs one implicit copy per call at the Python->C++ boundary
-//   (~1.3 MB for a 54K-vertex mesh). This is expected and acceptable.
-//   Do not add workarounds — profiling in v0.2 will determine if it matters.
+//   Each Eigen::Ref<const> argument whose numpy layout/dtype differs from the
+//   column-major Eigen type is copied once at the Python->C++ boundary
+//   (up to 6 copies for rigid_registration: 2 features, 2 faces, 2 flags).
+//   meshmonk.cpp then makes mutable copies again before running the pipeline.
 //
 // GIL release note:
 //   nb::call_guard<nb::gil_scoped_release>() releases the GIL for the

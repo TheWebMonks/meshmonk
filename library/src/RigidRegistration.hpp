@@ -29,13 +29,9 @@ class RigidRegistration {
   -inFloatingFlags
   -inTargetFlags
 
-  # PARAMETERS
-  -numNeighbours(=3):
-  number of nearest neighbours
-
   # OUTPUT
-  -outCorrespondingFeatures
-  -outCorrespondingFlags
+  Results are written in place to ioFloatingFeatures; see get_transformation().
+  Parameters: see set_parameters().
   */
 
 public:
