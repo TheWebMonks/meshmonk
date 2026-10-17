@@ -32,7 +32,6 @@ public:
     return entries_;
   }
   void reset() { entries_.clear(); }
-  bool empty() const { return entries_.empty(); }
 
   // Out-of-line definition below, after ScopedTimer is fully defined.
   uint64_t calibrate(size_t n);
@@ -101,7 +100,6 @@ class Profiler {
 public:
   ScopedTimer scoped(const std::string&) { return {}; }
   void reset() {}
-  bool empty() const { return true; }
   uint64_t calibrate(size_t) { return 0; }
   std::unordered_map<std::string, ProfileEntry> snapshot() const { return {}; }
 };

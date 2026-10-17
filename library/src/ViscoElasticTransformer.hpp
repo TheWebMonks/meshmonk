@@ -30,7 +30,6 @@ public:
   void set_parameters(size_t numNeighbours = 10, float sigma = 3.0,
                       size_t viscousIterations = 10,
                       size_t elasticIterations = 10);
-  Vec3Mat get_transformation() const { return _displacementField; }
   void update();
 
 protected:

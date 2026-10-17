@@ -66,11 +66,6 @@ private:
   // # Internal Parameters
   size_t _numElements = 0;
   size_t _numFeatures = 0;
-
-  // # Internal functions
-  // ## Function to update the transformation matrix and apply it to the
-  // floating positions
-  void _update_transformation();
 };
 
 } // namespace registration

@@ -53,22 +53,6 @@ public:
                       size_t numElasticIterationsStart,
                       size_t numElasticIterationsEnd);
 
-  void get_annealing_rates(float &viscousAnnealingRate,
-                           float &elasticAnnealingRate) {
-    viscousAnnealingRate = _viscousAnnealingRate;
-    elasticAnnealingRate = _elasticAnnealingRate;
-  }
-  void set_annealing_rates(const float viscousAnnealingRate,
-                           const float elasticAnnealingRate) {
-    _viscousAnnealingRate = viscousAnnealingRate;
-    _elasticAnnealingRate = elasticAnnealingRate;
-  }
-  void get_viscoelastic_iterations(float &numViscousIterations,
-                                   float &numElasticIterations) {
-    numViscousIterations = _numViscousIterations;
-    numElasticIterations = _numElasticIterations;
-  }
-
   void update();
 
 protected:

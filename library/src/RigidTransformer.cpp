@@ -15,7 +15,7 @@ void RigidTransformer::set_output(FeatureMat *const ioFeatures) {
 }
 void RigidTransformer::set_parameters(bool scaling) { _scaling = scaling; }
 
-void RigidTransformer::_update_transformation() {
+void RigidTransformer::update() {
 
   // # Info & Initialization
   _numElements = _ioFeatures->rows();
@@ -180,7 +180,5 @@ void RigidTransformer::_update_transformation() {
     _ioFeatures->block<1, 3>(i, 3) = vector4d.segment(0, 3);
   }
 }
-
-void RigidTransformer::update() { _update_transformation(); } // end update
 
 } // namespace registration
