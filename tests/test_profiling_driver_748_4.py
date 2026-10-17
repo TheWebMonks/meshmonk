@@ -42,7 +42,6 @@ class TestParseArgs:
         assert args.modes == ["rigid"]
         assert args.runs == 5
         assert args.warmup == 1
-        assert args.seed == 42
 
     def test_multiple_tiers_modes(self):
         args = rp.parse_args(["--tiers", "1k,10k,100k", "--modes", "rigid,nonrigid,pyramid"])
@@ -604,7 +603,6 @@ class TestMainStepZeroGuard:
         mock_args.modes = ["rigid"]
         mock_args.runs = 1
         mock_args.warmup = 0
-        mock_args.seed = 42
         mock_args.out = None
 
         with patch.dict("sys.modules", {"meshmonk": mock_mm}):
@@ -618,6 +616,28 @@ class TestMainStepZeroGuard:
 # ---------------------------------------------------------------------------
 # Integration: import sanity
 # ---------------------------------------------------------------------------
+
+class TestComplexityBucketAndSelfCheck:
+    def test_k116_maps_to_nlogn_not_linear(self):
+        assert rp._complexity_bucket(1.16) == "k≈1.16 (n·log n)"
+
+    def test_bucket_picks_nearest_candidate(self):
+        assert rp._complexity_bucket(1.05) == "k≈1.0 (linear)"
+        assert rp._complexity_bucket(1.5).startswith("other")
+
+    def test_rigid_only_self_check_needs_no_nonrigid_label(self):
+        needles = [n for n, _ in rp._sanity_checks(["rigid"])]
+        assert needles == ["NeighbourFinder::update", "RigidRegistration::update"]
+
+    def test_self_check_excludes_static_template_text(self):
+        needles = [n for n, _ in rp._sanity_checks(["rigid", "nonrigid", "pyramid"])]
+        for static in ("OMP_NUM_THREADS", "ns/scope", "/layer", "NonrigidRegistration::update"):
+            assert static not in needles
+
+    def test_seed_flag_removed(self):
+        with pytest.raises(SystemExit):
+            rp.parse_args(["--tiers", "1k", "--modes", "rigid", "--seed", "1"])
+
 
 class TestModuleStructure:
     """Verify module-level structure."""
