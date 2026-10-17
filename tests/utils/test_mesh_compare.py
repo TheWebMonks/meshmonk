@@ -1,8 +1,6 @@
 import numpy as np
 import pytest
 from tests.utils.mesh_compare import (
-    DEFAULT_TRANSFORM_ATOL,
-    DEFAULT_VERTEX_ATOL_MM,
     hausdorff_symmetric,
     max_vertex_distance,
     rmse,
@@ -34,15 +32,17 @@ def test_rmse_known_translation():
 
 
 def test_hausdorff_symmetric_property():
+    # Asymmetric directed distances: a->b is 1.0 (vertex [1,0,0] is 1 from b),
+    # b->a is 0.0. A one-directional implementation returns 0.0 for one order.
     a = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
-    b = np.array([[0.5, 0.0, 0.0]])
-    # hausdorff(a, b) == hausdorff(b, a)
-    assert hausdorff_symmetric(a, b) == pytest.approx(hausdorff_symmetric(b, a))
+    b = np.array([[0.0, 0.0, 0.0]])
+    assert hausdorff_symmetric(a, b) == pytest.approx(1.0)
+    assert hausdorff_symmetric(b, a) == pytest.approx(1.0)
 
 
-def test_constants_exist():
-    assert DEFAULT_TRANSFORM_ATOL == 1e-4
-    assert DEFAULT_VERTEX_ATOL_MM == 0.01
+def test_scalar_input_raises_value_error():
+    with pytest.raises(ValueError, match="shape"):
+        rmse(np.float64(1.0), np.zeros((2, 3)))
 
 
 def test_max_vertex_distance_known():

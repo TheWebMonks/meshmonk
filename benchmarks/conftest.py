@@ -23,7 +23,7 @@ Key invariants enforced here:
 
 Shared harness utilities (load_full_mesh, downsample_to) live in
 ``benchmarks/_harness.py`` and are imported by all bench files and
-test_harness_sizing.py.
+scripts/generate_profiling_meshes.py.
 """
 
 from __future__ import annotations
@@ -84,7 +84,7 @@ def pin_threads():
 
 
 def pytest_configure(config):
-    """Register benchmark markers and enforce minimum rounds in CI mode."""
+    """Register the ``benchmark`` marker (rounds are enforced by the CI CLI flag, not here)."""
     config.addinivalue_line(
         "markers",
         "benchmark: mark a test as a benchmark (run with --benchmark-only)",

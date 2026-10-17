@@ -14,7 +14,6 @@ the full profiling functionality.
 Tests are designed to pass in BOTH build variants.
 """
 
-from pathlib import Path
 
 import meshmonk
 import numpy as np
@@ -25,15 +24,15 @@ import pytest
 # Helper: populate the accumulator via a real (fast) registration
 # ---------------------------------------------------------------------------
 
-_DATA_DIR = Path("/workspace/data")
-_TEMPLATE_1K = _DATA_DIR / "Template_1K.obj"
-_DEMOFACE_1K = _DATA_DIR / "DemoFace_1K.obj"
+from tests.conftest import DATA_DIR
+_TEMPLATE_1K = DATA_DIR / "Template_1K.obj"
+_DEMOFACE_1K = DATA_DIR / "DemoFace_1K.obj"
 
 
 def _populate_accumulator_with_registration():
     """Run a rigid registration with 1K meshes to populate the accumulator.
 
-    Requires Template_1K.obj and DemoFace_1K.obj to exist in /workspace/data/.
+    Requires Template_1K.obj and DemoFace_1K.obj to exist in data/.
     Skips via pytest.skip() if the mesh files are not present.
     Returns the snap dict from profiling_peek() after the run (for assertion).
     """
@@ -66,6 +65,7 @@ def _populate_accumulator_with_registration():
         floating_flags=flags_f,
         target_flags=flags_t,
     )
+    return meshmonk.profiling_peek()
 
 
 # ---------------------------------------------------------------------------
@@ -135,10 +135,12 @@ class TestReturnTypes:
         assert isinstance(result, int)
 
     def test_profiling_calibrate_default_arg(self):
-        """calibrate() must accept zero-argument call (default n=1_000_000).
-        We call it with n=1 for speed, but verify the default doesn't crash.
-        Just test that n is accepted as a keyword argument too.
-        """
+        """calibrate() must accept a zero-argument call (default n=1_000_000)."""
+        result = meshmonk.profiling_calibrate()
+        assert isinstance(result, int)
+
+    def test_profiling_calibrate_n_keyword_arg(self):
+        """calibrate() must accept n as a keyword argument."""
         result = meshmonk.profiling_calibrate(n=1)
         assert isinstance(result, int)
 
@@ -258,7 +260,8 @@ class TestOnBuildSemantics:
         if not meshmonk.profiling_enabled():
             pytest.skip("This test only applies to ON builds")
         ns = meshmonk.profiling_calibrate(100_000)
-        # ScopedTimer = two chrono::now() calls, expected 10-2000 ns/scope
+        # ScopedTimer = two chrono::now() calls, typically 10-2000 ns/scope;
+        # the bound below is 5000 to leave slack on loaded CI hosts
         assert 10 <= ns <= 5000, f"calibrate() returned implausible {ns} ns/scope"
 
     def test_on_build_calibrate_does_not_pollute_accumulator(self):
@@ -281,14 +284,8 @@ class TestOnBuildSemantics:
         """When accumulator has data, peek returns {label: {total_us, count}} shape."""
         if not meshmonk.profiling_enabled():
             pytest.skip("This test only applies to ON builds")
-        # Since we can't easily populate the accumulator without running a
-        # registration (which requires mesh data), we verify the empty case shape.
-        # Shape is implicitly validated by test_profiling_enabled_roundtrip below.
-        meshmonk.profiling_reset()
-        snap = meshmonk.profiling_peek()
-        # Empty dict is valid shape
-        assert isinstance(snap, dict)
-        # If non-empty, each value must have total_us and count keys
+        snap = _populate_accumulator_with_registration()
+        assert len(snap) > 0, "Expected non-empty accumulator after registration"
         for label, entry in snap.items():
             assert isinstance(label, str)
             assert isinstance(entry, dict)

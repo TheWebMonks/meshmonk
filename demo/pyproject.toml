@@ -6,7 +6,6 @@ dependencies = [
     "meshmonk",
     "trimesh>=4.0",
     "matplotlib",
-    "scipy>=1.11",
 ]
 
 [tool.uv.sources]

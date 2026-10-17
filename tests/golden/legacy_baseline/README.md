@@ -26,6 +26,8 @@ From tests/utils/mesh_compare.py (to be calibrated in v0.1):
 - DEFAULT_TRANSFORM_ATOL = 1e-4  (rigid transform components)
 - DEFAULT_VERTEX_ATOL_MM = 0.01  (per-vertex position in mm)
 
+Both constants were never calibrated and were removed (dotpi-kcjb.14); tolerances now live in each golden test.
+
 ## Reproducibility check (v0.0)
 
 **Outcome: BUILD_FAILED** (acceptable per design)

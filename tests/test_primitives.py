@@ -15,7 +15,6 @@ translation [5,3,1]).  The 'corresponding_features.txt' is the unit cube at the 
 The test validates that compute_rigid_transform():
   1. Returns a valid SE(3) matrix.
   2. Returns a result whose rotation part matches the expected rotation (from expected_transform.txt).
-  3. Reduces alignment error when its transform is applied iteratively (ICP-style).
 """
 
 from pathlib import Path
@@ -23,22 +22,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-trimesh = pytest.importorskip("trimesh")
-
-import meshmonk  # noqa: E402
+import meshmonk
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "cube_rigid"
-
-
-def _parse_obj_vertices(obj_path: Path) -> np.ndarray:
-    """Parse 'v x y z' lines from an OBJ file, return (N, 3) float32 array."""
-    vertices = []
-    with open(obj_path) as f:
-        for line in f:
-            parts = line.strip().split()
-            if parts and parts[0] == "v":
-                vertices.append([float(parts[1]), float(parts[2]), float(parts[3])])
-    return np.array(vertices, dtype="float32")
 
 
 def test_compute_rigid_transform_cube():
@@ -49,8 +35,6 @@ def test_compute_rigid_transform_cube():
       1. The returned transform is a valid SE(3) matrix.
       2. The rotation part of the result matches the expected rotation from
          expected_transform.txt (atol=1e-4).
-      3. The transform reduces alignment RMSE when the unit cube is used as
-         floating and the correspondences are the transformed cube positions.
 
     Note: The internal RigidTransformer uses a centroid-based Horn method that
     returns T = [R | R*(corr_centroid - R*float_centroid)] (applies translation
@@ -63,7 +47,6 @@ def test_compute_rigid_transform_cube():
     )
     assert expected_transform.shape == (4, 4)
     R_expected = expected_transform[:3, :3]
-    expected_transform[:3, 3]
 
     # Load unit cube as floating features (the source to be registered)
     floating_features = np.loadtxt(
@@ -130,8 +113,9 @@ def _make_rotation_matrix(angle_rad: float, axis: str) -> np.ndarray:
         return np.array([[1, 0, 0], [0, c, -s], [0, s, c]], dtype=np.float32)
     if axis == "y":
         return np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]], dtype=np.float32)
-    # axis == "z"
-    return np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]], dtype=np.float32)
+    if axis == "z":
+        return np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]], dtype=np.float32)
+    raise ValueError(f"Unknown axis: {axis}")
 
 
 class TestRigidScalingOff:

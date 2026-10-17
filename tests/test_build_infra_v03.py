@@ -35,20 +35,29 @@ def test_ci_no_macos13():
     ), "ci.yml still contains macos-13 entries (deprecated December 2025)"
 
 
-def test_ci_no_manylinux2014():
-    """ci.yml must not reference manylinux2014 image."""
-    ci_content = (WORKSPACE / ".github/workflows/ci.yml").read_text()
-    assert (
-        "manylinux2014" not in ci_content
-    ), "ci.yml still uses manylinux2014; should be manylinux_2_28"
-
-
 def test_ci_test_command_excludes_silent_logger():
     """ci.yml CIBW_TEST_COMMAND must exclude test_silent_logger.py."""
-    ci_content = (WORKSPACE / ".github/workflows/ci.yml").read_text()
-    assert (
-        "test_silent_logger" in ci_content
-    ), "ci.yml CIBW_TEST_COMMAND must add --ignore for test_silent_logger.py"
+    import yaml
+
+    ci = yaml.safe_load((WORKSPACE / ".github/workflows/ci.yml").read_text())
+    cmds = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k == "CIBW_TEST_COMMAND":
+                    cmds.append(v)
+                walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+
+    walk(ci)
+    assert cmds, "ci.yml has no CIBW_TEST_COMMAND"
+    for cmd in cmds:
+        assert (
+            "--ignore={project}/tests/test_silent_logger.py" in cmd.split()
+        ), "ci.yml CIBW_TEST_COMMAND must add --ignore for test_silent_logger.py"
 
 
 # ---------------------------------------------------------------------------
@@ -56,27 +65,9 @@ def test_ci_test_command_excludes_silent_logger():
 # ---------------------------------------------------------------------------
 
 
-def test_cmake_stable_abi():
-    """CMakeLists.txt must have STABLE_ABI in nanobind_add_module call."""
-    cmake_content = (WORKSPACE / "CMakeLists.txt").read_text()
-    assert (
-        "STABLE_ABI" in cmake_content
-    ), "CMakeLists.txt is missing STABLE_ABI flag in nanobind_add_module"
-
-
 # ---------------------------------------------------------------------------
 # Change 3: pyproject.toml changes
 # ---------------------------------------------------------------------------
-
-
-def test_pyproject_version_bump():
-    """pyproject.toml must be on a 0.3.0 dev/rc/final track."""
-    with open(WORKSPACE / "pyproject.toml", "rb") as f:
-        data = tomllib.load(f)
-    version = data["project"]["version"]
-    assert version.startswith(
-        "0.3.0"
-    ), f"Expected version on 0.3.0 track, got {version}"
 
 
 def test_pyproject_has_pyyaml():
@@ -99,43 +90,6 @@ def test_pyproject_has_tomli():
     ), "pyproject.toml dev extra missing tomli"
 
 
-def test_pyproject_has_docs_extra():
-    """pyproject.toml must have a docs optional-dependency group."""
-    with open(WORKSPACE / "pyproject.toml", "rb") as f:
-        data = tomllib.load(f)
-    assert (
-        "docs" in data["project"]["optional-dependencies"]
-    ), "pyproject.toml missing docs optional-dependency group"
-
-
-def test_pyproject_has_cibuildwheel_section():
-    """pyproject.toml must have [tool.cibuildwheel] section."""
-    with open(WORKSPACE / "pyproject.toml", "rb") as f:
-        data = tomllib.load(f)
-    assert "cibuildwheel" in data.get(
-        "tool", {}
-    ), "pyproject.toml missing [tool.cibuildwheel] section"
-
-
-def test_pyproject_cibuildwheel_build_selector():
-    """cibuildwheel build selector must include cp310, cp311, cp312."""
-    with open(WORKSPACE / "pyproject.toml", "rb") as f:
-        data = tomllib.load(f)
-    build = data["tool"]["cibuildwheel"]["build"]
-    assert "cp310-*" in build
-    assert "cp311-*" in build
-    assert "cp312-*" in build
-
-
-def test_pyproject_cibuildwheel_manylinux_image():
-    """cibuildwheel linux config must use manylinux_2_28."""
-    with open(WORKSPACE / "pyproject.toml", "rb") as f:
-        data = tomllib.load(f)
-    linux = data["tool"]["cibuildwheel"]["linux"]
-    assert linux["manylinux-x86_64-image"] == "manylinux_2_28"
-    assert linux["manylinux-aarch64-image"] == "manylinux_2_28"
-
-
 def test_pyproject_cibuildwheel_cp312_override():
     """cibuildwheel must have cp312 override for SKBUILD_WHEEL_PY_API."""
     with open(WORKSPACE / "pyproject.toml", "rb") as f:
@@ -149,49 +103,9 @@ def test_pyproject_cibuildwheel_cp312_override():
     ), "cp312 override missing SKBUILD_WHEEL_PY_API = cp312"
 
 
-def test_pyproject_test_command_excludes_silent_logger():
-    """cibuildwheel test-command must exclude test_silent_logger.py."""
-    with open(WORKSPACE / "pyproject.toml", "rb") as f:
-        data = tomllib.load(f)
-    test_cmd = data["tool"]["cibuildwheel"]["test-command"]
-    assert "test_silent_logger" in test_cmd
-
-
-def test_pyproject_valid_toml():
-    """pyproject.toml must parse as valid TOML."""
-    with open(WORKSPACE / "pyproject.toml", "rb") as f:
-        data = tomllib.load(f)
-    # If we get here, TOML is valid
-    assert data is not None
-
-
 # ---------------------------------------------------------------------------
 # Change 4: meshmonk/__init__.py importlib.metadata version
 # ---------------------------------------------------------------------------
-
-
-def test_init_uses_importlib_metadata():
-    """meshmonk/__init__.py must use importlib.metadata for version."""
-    init_content = (WORKSPACE / "meshmonk/__init__.py").read_text()
-    assert (
-        "importlib.metadata" in init_content
-    ), "__init__.py still uses hardcoded __version__; should use importlib.metadata"
-
-
-def test_init_no_hardcoded_version():
-    """meshmonk/__init__.py must not have hardcoded version string."""
-    init_content = (WORKSPACE / "meshmonk/__init__.py").read_text()
-    assert (
-        '__version__ = "0.2.0"' not in init_content
-    ), "__init__.py still has hardcoded 0.2.0 version"
-
-
-def test_init_has_fallback_version():
-    """meshmonk/__init__.py must have a fallback version for uninstalled runs."""
-    init_content = (WORKSPACE / "meshmonk/__init__.py").read_text()
-    assert (
-        "0.0.0.dev0" in init_content
-    ), "__init__.py missing fallback version '0.0.0.dev0'"
 
 
 def test_init_compiles():

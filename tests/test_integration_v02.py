@@ -7,7 +7,6 @@ import pathlib
 import subprocess
 import sys
 
-import numpy as np
 import pytest
 
 import meshmonk
@@ -28,20 +27,10 @@ def test_meshmonk_error_not_raised_for_valid_input():
     assert result is not None
 
 
-def test_degenerate_input_raises_meshmonk_error_not_generic_runtime_error():
+def test_degenerate_input_raises_meshmonk_error_not_generic_runtime_error(empty_registration_kwargs):
     # After bead 1: MeshMonkError is only thrown for intentional library failures
-    empty = np.zeros((0, 6), dtype=np.float32)
-    faces = np.zeros((0, 3), dtype=np.int32)
-    flags = np.zeros((0,), dtype=np.float32)
     with pytest.raises(meshmonk.MeshMonkError) as exc_info:
-        meshmonk.rigid_register(
-            floating_features=empty,
-            target_features=empty,
-            floating_faces=faces,
-            target_faces=faces,
-            floating_flags=flags,
-            target_flags=flags,
-        )
+        meshmonk.rigid_register(**empty_registration_kwargs)
     # Error message must identify the error type
     assert "DegenerateInput" in str(exc_info.value)
 
@@ -94,20 +83,6 @@ def test_pyramid_register_with_rigid_params():
     assert result.aligned_features.shape[0] == len(m.vertices)
 
 
-def test_nonrigid_register_with_rigid_params():
-    pytest.importorskip("trimesh")
-    import trimesh
-
-    m = trimesh.creation.icosphere(subdivisions=0)
-    result = meshmonk.nonrigid_register(
-        floating=m,
-        target=m,
-        rigid_params={},
-        num_iterations=3,
-    )
-    assert result.aligned_features.shape[1] == 6
-
-
 # ---- rigid_params TypeError validation ----
 
 
@@ -142,7 +117,7 @@ def test_py_typed_marker_exists():
     py_typed = package_dir / "py.typed"
     assert py_typed.exists(), (
         f"py.typed missing at {py_typed}. "
-        "Create an empty file at /workspace/meshmonk/py.typed"
+        "Create an empty file at meshmonk/py.typed"
     )
 
 

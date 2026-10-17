@@ -1,8 +1,6 @@
-"""Tests for h31: TypedDict + Unpack type hints on register function kwargs.
+"""Tests for h31: TypedDict + Unpack type hints on register function kwargs."""
 
-TDD RED phase: these tests will fail until _types.py is created and
-register functions are updated with Unpack signatures.
-"""
+from typing_extensions import is_typeddict
 
 
 # ---------------------------------------------------------------------------
@@ -18,19 +16,19 @@ def test_types_module_exists():
 def test_rigid_kwargs_typeddict_exists():
     """RigidKwargs must be a TypedDict in meshmonk._types."""
     from meshmonk._types import RigidKwargs
-    assert isinstance(RigidKwargs, type)
+    assert is_typeddict(RigidKwargs)
 
 
 def test_nonrigid_kwargs_typeddict_exists():
     """NonrigidKwargs must be a TypedDict in meshmonk._types."""
     from meshmonk._types import NonrigidKwargs
-    assert isinstance(NonrigidKwargs, type)
+    assert is_typeddict(NonrigidKwargs)
 
 
 def test_pyramid_kwargs_typeddict_exists():
     """PyramidKwargs must be a TypedDict in meshmonk._types."""
     from meshmonk._types import PyramidKwargs
-    assert isinstance(PyramidKwargs, type)
+    assert is_typeddict(PyramidKwargs)
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +60,7 @@ def test_pyramid_kwargs_total_false():
 
 
 def test_rigid_kwargs_fields():
-    """RigidKwargs must contain exactly the fields matching _RIGID_KNOWN_KWARGS."""
+    """RigidKwargs must contain exactly the fields listed below (the allowlist _RIGID_KNOWN_KWARGS is derived from them)."""
     from meshmonk._types import RigidKwargs
     expected = {
         "correspondences_symmetric",
@@ -78,7 +76,7 @@ def test_rigid_kwargs_fields():
 
 
 def test_nonrigid_kwargs_fields():
-    """NonrigidKwargs must contain exactly the fields matching _NONRIGID_KNOWN_KWARGS."""
+    """NonrigidKwargs must contain exactly the fields listed below (the allowlist _NONRIGID_KNOWN_KWARGS is derived from them)."""
     from meshmonk._types import NonrigidKwargs
     expected = {
         "correspondences_symmetric",
@@ -98,7 +96,7 @@ def test_nonrigid_kwargs_fields():
 
 
 def test_pyramid_kwargs_fields():
-    """PyramidKwargs must contain exactly the fields matching _PYRAMID_KNOWN_KWARGS."""
+    """PyramidKwargs must contain exactly the fields listed below (the allowlist _PYRAMID_KNOWN_KWARGS is derived from them)."""
     from meshmonk._types import PyramidKwargs
     expected = {
         "correspondences_symmetric",
@@ -219,8 +217,11 @@ def test_typing_extensions_importable():
 
 def test_unpack_imported_from_typing_extensions():
     """Unpack must come from typing_extensions in meshmonk.__init__."""
-    # Verify typing_extensions.Unpack is importable (the dep is in pyproject.toml)
-    from typing_extensions import Unpack  # noqa: F401
+    import typing_extensions
+
+    import meshmonk
+
+    assert meshmonk.Unpack is typing_extensions.Unpack
 
 
 # ---------------------------------------------------------------------------
@@ -276,7 +277,7 @@ def test_pyramid_register_kwargs_annotation():
 # ---------------------------------------------------------------------------
 
 
-def test_pyramid_register_explicit_kwargs_detection(tmp_path):
+def test_pyramid_register_explicit_kwargs_detection():
     """_apply_pyramid_kwargs must still detect explicit vs auto-populated kwargs.
 
     This verifies that TypedDict(total=False) preserves the kwargs.keys()

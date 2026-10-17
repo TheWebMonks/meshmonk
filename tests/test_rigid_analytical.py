@@ -168,17 +168,11 @@ def test_round_trip():
 
     result = _rigid_register_cube(feat_a, feat_b, num_iterations=80)
 
-    _build_transform(R, t)
-    meshmonk.RigidTransform()
     # Build inverse by direct matrix math (T_known^{-1})
     # For SE(3): [R|t]^{-1} = [R^T | -R^T*t]
     R_inv = R.T
     t_inv = -(R_inv @ t)
     T_inv = _build_transform(R_inv, t_inv)
-    # Create RigidTransform from inverse using compute_rigid_transform trick:
-    # compose recovered transform with the known inverse
-    # We build an identity RigidTransform and "wrap" the matrix manually
-    # Since RigidTransform.matrix has no setter, we use matrix math:
     T_composed = result.transform.matrix @ T_inv
     np.testing.assert_allclose(
         T_composed,

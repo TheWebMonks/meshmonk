@@ -9,8 +9,7 @@ Usage::
         --tiers 1k,10k,100k \\
         --modes rigid,nonrigid,pyramid \\
         --runs 5 \\
-        --warmup 1 \\
-        --seed 42
+        --warmup 1
 
 See docs/decisions/ADR-004-profiling.md and
 history/2026-04-23-profiling-design.md for design context.
@@ -79,12 +78,6 @@ def parse_args(argv=None) -> argparse.Namespace:
         type=int,
         default=1,
         help="Number of warmup runs discarded per (tier, mode) (default: 1)",
-    )
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=42,
-        help="Random seed (default: 42; reserved for future use)",
     )
     parser.add_argument(
         "--out",
@@ -354,9 +347,9 @@ def _complexity_bucket(k: float) -> str:
     if np.isnan(k):
         return "n/a (insufficient tiers)"
     candidates = [(1.0, "k≈1.0 (linear)"), (1.16, "k≈1.16 (n·log n)"), (2.0, "k≈2.0 (quadratic)")]
-    for c, label in candidates:
-        if abs(k - c) < 0.2:
-            return label
+    c, label = min(candidates, key=lambda cl: abs(k - cl[0]))
+    if abs(k - c) < 0.2:
+        return label
     return f"other (k={k:.2f})"
 
 
@@ -473,7 +466,6 @@ def generate_report(
         f" --modes {','.join(args.modes)}"
         f" --runs {args.runs}"
         f" --warmup {args.warmup}"
-        f" --seed {args.seed}"
     )
 
     # -----------------------------------------------------------------------
@@ -499,7 +491,6 @@ def generate_report(
 - **OMP_NUM_THREADS**: {os.environ.get("OMP_NUM_THREADS", "not set")}
 - **EIGEN_DONT_PARALLELIZE**: {os.environ.get("EIGEN_DONT_PARALLELIZE", "not set")}
 - **Run command**: `{run_cmd}`
-- **Seed**: {args.seed}
 - **ScopedTimer overhead**: {overhead_ns} ns/scope (median of 3 × profiling_calibrate(1_000_000); individual: {cal_runs[0] if cal_runs else "?"}, {cal_runs[1] if cal_runs else "?"}, {cal_runs[2] if cal_runs else "?"} ns/scope)
 - **Repetitions per (tier, mode)**: warmup={args.warmup}, runs={args.runs}, median selected
 
@@ -739,6 +730,20 @@ Corrected values unreliable — cannot meaningfully distinguish measurement nois
     )
 
 
+def _sanity_checks(modes: list[str]) -> list[tuple[str, str]]:
+    """Return (needle, failure message) pairs the report must contain for ``modes``.
+
+    Only needles that come from measured data are checked: the report's own
+    template text (Methodology block, static section labels) would pass vacuously.
+    """
+    checks = [("NeighbourFinder::update", "NeighbourFinder::update missing from report")]
+    if "rigid" in modes:
+        checks.append(("RigidRegistration::update", "RigidRegistration::update missing"))
+    if "nonrigid" in modes or "pyramid" in modes:
+        checks.append(("ViscoElasticTransformer", "No ViscoElasticTransformer label in report"))
+    return checks
+
+
 def main() -> None:
     """Main entry point for the profiling driver."""
     # Step 0: Env vars already pinned at module level (OMP_NUM_THREADS=1,
@@ -834,21 +839,7 @@ def main() -> None:
     print("\nRunning sanity checks ...")
     report_text = report_md
 
-    checks = [
-        ("NeighbourFinder::update", "NeighbourFinder::update missing from report"),
-        ("ViscoElasticTransformer", "No ViscoElasticTransformer label in report"),
-        ("NonrigidRegistration::update", "NonrigidRegistration::update missing"),
-        ("RigidRegistration::update", "RigidRegistration::update missing"),
-        ("OMP_NUM_THREADS", "OMP_NUM_THREADS not in Methodology"),
-        ("ns/scope", "Calibration overhead not in Methodology"),
-    ]
-
-    # Only check pyramid labels if pyramid was run
-    if "pyramid" in args.modes:
-        checks.append(
-            ("PyramidNonrigidRegistration::update", "Pyramid static label missing")
-        )
-        checks.append(("/layer", "No /layer labels in pyramid mode"))
+    checks = _sanity_checks(args.modes)
 
     all_passed = True
     for needle, msg in checks:

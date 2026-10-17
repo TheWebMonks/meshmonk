@@ -1,9 +1,9 @@
 """Benchmark: rigid registration at three mesh-size tiers.
 
 Mesh tiers: 1K, 3K, 7K vertices.
-  - 7K: full Template.obj (7,160 vertices) — used as-is.
-  - 3K, 1K: obtained by iterative downsampling from the full mesh using
-    meshmonk.downsample_mesh with a deterministic ratio.
+  - 7K, 3K, 1K: obtained by iterative downsampling from the full Template.obj
+    (7,160 vertices) using meshmonk.downsample_mesh with a deterministic ratio.
+    The 7K tier is a ~160-vertex decimation of the full mesh, not the mesh as-is.
 
 All inputs are synthesised from data/Template.obj with a fixed random seed
 perturbation so benchmarks are fully reproducible.
@@ -19,7 +19,7 @@ import pytest
 import meshmonk
 from benchmarks._harness import downsample_to, load_full_mesh
 
-# Mesh-size tiers (vertex counts). The top tier matches Template.obj (7,160 v).
+# Mesh-size tiers (vertex counts). The top tier is just under Template.obj (7,160 v).
 MESH_SIZES = [1000, 3000, 7000]
 
 # Fixed random state for reproducible perturbation

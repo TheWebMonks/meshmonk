@@ -17,11 +17,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      - uses: lukka/get-cmake@v3.28.0
+      - uses: lukka/get-cmake@98fde40bf98bdc391abe7227e6b1052d9b36a22f  # v3.28.0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
         with:
           python-version: "3.12"
 
@@ -97,7 +97,7 @@ jobs:
           PYEOF
 
       - name: Upload benchmark results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b  # v4.5.0
         if: always()
         with:
           name: benchmark-results
@@ -108,7 +108,7 @@ jobs:
       # Baseline refresh: only when workflow_dispatch with refresh_baseline=true
       # Opens a PR — does NOT auto-merge. Required by ADR D6.
       - name: Merge benchmark results for baseline update
-        if: inputs.refresh_baseline
+        if: ${{ !cancelled() && inputs.refresh_baseline }}
         run: |
           python - <<'PYEOF'
           import json
@@ -133,7 +133,7 @@ jobs:
           PYEOF
 
       - name: Open PR to update baseline.json
-        if: inputs.refresh_baseline
+        if: ${{ !cancelled() && inputs.refresh_baseline }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

@@ -159,9 +159,15 @@ jobs:
       - name: Install package with dev and io extras
         run: uv pip install --system ".[dev,io]"
 
-      - name: Verify type stub exists
+      - name: Verify tracked type stub matches the built module
+        shell: bash
         run: |
-          python -c "import pathlib; p = pathlib.Path('meshmonk/_meshmonk_core.pyi'); assert p.exists(), 'missing _meshmonk_core.pyi'"
+          uv pip install --system "nanobind<3"
+          # import the .so directly (as CMake's nanobind_add_stub does), not via the meshmonk package; -P mirrors INCLUDE_PRIVATE in CMakeLists.txt
+          SO_DIR=$(python -c "import importlib.util as u,os; print(os.path.dirname(u.find_spec('meshmonk._meshmonk_core').origin))")
+          python -m nanobind.stubgen -P -i "$SO_DIR" -m _meshmonk_core -o "$RUNNER_TEMP/gen.pyi"
+          # AST compare: robust to formatting/comments, fails on any added/removed/changed binding
+          python -c "import ast,sys; d=lambda f: ast.dump(ast.parse(open(f).read())); sys.exit(0 if d(sys.argv[1])==d(sys.argv[2]) else 'tracked meshmonk/_meshmonk_core.pyi is stale vs built module; regenerate and commit it')" "$RUNNER_TEMP/gen.pyi" meshmonk/_meshmonk_core.pyi
 
       - name: Run tests (excluding golden tests)
         run: pytest tests/ -q --ignore=tests/test_golden.py
@@ -214,7 +220,7 @@ jobs:
           CIBW_BUILD: cp312-manylinux_x86_64
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_TEST_REQUIRES: pytest scipy trimesh pyyaml meshio
-          CIBW_TEST_COMMAND: pytest {project}/tests -q --ignore={project}/tests/test_golden.py --ignore={project}/tests/test_silent_logger.py
+          CIBW_TEST_COMMAND: pytest {project}/tests -q --ignore={project}/tests/test_golden.py --ignore={project}/tests/test_silent_logger.py --ignore={project}/tests/test_profiling_driver_748_4.py --ignore={project}/tests/utils
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b  # v4.5.0

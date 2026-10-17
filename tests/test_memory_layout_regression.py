@@ -21,7 +21,7 @@ import pytest
 
 import meshmonk
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+from tests.conftest import DATA_DIR
 TEMPLATE_OBJ = DATA_DIR / "Template.obj"
 DEMOFACE_OBJ = DATA_DIR / "demoFace.obj"
 REFERENCE_NPY = Path(__file__).parent / "golden" / "memory_layout_reference.npy"
@@ -89,7 +89,7 @@ def test_close_to_reference(registration_result):
     )
 
 
-def test_back_to_back_calls_same_size(registration_result):
+def test_back_to_back_calls_same_size():
     """Two consecutive nonrigid_register calls with same-size mesh give identical results.
 
     Guards against state leakage between calls to `nonrigid_register` — a broad correctness

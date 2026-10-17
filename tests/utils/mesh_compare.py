@@ -1,28 +1,20 @@
 """
 Mesh comparison utilities for MeshMonk test harness.
-
-Module constants (to be calibrated in v0.1):
-    DEFAULT_TRANSFORM_ATOL: float — tolerance for rigid transform components
-    DEFAULT_VERTEX_ATOL_MM: float — per-vertex position tolerance in millimetres
 """
 
 import numpy as np
 from scipy.spatial import cKDTree
 
-# Placeholder tolerances — calibrate in v0.1 once run-to-run noise is measured
-DEFAULT_TRANSFORM_ATOL = 1e-4
-DEFAULT_VERTEX_ATOL_MM = 0.01
-
 
 def _validate_vertex_array(arr: np.ndarray, name: str) -> np.ndarray:
     """Cast to float64 and validate shape (N, 3). Raises ValueError on bad input."""
     arr = np.asarray(arr, dtype=np.float64)
-    if arr.shape[0] == 0:
-        raise ValueError(f"empty input array: '{name}' has 0 rows")
     if arr.ndim != 2 or arr.shape[1] != 3:
         raise ValueError(
             f"invalid shape for '{name}': expected (N, 3), got {arr.shape}"
         )
+    if arr.shape[0] == 0:
+        raise ValueError(f"empty input array: '{name}' has 0 rows")
     return arr
 
 

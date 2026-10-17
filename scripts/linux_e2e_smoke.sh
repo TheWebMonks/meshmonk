@@ -2,7 +2,7 @@
 # Run the e2e demo inside a Linux container for visual smoke testing.
 #
 # Two modes:
-#   wheel  (default, ~30s) — install latest dev wheel from TestPyPI
+#   wheel  (default, ~30s) — pip-install the latest stable (no --pre) from TestPyPI+PyPI
 #   src    (~3 min)        — build current working tree from source
 #                            (use this to verify uncommitted/unreleased changes)
 #

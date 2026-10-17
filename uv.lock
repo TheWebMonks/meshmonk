@@ -927,8 +927,6 @@ source = { virtual = "demo" }
 dependencies = [
     { name = "matplotlib" },
     { name = "meshmonk" },
-    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "trimesh" },
 ]
 
@@ -936,7 +934,6 @@ dependencies = [
 requires-dist = [
     { name = "matplotlib" },
     { name = "meshmonk", editable = "." },
-    { name = "scipy", specifier = ">=1.11" },
     { name = "trimesh", specifier = ">=4.0" },
 ]
 

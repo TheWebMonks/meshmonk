@@ -96,7 +96,16 @@ def _find_demo_meshes():
     return None
 
 
-def _run_and_save(trimesh, register_fn, floating, target, out, **kwargs) -> None:
+def _run_and_save(
+    trimesh,
+    register_fn,
+    floating,
+    target,
+    out,
+    *,
+    saved_msg: str = "Saved result to",
+    **kwargs,
+) -> None:
     """Load FLOATING and TARGET, run *register_fn* with *kwargs*, save to *out*, echo."""
     floating_mesh = _load_mesh(trimesh, floating)
     target_mesh = _load_mesh(trimesh, target)
@@ -104,7 +113,7 @@ def _run_and_save(trimesh, register_fn, floating, target, out, **kwargs) -> None
     result = register_fn(floating=floating_mesh, target=target_mesh, **kwargs)
 
     _save_mesh(trimesh, result.aligned_vertices, floating_mesh.faces, out)
-    typer.echo(f"Saved result to {out}")
+    typer.echo(f"{saved_msg} {out}")
 
 
 # ---------------------------------------------------------------------------
@@ -282,8 +291,9 @@ def _demo_run(mode: str) -> None:
         typer.echo(
             "Demo meshes not found.  Run with --download to fetch them:\n"
             "  meshmonk demo --download\n\n"
-            "Or, if you have the repository checked out with data/ present,\n"
-            "run from the repository root directory."
+            "Or place Template.obj and demoFace.obj in ~/.cache/meshmonk/ or in\n"
+            "the data/ directory next to the meshmonk package (a source checkout);\n"
+            "the current directory is not searched."
         )
         raise typer.Exit(code=1)
 
@@ -294,20 +304,23 @@ def _demo_run(mode: str) -> None:
     trimesh = _require_trimesh()
     import meshmonk  # noqa: PLC0415
 
-    floating_mesh = _load_mesh(trimesh, template_path)
-    target_mesh = _load_mesh(trimesh, demo_face_path)
-
-    if mode == "rigid":
-        result = meshmonk.rigid_register(floating=floating_mesh, target=target_mesh)
-    elif mode == "nonrigid":
-        result = meshmonk.nonrigid_register(floating=floating_mesh, target=target_mesh)
-    elif mode == "pyramid":
-        result = meshmonk.pyramid_register(floating=floating_mesh, target=target_mesh)
-    else:
+    def _reject_mode(**_kwargs):
         typer.echo(
             f"Unknown mode {mode!r}.  Choose: rigid, nonrigid, pyramid.", err=True
         )
         raise typer.Exit(code=1)
 
-    _save_mesh(trimesh, result.aligned_vertices, floating_mesh.faces, str(out_path))
-    typer.echo(f"Demo result saved to {out_path}")
+    register_fn = {
+        "rigid": meshmonk.rigid_register,
+        "nonrigid": meshmonk.nonrigid_register,
+        "pyramid": meshmonk.pyramid_register,
+    }.get(mode, _reject_mode)
+
+    _run_and_save(
+        trimesh,
+        register_fn,
+        template_path,
+        demo_face_path,
+        str(out_path),
+        saved_msg="Demo result saved to",
+    )

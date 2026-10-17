@@ -135,8 +135,8 @@ def main() -> None:
     floating_f = np.asarray(floating.faces, dtype=np.int32)
     target_f = np.asarray(target.faces, dtype=np.int32)
 
-    # Build Pattern-B feature matrices once. We feed each stage's aligned_features
-    # forward as the next stage's floating_features.
+    # Build Pattern-B feature matrices once. Nonrigid and pyramid both start from
+    # the rigid stage's aligned features (feat_after_rigid), not from each other.
     feat_float = meshmonk.features_from_vertices(floating_v, floating_f)
     feat_target = meshmonk.features_from_vertices(target_v_f, target_f)
     target_v = target_v_f  # for plotting

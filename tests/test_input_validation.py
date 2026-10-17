@@ -7,7 +7,7 @@ import meshmonk
 
 # Small synthetic data for validation tests
 def _make_features(n=10):
-    """Create minimal (n,6) feature matrix and (n,3) faces."""
+    """Return (features (n,6), faces (1,3): one triangle, flags (n,): all ones)."""
     rng = np.random.RandomState(42)
     verts = rng.randn(n, 3).astype(np.float32)
     normals = rng.randn(n, 3).astype(np.float32)
@@ -44,16 +44,30 @@ class TestPatternBNoneGuard:
             )
 
     def test_pattern_b_none_flags_defaults_to_ones(self):
-        feat, faces, _ = _make_features()
-        result = meshmonk.rigid_register(
-            floating_features=feat,
-            target_features=feat,
-            floating_faces=faces,
-            target_faces=faces,
-            floating_flags=None,
-            target_flags=None,
+        feat, faces, ones = _make_features()
+        target = feat.copy()
+        target[:, :3] += 0.3  # shifted so flags affect the fit
+
+        def register(floating_flags, target_flags):
+            return meshmonk.rigid_register(
+                floating_features=feat,
+                target_features=target,
+                floating_faces=faces,
+                target_faces=faces,
+                floating_flags=floating_flags,
+                target_flags=target_flags,
+            )
+
+        defaulted = register(None, None)
+        np.testing.assert_array_equal(
+            defaulted.aligned_features, register(ones, ones).aligned_features
         )
-        assert result is not None
+        # Sensitivity: flags that are not all ones give a different fit.
+        partial = ones.copy()
+        partial[: len(partial) // 2] = 0.0
+        assert not np.array_equal(
+            defaulted.aligned_features, register(partial, ones).aligned_features
+        )
 
 
 class TestMixedPatternRejection:
@@ -80,9 +94,9 @@ class TestNormalsOverrideValidation:
     def test_wrong_shape_raises(self):
         """normals_override with wrong shape should raise ValueError."""
         pytest.importorskip("trimesh")
-        from pathlib import Path
+        from tests.conftest import DATA_DIR
 
-        template = Path("/workspace/data/Template.obj")
+        template = DATA_DIR / "Template.obj"
         if not template.exists():
             pytest.skip("Template.obj not available")
         bad_normals = np.random.randn(5, 3).astype(np.float32)  # wrong N
@@ -179,46 +193,61 @@ class TestPatternAFlagsNotSilentlyDropped:
 
 
 class TestNonrigidAnnealingGuard:
-    """Fix: NonrigidRegistration must guard annealing rate when viscous/elastic start=0.
+    """NonrigidRegistration must guard the annealing rate when viscous/elastic start=0.
 
-    Without the guard: exp(log(end/0) / (iters-1)) = Inf/NaN — undefined behaviour.
-    With the guard: rate = 1.0f (no annealing), matching PyramidNonrigidRegistration.
+    Without the guard: exp(log(end/0) / (iters-1)) = Inf, 0 * Inf = NaN is cast
+    to int (undefined behaviour); in practice the registration never returns.
+    With the guard: rate = 1.0f (no annealing), so start=0,end=3 clamps to 3
+    iterations on every step -- identical to start=3,end=3.
 
-    We verify the fix via source-code inspection to directly capture the fix.
+    The call runs in a subprocess with a timeout so a regression fails fast
+    instead of hanging the suite.
     """
 
-    _SOURCE_FILE = str(
-        __import__("pathlib").Path(__file__).resolve().parent.parent
-        / "library"
-        / "src"
-        / "NonrigidRegistration.cpp"
+    _SCRIPT = """
+import sys
+import numpy as np
+import meshmonk
+
+kind = sys.argv[1]
+rng = np.random.RandomState(42)
+feat = np.hstack([rng.randn(10, 3), rng.randn(10, 3)]).astype(np.float32)
+faces = np.array([[0, 1, 2]], dtype=np.int32)
+flags = np.ones(10, dtype=np.float32)
+target = (feat[::-1] * 1.1).copy()
+
+
+def run(start):
+    return meshmonk.nonrigid_register(
+        floating_features=feat, target_features=target,
+        floating_faces=faces, target_faces=faces,
+        floating_flags=flags, target_flags=flags,
+        num_iterations=5,
+        **{
+            f"transform_num_{kind}_iterations_start": start,
+            f"transform_num_{kind}_iterations_end": 3,
+        },
     )
 
-    def test_viscous_annealing_guard_present(self):
-        """NonrigidRegistration.cpp must have a guard for zero viscous start value."""
-        from pathlib import Path
 
-        source = Path(self._SOURCE_FILE).read_text()
-        # The fixed code must check _numViscousIterationsStart > 0 before computing rate
-        assert "_numViscousIterationsStart > 0" in source, (
-            "NonrigidRegistration.cpp is missing the guard for zero "
-            "_numViscousIterationsStart. Without it, exp(log(end/0)/(iters-1)) "
-            "produces Inf/NaN (undefined behaviour). Add the same guard that "
-            "PyramidNonrigidRegistration.cpp has at lines 71-74."
+zero, three = run(0), run(3)
+assert np.isfinite(zero.aligned_features).all()
+np.testing.assert_array_equal(zero.aligned_features, three.aligned_features)
+"""
+
+    @pytest.mark.parametrize("kind", ["viscous", "elastic"])
+    def test_zero_start_matches_constant_schedule(self, kind):
+        """start=0 behaves as no annealing (== start=end), finite, and terminates."""
+        import subprocess
+        import sys
+
+        proc = subprocess.run(
+            [sys.executable, "-c", self._SCRIPT, kind],
+            capture_output=True,
+            text=True,
+            timeout=60,
         )
-
-    def test_elastic_annealing_guard_present(self):
-        """NonrigidRegistration.cpp must have a guard for zero elastic start value."""
-        from pathlib import Path
-
-        source = Path(self._SOURCE_FILE).read_text()
-        # The fixed code must check _numElasticIterationsStart > 0 before computing rate
-        assert "_numElasticIterationsStart > 0" in source, (
-            "NonrigidRegistration.cpp is missing the guard for zero "
-            "_numElasticIterationsStart. Without it, exp(log(end/0)/(iters-1)) "
-            "produces Inf/NaN (undefined behaviour). Add the same guard that "
-            "PyramidNonrigidRegistration.cpp has at lines 75-78."
-        )
+        assert proc.returncode == 0, proc.stderr[-2000:]
 
 
 # ---------------------------------------------------------------------------
@@ -309,23 +338,24 @@ class TestDegenerateMeshes:
         feat, faces, flags = _make_features()
         single_vert = np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 1.0]], dtype=np.float32)
         single_flags = np.ones(1, dtype=np.float32)
-        empty_faces = np.zeros((0, 3), dtype=np.int32)
+        # Non-empty faces so the zero-range bounding-box check is the one reached.
+        single_faces = np.array([[0, 0, 0]], dtype=np.int32)
         with pytest.raises(meshmonk.MeshMonkError, match="DegenerateInput"):
             meshmonk.rigid_register(
                 floating_features=single_vert,
                 target_features=feat,
-                floating_faces=empty_faces,
+                floating_faces=single_faces,
                 target_faces=faces,
                 floating_flags=single_flags,
                 target_flags=flags,
             )
 
-    def test_empty_vertex_raises_degenerate_input(self):
+    def test_empty_vertex_raises_degenerate_input(self, empty_registration_kwargs):
         """A zero-row floating mesh raises MeshMonkError(DegenerateInput)."""
         feat, faces, flags = _make_features()
-        empty_feat = np.zeros((0, 6), dtype=np.float32)
-        empty_flags = np.zeros(0, dtype=np.float32)
-        empty_faces = np.zeros((0, 3), dtype=np.int32)
+        empty_feat = empty_registration_kwargs["floating_features"]
+        empty_flags = empty_registration_kwargs["floating_flags"]
+        empty_faces = empty_registration_kwargs["floating_faces"]
         with pytest.raises(meshmonk.MeshMonkError, match="DegenerateInput"):
             meshmonk.rigid_register(
                 floating_features=empty_feat,
