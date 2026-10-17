@@ -39,7 +39,7 @@ DEMOFACE_OBJ = DATA_DIR / "demoFace.obj"
 
 
 # ---------------------------------------------------------------------------
-# Tier 3: Human-approved visual goldens (stubs — xfail until goldens captured)
+# Tier 3: Human-approved visual goldens (tests/golden/*.npz; skip if a file is absent)
 # ---------------------------------------------------------------------------
 
 
@@ -166,7 +166,7 @@ def test_rigid_scientific_equivalence():
     result_transform = result.transform.matrix  # (4, 4) float32
 
     # Compare: loose tolerance — advisory only
-    # atol=1e-2 for matrix elements, RMSE atol=1e-1 for vertex positions
+    # atol=1e-2 on the transform matrix elements
     matrix_close = np.allclose(result_transform, legacy_transform, atol=1e-2)
 
     if not matrix_close:
