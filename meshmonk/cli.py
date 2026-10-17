@@ -291,8 +291,9 @@ def _demo_run(mode: str) -> None:
         typer.echo(
             "Demo meshes not found.  Run with --download to fetch them:\n"
             "  meshmonk demo --download\n\n"
-            "Or, if you have the repository checked out with data/ present,\n"
-            "run from the repository root directory."
+            "Or place Template.obj and demoFace.obj in ~/.cache/meshmonk/ or in\n"
+            "the data/ directory next to the meshmonk package (a source checkout);\n"
+            "the current directory is not searched."
         )
         raise typer.Exit(code=1)
 

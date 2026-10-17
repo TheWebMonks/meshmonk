@@ -101,6 +101,15 @@ def test_error_message_still_contains_description(empty_registration_kwargs):
     ), f"Expected 'DegenerateInput' in message, got: {msg!r}"
 
 
+def test_degenerate_message_names_pyramid_parameter_causes(empty_registration_kwargs):
+    """The DegenerateInput text lists the pyramid parameter conditions (c25)."""
+    with pytest.raises(MeshMonkError) as exc_info:
+        meshmonk.pyramid_register(**empty_registration_kwargs)
+    msg = str(exc_info.value)
+    assert "num_pyramid_layers < 1" in msg, msg
+    assert "fewer than 2 iterations per layer" in msg, msg
+
+
 # ---------------------------------------------------------------------------
 # All error codes accessible via nonrigid (InsufficientInliers)
 # ---------------------------------------------------------------------------

@@ -52,8 +52,9 @@ T unwrap_expected(tl::expected<T, meshmonk::RegistrationError> result) {
   std::string msg;
   switch (code) {
   case meshmonk::RegistrationError::DegenerateInput:
-    msg = "DegenerateInput: empty inputs, shape mismatch, zero-range bounding "
-          "box, or all-zero inlier flags";
+    msg = "DegenerateInput: empty inputs or faces, shape mismatch, faces not "
+          "(N,3), zero-range bounding box, all-zero inlier flags, or (pyramid) "
+          "num_pyramid_layers < 1 or fewer than 2 iterations per layer";
     break;
   case meshmonk::RegistrationError::InsufficientInliers:
     msg = "InsufficientInliers: fewer than 4 non-zero inlier weights after "

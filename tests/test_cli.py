@@ -218,6 +218,19 @@ def test_demo_download_message_is_user_friendly(runner, app):
     assert "Downloading" in result.output or "download" in result.output.lower()
 
 
+def test_demo_not_found_hint_names_real_lookup_dirs(runner, app, monkeypatch):
+    """The not-found hint names the cache and package data/ dirs, not the cwd (c75)."""
+    import meshmonk.cli as cli
+
+    monkeypatch.setattr(cli, "_find_demo_meshes", lambda: None)
+    result = runner.invoke(app, ["demo", "rigid"])
+    out = _strip_ansi(result.output)
+    assert result.exit_code == 1, out
+    assert "~/.cache/meshmonk/" in out
+    assert "data/ directory next to the meshmonk package" in out
+    assert "repository root" not in out
+
+
 @pytest.mark.skipif(
     not MESHES_AVAILABLE,
     reason="Test meshes not available at data/",
