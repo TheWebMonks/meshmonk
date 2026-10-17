@@ -158,7 +158,7 @@ def test_cli_download_network_error_exits_1_and_cleans_partial(
     """URLError and plain OSError both exit 1 and remove a partial file."""
     import click
 
-    def urlopen(url, timeout=None):
+    def urlopen(_url, **_kwargs):
         raise exc
 
     (tmp_path / "Template.obj").write_bytes(b"partial")
@@ -171,7 +171,7 @@ def test_cli_download_network_error_exits_1_and_cleans_partial(
 def test_cli_download_passes_timeout_30(monkeypatch, tmp_path):
     seen = []
 
-    def urlopen(url, timeout=None):
+    def urlopen(_url, timeout=None):
         seen.append(timeout)
         return _Resp(b"x")
 

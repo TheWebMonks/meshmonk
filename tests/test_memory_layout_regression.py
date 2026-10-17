@@ -89,7 +89,7 @@ def test_close_to_reference(registration_result):
     )
 
 
-def test_back_to_back_calls_same_size(registration_result):
+def test_back_to_back_calls_same_size():
     """Two consecutive nonrigid_register calls with same-size mesh give identical results.
 
     Guards against state leakage between calls to `nonrigid_register` — a broad correctness

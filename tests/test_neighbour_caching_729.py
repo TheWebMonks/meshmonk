@@ -10,7 +10,6 @@ produce identical registration output — this test enforces that.
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 import meshmonk
 

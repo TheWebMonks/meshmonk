@@ -1,6 +1,5 @@
 import pytest
 import meshmonk
-import numpy as np
 
 
 def test_meshmonk_error_is_runtime_error_subclass():

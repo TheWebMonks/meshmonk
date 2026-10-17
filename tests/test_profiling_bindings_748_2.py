@@ -14,7 +14,6 @@ the full profiling functionality.
 Tests are designed to pass in BOTH build variants.
 """
 
-from pathlib import Path
 
 import meshmonk
 import numpy as np

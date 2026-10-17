@@ -26,14 +26,6 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "integration: marks tests as integration tests requiring external resources",
-    )
-    config.addinivalue_line(
-        "markers",
-        "golden: marks tests as golden-comparison tests (compare against frozen .npz files)",
-    )
-    config.addinivalue_line(
-        "markers",
         "advisory: marks tests as advisory (failures reported but do not gate CI)",
     )
 
@@ -45,34 +37,6 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 # ---------------------------------------------------------------------------
 # Shared fixtures
 # ---------------------------------------------------------------------------
-
-
-@pytest.fixture
-def mesh_data_dir():
-    """Path to the repo's tracked data/ directory (DATA_DIR).
-
-    Skips the test if the data directory is empty or does not contain any OBJ files.
-    """
-    data_dir = DATA_DIR
-    obj_files = list(data_dir.glob("*.obj"))
-    if not obj_files:
-        pytest.skip(f"No OBJ files found in {data_dir} — skipping data-dependent test")
-    return data_dir
-
-
-@pytest.fixture
-def golden_dir():
-    """Path to tests/golden/ directory.
-
-    Skips the test if the golden directory contains no .npz files.
-    """
-    golden = Path(__file__).parent / "golden"
-    npz_files = list(golden.glob("*.npz"))
-    if not npz_files:
-        pytest.skip(
-            f"No .npz golden files found in {golden} — run golden capture first"
-        )
-    return golden
 
 
 @pytest.fixture

@@ -6,7 +6,6 @@ These tests act as a soft anchor — they should always pass since the files are
 committed and do not require any build or registration to run.
 """
 
-from pathlib import Path
 
 import numpy as np
 

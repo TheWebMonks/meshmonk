@@ -277,7 +277,7 @@ def test_pyramid_register_kwargs_annotation():
 # ---------------------------------------------------------------------------
 
 
-def test_pyramid_register_explicit_kwargs_detection(tmp_path):
+def test_pyramid_register_explicit_kwargs_detection():
     """_apply_pyramid_kwargs must still detect explicit vs auto-populated kwargs.
 
     This verifies that TypedDict(total=False) preserves the kwargs.keys()
