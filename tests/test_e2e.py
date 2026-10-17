@@ -22,7 +22,7 @@ def _utf8_env() -> dict:
     return env
 
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+from tests.conftest import DATA_DIR
 TEMPLATE_OBJ = DATA_DIR / "Template.obj"
 DEMOFACE_OBJ = DATA_DIR / "demoFace.obj"
 

@@ -21,7 +21,7 @@ import pytest
 
 import meshmonk
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+from tests.conftest import DATA_DIR
 TEMPLATE_OBJ = DATA_DIR / "Template.obj"
 DEMOFACE_OBJ = DATA_DIR / "demoFace.obj"
 REFERENCE_NPY = Path(__file__).parent / "golden" / "memory_layout_reference.npy"

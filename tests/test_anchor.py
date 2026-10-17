@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+from tests.conftest import DATA_DIR
 
 
 def test_rigid_transform_file_exists():

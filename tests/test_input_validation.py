@@ -80,9 +80,9 @@ class TestNormalsOverrideValidation:
     def test_wrong_shape_raises(self):
         """normals_override with wrong shape should raise ValueError."""
         pytest.importorskip("trimesh")
-        from pathlib import Path
+        from tests.conftest import DATA_DIR
 
-        template = Path("/workspace/data/Template.obj")
+        template = DATA_DIR / "Template.obj"
         if not template.exists():
             pytest.skip("Template.obj not available")
         bad_normals = np.random.randn(5, 3).astype(np.float32)  # wrong N

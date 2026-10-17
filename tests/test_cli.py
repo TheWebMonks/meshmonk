@@ -24,7 +24,7 @@ def _strip_ansi(s: str) -> str:
     return _ANSI_RE.sub("", s)
 
 
-DATA_DIR = Path("/workspace/data")
+from tests.conftest import DATA_DIR
 TEMPLATE_OBJ = DATA_DIR / "Template.obj"
 DEMO_FACE_OBJ = DATA_DIR / "demoFace.obj"
 MESHES_AVAILABLE = TEMPLATE_OBJ.exists() and DEMO_FACE_OBJ.exists()
@@ -130,7 +130,7 @@ def test_pyramid_help_shows_layers(runner, app):
 
 @pytest.mark.skipif(
     not MESHES_AVAILABLE,
-    reason="Test meshes not available at /workspace/data/",
+    reason="Test meshes not available at data/",
 )
 def test_rigid_e2e_produces_output_file(runner, app, tmp_path):
     out_path = tmp_path / "result.obj"
@@ -151,7 +151,7 @@ def test_rigid_e2e_produces_output_file(runner, app, tmp_path):
 
 @pytest.mark.skipif(
     not MESHES_AVAILABLE,
-    reason="Test meshes not available at /workspace/data/",
+    reason="Test meshes not available at data/",
 )
 def test_rigid_e2e_prints_saved_message(runner, app, tmp_path):
     out_path = tmp_path / "result.obj"
@@ -170,13 +170,13 @@ def test_rigid_e2e_prints_saved_message(runner, app, tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Demo subcommand: dev-convenience path (uses /workspace/data/)
+# Demo subcommand: dev-convenience path (uses data/)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.skipif(
     not MESHES_AVAILABLE,
-    reason="Test meshes not available at /workspace/data/",
+    reason="Test meshes not available at data/",
 )
 def test_demo_download_flag_present(runner, app):
     """demo --download is a valid flag (even if URLs are placeholder)."""
@@ -203,10 +203,10 @@ def test_demo_download_message_is_user_friendly(runner, app):
 
 @pytest.mark.skipif(
     not MESHES_AVAILABLE,
-    reason="Test meshes not available at /workspace/data/",
+    reason="Test meshes not available at data/",
 )
 def test_demo_runs_rigid_mode(runner, app, monkeypatch, tmp_path):
-    """demo rigid finds meshes in /workspace/data/ dev fallback and runs."""
+    """demo rigid finds meshes in data/ dev fallback and runs."""
     # Patch the cache dir so output lands somewhere predictable
     monkeypatch.setenv("HOME", str(tmp_path))
     result = runner.invoke(app, ["demo", "rigid"])

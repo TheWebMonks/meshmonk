@@ -37,6 +37,10 @@ def pytest_configure(config):
     )
 
 
+# Single repo-relative data dir; test modules import this (tracked meshes live here).
+DATA_DIR = Path(__file__).parent.parent / "data"
+
+
 # ---------------------------------------------------------------------------
 # Shared fixtures
 # ---------------------------------------------------------------------------
@@ -44,11 +48,11 @@ def pytest_configure(config):
 
 @pytest.fixture
 def mesh_data_dir():
-    """Path to /workspace/data/ directory.
+    """Path to the repo's tracked data/ directory (DATA_DIR).
 
     Skips the test if the data directory is empty or does not contain any OBJ files.
     """
-    data_dir = Path(__file__).parent.parent / "data"
+    data_dir = DATA_DIR
     obj_files = list(data_dir.glob("*.obj"))
     if not obj_files:
         pytest.skip(f"No OBJ files found in {data_dir} — skipping data-dependent test")

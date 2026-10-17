@@ -32,7 +32,7 @@ import meshmonk
 
 GOLDEN_DIR = Path(__file__).parent / "golden"
 LEGACY_DIR = GOLDEN_DIR / "legacy_baseline"
-DATA_DIR = Path(__file__).parent.parent / "data"
+from tests.conftest import DATA_DIR
 
 TEMPLATE_OBJ = DATA_DIR / "Template.obj"
 DEMOFACE_OBJ = DATA_DIR / "demoFace.obj"
@@ -137,7 +137,7 @@ def test_pyramid_golden():
 def test_rigid_scientific_equivalence():
     """Assert rigid registration output is close to the legacy baseline transform.
 
-    Uses /workspace/tests/golden/legacy_baseline/rigid_transform.txt as the
+    Uses tests/golden/legacy_baseline/rigid_transform.txt as the
     reference, captured from a prior meshmonk_cli run on the same meshes.
 
     This is an advisory test — it reports discrepancies but does not gate PRs.

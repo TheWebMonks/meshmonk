@@ -25,15 +25,15 @@ import pytest
 # Helper: populate the accumulator via a real (fast) registration
 # ---------------------------------------------------------------------------
 
-_DATA_DIR = Path("/workspace/data")
-_TEMPLATE_1K = _DATA_DIR / "Template_1K.obj"
-_DEMOFACE_1K = _DATA_DIR / "DemoFace_1K.obj"
+from tests.conftest import DATA_DIR
+_TEMPLATE_1K = DATA_DIR / "Template_1K.obj"
+_DEMOFACE_1K = DATA_DIR / "DemoFace_1K.obj"
 
 
 def _populate_accumulator_with_registration():
     """Run a rigid registration with 1K meshes to populate the accumulator.
 
-    Requires Template_1K.obj and DemoFace_1K.obj to exist in /workspace/data/.
+    Requires Template_1K.obj and DemoFace_1K.obj to exist in data/.
     Skips via pytest.skip() if the mesh files are not present.
     Returns the snap dict from profiling_peek() after the run (for assertion).
     """

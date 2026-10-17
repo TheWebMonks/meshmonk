@@ -142,7 +142,7 @@ def test_py_typed_marker_exists():
     py_typed = package_dir / "py.typed"
     assert py_typed.exists(), (
         f"py.typed missing at {py_typed}. "
-        "Create an empty file at /workspace/meshmonk/py.typed"
+        "Create an empty file at meshmonk/py.typed"
     )
 
 

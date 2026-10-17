@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+from tests.conftest import DATA_DIR
 
 EXPECTED_MESHES = {
     "Template_1K": 1_000,

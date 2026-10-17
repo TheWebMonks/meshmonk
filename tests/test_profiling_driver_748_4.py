@@ -20,12 +20,14 @@ from unittest.mock import patch, MagicMock
 import numpy as np
 import pytest
 
+from tests.conftest import DATA_DIR
+
 
 # ---------------------------------------------------------------------------
 # Import the module under test
 # ---------------------------------------------------------------------------
 
-sys.path.insert(0, str(Path("/workspace")))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 import profiling.run_profile as rp
 
 
@@ -94,9 +96,9 @@ class TestSha256File:
 # ---------------------------------------------------------------------------
 
 class TestLoadMeshTier:
-    """Requires the 6 OBJ files in /workspace/data/"""
+    """Requires the 6 OBJ files in data/"""
 
-    DATA = Path("/workspace/data")
+    DATA = DATA_DIR
 
     def test_1k_returns_correct_shapes(self):
         if not (self.DATA / "Template_1K.obj").exists():
