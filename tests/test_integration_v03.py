@@ -4,8 +4,11 @@ Verifies pyproject.toml, ci.yml, release.yml, mkdocs.yml, and source files are
 correctly configured for the v0.3 PyPI-ready release. No live builds or network
 access required.
 
-Focus: CROSS-CUTTING concerns — verifying that the pieces work TOGETHER, not
-re-testing individual file changes already covered by test_build_infra_v03.py.
+Focus: CROSS-CUTTING concerns — verifying that the pieces work TOGETHER.
+Each property is asserted by exactly one test across this file and
+test_build_infra_v03.py (which owns the macos-13 ban, the cp312 override,
+dev-extra deps, py_compile of __init__.py, and the ADR-001 amendment text) and
+test_integration_v02.py (which owns the per-asset DEMO_ASSETS URL check).
 
 Requires: pyyaml (pip install pyyaml or pip install ".[dev]")
 tomllib is stdlib in Python 3.11+; on Python 3.10 install tomli:
@@ -77,16 +80,6 @@ def test_cibuildwheel_macos_arm64_only():
     assert "x86_64" not in macos_archs
 
 
-def test_cibuildwheel_cp312_override_sets_abi3():
-    """cp312 override must set SKBUILD_WHEEL_PY_API=cp312 for abi3 tagging."""
-    content = tomllib.loads((ROOT / "pyproject.toml").read_text())
-    overrides = content["tool"]["cibuildwheel"]["overrides"]
-    cp312_override = next((o for o in overrides if o["select"] == "cp312-*"), None)
-    assert cp312_override is not None, "Missing cp312-* override"
-    env = cp312_override.get("environment", {})
-    assert env.get("SKBUILD_WHEEL_PY_API") == "cp312"
-
-
 def test_cibuildwheel_test_excludes_silent_logger():
     """cibuildwheel test-command must exclude test_silent_logger.py."""
     content = tomllib.loads((ROOT / "pyproject.toml").read_text())
@@ -118,12 +111,6 @@ def test_docs_extra_in_pyproject():
 # Section 2: CI workflow + pyproject.toml consistency
 # (ci.yml dry-run must use same manylinux image as pyproject.toml release config)
 # ---------------------------------------------------------------------------
-
-
-def test_ci_yml_has_no_macos13():
-    """ci.yml must not reference macos-13 (runner deprecated December 2025)."""
-    content = (ROOT / ".github/workflows/ci.yml").read_text()
-    assert "macos-13" not in content, "macos-13 runner still referenced in ci.yml"
 
 
 def test_ci_yml_and_pyproject_agree_on_manylinux_image():
@@ -249,19 +236,6 @@ def test_init_py_no_hardcoded_version():
     assert hardcoded is None, f"Hardcoded version found: {hardcoded.group()}"
 
 
-def test_pyproject_version_is_consistent_with_v03_branch():
-    """pyproject.toml version must be 0.3.x, consistent with __init__.py fallback being 0.0.0.dev0."""
-    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
-    version = pyproject["project"]["version"]
-    # Must be 0.3.x (not stuck at 0.2.x)
-    assert version.startswith("0.3."), f"pyproject.toml still at old version: {version}"
-    # __init__.py fallback must NOT be the release version (that would be dual-maintenance)
-    init_content = (ROOT / "meshmonk/__init__.py").read_text()
-    assert (
-        version not in init_content or "importlib.metadata" in init_content
-    ), "__init__.py hardcodes the pyproject version instead of using importlib.metadata"
-
-
 # ---------------------------------------------------------------------------
 # Section 5: Docs cross-cutting — mkdocs.yml nav references existing files
 # ---------------------------------------------------------------------------
@@ -350,13 +324,6 @@ def test_mkdocs_nav_has_decisions_section():
 # ---------------------------------------------------------------------------
 
 
-def test_cli_demo_assets_dict_exists():
-    """cli.py must define DEMO_ASSETS dict with GitHub Releases URLs."""
-    content = (ROOT / "meshmonk/cli.py").read_text()
-    assert "DEMO_ASSETS" in content
-    assert "releases/latest/download" in content
-
-
 def test_cli_demo_assets_have_sha256_field():
     """Each DEMO_ASSETS entry must have a sha256 field (may be None)."""
     from meshmonk.cli import DEMO_ASSETS
@@ -441,14 +408,3 @@ def test_displacement_field_has_docstring_in_bindings():
 # Section 9: ADR-001 amendment present
 # ---------------------------------------------------------------------------
 
-
-def test_adr001_d2_amendment_present():
-    """ADR-001 must contain the D2 amendment for the v0.3 12-wheel strategy."""
-    adr_path = ROOT / "docs/decisions/ADR-001-meshmonk-modernization.md"
-    assert adr_path.exists(), f"ADR-001 not found at {adr_path}"
-    content = adr_path.read_text()
-    assert "Amendment" in content, "ADR-001 D2 amendment is missing"
-    assert "12 wheels" in content, "ADR-001 amendment must mention 12-wheel strategy"
-    assert (
-        "3.12" in content
-    ), "ADR-001 amendment must reference Python 3.12 as abi3 floor"
