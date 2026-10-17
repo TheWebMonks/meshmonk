@@ -73,9 +73,6 @@ private:
   // # Internal Functions
   // ## Function to update the sparse affinity matrix
   void _update_affinity();
-  // ## Function to convert the sparse affinity weights into corresponding
-  // ## features and flags
-  void _affinity_to_correspondences();
 };
 
 } // namespace registration

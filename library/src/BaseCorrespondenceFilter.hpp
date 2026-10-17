@@ -36,12 +36,6 @@ public:
                                 const VecDynFloat *const inTargetFlags) {}
   void set_output(FeatureMat *const ioCorrespondingFeatures,
                   VecDynFloat *const ioCorrespondingFlags);
-  SparseMat get_affinity() const { return _affinity; }
-  virtual void set_parameters(const size_t numNeighbours,
-                              const float flagThreshold) {}
-  virtual void set_parameters(const size_t numNeighbours,
-                              const float flagThreshold,
-                              const bool equalizePushPull) {}
   virtual void update() {}
 
 protected:

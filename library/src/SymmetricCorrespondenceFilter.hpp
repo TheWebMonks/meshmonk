@@ -76,9 +76,6 @@ private:
   // # Internal functions
   // ## Function to update the internal push and pull correspondence filters
   void _update_push_and_pull();
-  // ## Function to convert the sparse affinity weights into corresponding
-  // ## features and flags
-  void _affinity_to_correspondences();
 };
 
 } // namespace registration
