@@ -1,7 +1,6 @@
 
 #include "helper_functions.hpp"
 #include "meshmonk/logger.hpp"
-#include <fstream>
 #include <stdexcept>
 
 namespace registration {
@@ -95,110 +94,6 @@ void normalize_sparse_matrix(SparseMat &ioMat) {
     }
   }
 } // end normalize_sparse_matrix()
-
-template <typename VecMatType>
-void radius_nearest_neighbours(const VecMatType &inQueriedPoints,
-                               const VecMatType &inSourcePoints,
-                               MatDynInt &outNeighbourIndices,
-                               MatDynFloat &outNeighbourSquaredDistances,
-                               const float paramRadius,
-                               const size_t paramLeafsize) {
-  /*
-  GOAL
-  This function searches in a radius for the nearest neighbours in
-  'inSourcePoints' for each element in the 'inQueriedPoints' set. It outputs
-  the indices of each neighbour and the squared (!) distances between each
-  element of 'inQueriedPoints' and its neighbours.
-
-  INPUT
-  -inQueriedPoints:
-  -inSourcePoints:
-
-  PARAMETERS
-  -paramRadius(= 3.0): the radius in which neighbours are queried
-  -paramLeafsize(= 15): should be between 5 and 50 or so
-
-  OUTPUT
-  -outNeighbourIndices
-  -outNeighbourSquaredDistances.
-  NOTE: Not for every queried elements, the same number of neighbours will be
-  found. So, 'empty' elements in the output are represented by '-1'.
-
-  */
-
-  // # Info and Initialization
-  const size_t dimension = inSourcePoints.cols();
-  typedef nanoflann::KDTreeEigenMatrixAdaptor<VecMatType> NanoKDTree;
-  const size_t numSourceElements = inSourcePoints.rows();
-  const size_t numQueriedElements = inQueriedPoints.rows();
-
-  // # Construct kd-tree
-  NanoKDTree kdTree(dimension, inSourcePoints, paramLeafsize);
-  kdTree.index->buildIndex();
-
-  // # Query the kd-tree
-  // ## Loop over the queried features
-  // ### Initialize variables we'll need during the loop
-  std::vector<float> queriedFeature(dimension);
-  std::vector<std::vector<size_t>> neighbourIndices;
-  std::vector<std::vector<float>> neighbourSquaredDistances;
-  size_t maxNumNeighboursFound = 0;
-
-  // ### Execute loop
-  for (size_t i = 0; i < numQueriedElements; ++i) {
-    // ### convert input features to 'queriedFeature' std::vector structure
-    // ### (required by nanoflann's kd-tree).
-    for (size_t j = 0; j < dimension; ++j) {
-      queriedFeature[j] = inQueriedPoints(i, j);
-    }
-
-    // ### Query the kd-tree
-    nanoflann::SearchParams searchParams;
-    std::vector<std::pair<size_t, float>> resultIndexAndDistancePairs;
-    nanoflann::RadiusResultSet<float, size_t> resultSet(
-        paramRadius, resultIndexAndDistancePairs);
-    const size_t nMatches = kdTree.index->radiusSearchCustomCallback(
-        &queriedFeature[0], resultSet, searchParams);
-
-    // ### Copy the result into neighbourIndices and neighbourSquaredDistances
-    // ### by first copying it into single std::vector<float/int> and then
-    // ### copying that std::vector into those std::vector<std::vector<>>.
-    std::vector<size_t> indices;
-    std::vector<float> squaredDistances;
-    for (size_t j = 0; j < nMatches; ++j) {
-      indices.push_back(resultIndexAndDistancePairs[j].first);
-      squaredDistances.push_back(resultIndexAndDistancePairs[j].second);
-    }
-    neighbourIndices.push_back(indices);
-    neighbourSquaredDistances.push_back(squaredDistances);
-
-    // ### Check if we found more neighbours than before
-    if (nMatches > maxNumNeighboursFound) {
-      maxNumNeighboursFound = nMatches;
-    }
-  }
-
-  // # Copy results into output
-  // ## Now that we have found all the neighbours and know what the maximum
-  // ## number of neighbours found was, we can finally initialize the output
-  // ## matrix size.
-  outNeighbourIndices =
-      -1 * MatDynInt::Ones(numQueriedElements, maxNumNeighboursFound);
-  outNeighbourSquaredDistances =
-      -1.0 * MatDynFloat::Ones(numQueriedElements, maxNumNeighboursFound);
-
-  // ## Loop over results
-  for (size_t i = 0; i < numQueriedElements; i++) {
-    int numNeighbours = neighbourIndices[i].size();
-
-    // ### Loop over neighbours
-    for (size_t j = 0; j < numNeighbours; j++) {
-      outNeighbourIndices(i, j) = neighbourIndices[i][j];
-      outNeighbourSquaredDistances(i, j) = neighbourSquaredDistances[i][j];
-    }
-  }
-
-} // end k_nearest_neighbours()
 
 void convert_mesh_to_matrices(const TriMesh &inMesh, FeatureMat &outFeatures,
                               FacesMat &outFaces) {
@@ -406,7 +301,7 @@ void convert_matrices_to_mesh(const FeatureMat &inFeatures,
   const size_t numFaces = inFaces.rows();
   if (outMesh.n_vertices() > 0) {
     meshmonk::log(meshmonk::LogLevel::Warning,
-                  "convert_eigen_to_openmesh expects an empty mesh as input!");
+                  "convert_matrices_to_mesh expects an empty mesh as input!");
   }
 
   // # Add each vertex and save the vertex handles for adding the faces later
@@ -560,54 +455,6 @@ void convert_matrices_to_mesh(const FeatureMat &inFeatures,
 
 } // end convert_matrices_to_mesh()
 
-void convert_eigen_to_openmesh(const FeatureMat &inFeatures, TriMesh &outMesh) {
-  /*
-  GOAL
-  This function converts a feature representation of a mesh using Eigen
-  matrices into a mesh representation using OpenMesh.
-
-  INPUT
-  -inFeatures:
-  a numVertices x 6 Eigen dense matrix where the first three columns are made
-  up of the positions of the vertices, and the last three columns the normals
-  of those vertices.
-
-  PARAMETERS
-
-  OUTPUT
-  -outMesh:
-  this has to be a mesh of openmesh's TriMesh type
-  */
-
-  // # Info and Initialization
-  const int numRows = inFeatures.rows();
-  const int numVertices = outMesh.n_vertices();
-  if (numRows != numVertices) {
-    meshmonk::log(meshmonk::LogLevel::Warning,
-                  "Number of rows does not correspond with number of vertices "
-                  "when calling eigen_features_to_openmesh()");
-  }
-
-  // # Put positions and normals back into mesh
-  TriMesh::Point updatedPosition(0.0f, 0.0f, 0.0f);
-  TriMesh::Normal updatedNormal(0.0f, 0.0f, 0.0f);
-  unsigned int i = 0;
-  TriMesh::VertexIter vertexIt(outMesh.vertices_begin());
-  TriMesh::VertexIter vertexEnd(outMesh.vertices_end());
-  for (; vertexIt != vertexEnd; ++i, ++vertexIt) {
-    // ## Get positions and normals from the feature matrix
-    updatedPosition[0] = inFeatures(i, 0);
-    updatedPosition[1] = inFeatures(i, 1);
-    updatedPosition[2] = inFeatures(i, 2);
-    updatedNormal[0] = inFeatures(i, 3);
-    updatedNormal[1] = inFeatures(i, 4);
-    updatedNormal[2] = inFeatures(i, 5);
-    // ## Insert position and normal into mesh
-    outMesh.set_point(vertexIt, updatedPosition);
-    outMesh.set_normal(vertexIt, updatedNormal);
-  }
-}
-
 // void load_obj_to_eigen(const std::string inObjFilename,
 //                                 TriMesh &outMesh,
 //                                 FeatureMat &outFeatureMatrix){
@@ -644,127 +491,6 @@ void convert_eigen_to_openmesh(const FeatureMat &inFeatures, TriMesh &outMesh) {
 //
 // }
 //
-
-// void write_eigen_to_obj(const FeatureMat &inFeatures,
-//                                 TriMesh &inMesh,
-//                                 const std::string inObjFilename){
-//     /*
-//     GOAL
-//     This function converts a feature representation of a mesh using Eigen
-//     matrices into a mesh representation using OpenMesh and then writes the
-//     result to an obj file.
-//
-//     INPUT
-//     -inFeatures:
-//     a numVertices x 6 Eigen dense matrix where the first three columns are
-//     made up of the positions of the vertices, and the last three columns the
-//     normals of those vertices. -inMesh -inObjFilename
-//
-//     PARAMETERS
-//
-//     OUTPUT
-//
-//     */
-//
-//     //# Info and Initialization
-//     const int numRows = inFeatures.rows();
-//     const int numVertices = inMesh.n_vertices();
-//      if (numRows != numVertices) {
-//     std::cerr << "Number of rows does not correspond with number of vertices
-//     when"
-//     << " calling write_eigen_features_to_obj()" << std::endl;
-//     }
-//
-//     //# Convert feature matrix to OpenMesh structure
-//     convert_eigen_to_openmesh(inFeatures, inMesh);
-//
-//     //# Write resulting mesh to OBJ file
-//     OpenMesh::IO::_OBJWriter_();
-//     if (!OpenMesh::IO::write_mesh(inMesh, inObjFilename))
-//     {
-//         std::cerr << "write error\n";
-//         exit(1);
-//     }
-// }//end write_eigen_features_to_obj()
-
-bool import_data(const std::string inFloatingMeshPath,
-                 const std::string inTargetMeshPath,
-                 FeatureMat &outFloatingFeatures, FeatureMat &outTargetFeatures,
-                 FacesMat &outFloatingFaces, FacesMat &outTargetFaces) {
-
-  // # Safety check (do the input files exist?)
-  bool inputfilesExist = true;
-  // ## Floating Mesh
-  std::ifstream infile(inFloatingMeshPath);
-  if (infile.good() != true) {
-    inputfilesExist = false;
-    meshmonk::log(meshmonk::LogLevel::Warning,
-                  "Floating mesh file does not exist");
-  }
-  infile.close();
-  // ## Target Mesh
-  infile.open(inTargetMeshPath);
-  if (infile.good() != true) {
-    inputfilesExist = false;
-    meshmonk::log(meshmonk::LogLevel::Warning,
-                  "Target mesh file does not exist");
-  }
-  infile.close();
-  if (!inputfilesExist) {
-    return inputfilesExist;
-  }
-
-  // # Load OpenMesh meshes
-  // ## Floating Mesh
-  TriMesh floatingMesh;
-  // OpenMesh::IO::_OBJReader_(); // This line might be problematic for static
-  // linking or modern OpenMesh
-  if (!OpenMesh::IO::read_mesh(floatingMesh, inFloatingMeshPath)) {
-    throw std::runtime_error(
-        "import_data: failed to read floating mesh from: " +
-        inFloatingMeshPath);
-  };
-  // ## Target Mesh
-  TriMesh targetMesh;
-  if (!OpenMesh::IO::read_mesh(targetMesh, inTargetMeshPath)) {
-    throw std::runtime_error("import_data: failed to read target mesh from: " +
-                             inTargetMeshPath);
-  };
-
-  // # Update the mesh vertex normals
-  floatingMesh.request_face_normals();
-  floatingMesh.request_vertex_normals();
-  floatingMesh.update_face_normals();
-  floatingMesh.update_vertex_normals();
-  targetMesh.request_face_normals();
-  targetMesh.request_vertex_normals();
-  targetMesh.update_face_normals();
-  targetMesh.update_vertex_normals();
-
-  // # Convert OpenMesh meshes to Eigen matrices
-  convert_mesh_to_matrices(floatingMesh, outFloatingFeatures, outFloatingFaces);
-  convert_mesh_to_matrices(targetMesh, outTargetFeatures, outTargetFaces);
-
-  return true;
-} // end import_data()
-
-bool export_data(FeatureMat &inResultFeatures, FacesMat &inResultFaces,
-                 const std::string inResultMeshPath) {
-
-  // # Convert the matrices to a mesh
-  TriMesh resultMesh;
-  convert_matrices_to_mesh(inResultFeatures, inResultFaces, resultMesh);
-  // # Write the mesh to file
-  //  OpenMesh::IO::_OBJWriter_(); // This line might be problematic for static
-  //  linking or modern OpenMesh
-  if (!OpenMesh::IO::write_mesh(resultMesh, inResultMeshPath)) {
-    throw std::runtime_error("export_data: failed to write result mesh to: " +
-                             inResultMeshPath);
-  }
-
-  return true;
-}
-
 void update_normals_for_altered_positions(TriMesh &ioMesh,
                                           FeatureMat &ioFeatures) {
   /*
@@ -803,7 +529,7 @@ void update_normals_for_altered_positions(TriMesh &ioMesh,
   if (numRows != numVertices) {
     meshmonk::log(meshmonk::LogLevel::Warning,
                   "Number of rows does not correspond with number of vertices "
-                  "when calling eigen_features_to_openmesh()");
+                  "when calling update_normals_for_altered_positions()");
   }
 
   // # Insert positions from 'ioFeatures' into 'ioMesh'
@@ -860,10 +586,9 @@ void update_normals_for_altered_positions(const Vec3Mat &inPositions,
   TriMesh mesh;
   convert_matrices_to_mesh(inPositions, inFaces, mesh);
 
-  // # let the mesh update its normals (note: can't use update_normals_safely()
-  // here # because that requires having older values for the normals, whereas
-  // # this function is called when there are no normals at all and they need to
-  // be # determined.)
+  // # let the mesh update its normals. convert_matrices_to_mesh() already ran
+  // update_normals_safely() with zero prior normals, which never flips, so
+  // this plain update_normals() computes the normals for real.
   mesh.request_face_normals();
   mesh.request_vertex_normals();
   mesh.update_normals();

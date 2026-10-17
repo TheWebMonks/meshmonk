@@ -29,14 +29,6 @@ void fuse_affinities(SparseMat &ioAffinity1, const SparseMat &inAffinity2);
 
 void normalize_sparse_matrix(SparseMat &ioMat);
 
-template <typename VecMatType>
-void radius_nearest_neighbours(const VecMatType &inQueriedPoints,
-                               const VecMatType &inSourcePoints,
-                               MatDynInt &outNeighbourIndices,
-                               MatDynFloat &outNeighbourSquaredDistances,
-                               const float paramRadius = 3.0,
-                               const size_t paramLeafsize = 15);
-
 void convert_mesh_to_matrices(const TriMesh &inMesh, FeatureMat &outFeatures,
                               FacesMat &outFaces);
 
@@ -62,14 +54,6 @@ void convert_matrices_to_mesh(const FeatureMat &inFeatures,
 // void write_eigen_to_obj(const FeatureMat &inFeatures,
 //                                 TriMesh &inMesh,
 //                                 const std::string inObjFilename);
-
-bool import_data(const std::string inFloatingMeshPath,
-                 const std::string inTargetMeshPath,
-                 FeatureMat &outFloatingFeatures, FeatureMat &outTargetFeatures,
-                 FacesMat &outFloatingFaces, FacesMat &outTargetFaces);
-
-bool export_data(FeatureMat &inResultFeatures, FacesMat &inResultFaces,
-                 const std::string inResultMeshPath);
 
 void update_normals_for_altered_positions(TriMesh &ioMesh,
                                           FeatureMat &ioFeatures);
