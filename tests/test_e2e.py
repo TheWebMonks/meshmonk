@@ -31,7 +31,7 @@ def _meshmonk_cmd() -> list:
     """Return the command prefix for invoking the meshmonk CLI.
 
     Prefers the installed 'meshmonk' entry point if found on PATH.
-    Falls back to 'python -m meshmonk.cli' using the current interpreter.
+    Falls back to 'python -m meshmonk' using the current interpreter.
     """
     # Look for the installed entry point next to the current Python executable
     # (i.e. in the same venv bin/ directory) before falling back to PATH search.
@@ -45,8 +45,8 @@ def _meshmonk_cmd() -> list:
     if cli:
         return [cli]
 
-    # Last resort: use typer's __main__ invocation
-    return [sys.executable, "-m", "meshmonk.cli"]
+    # Last resort: meshmonk/__main__.py calls app()
+    return [sys.executable, "-m", "meshmonk"]
 
 
 def test_cli_help_exits_zero():

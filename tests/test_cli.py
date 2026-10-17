@@ -11,6 +11,7 @@ Tests verify:
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -26,8 +27,8 @@ def _strip_ansi(s: str) -> str:
 
 from tests.conftest import DATA_DIR
 TEMPLATE_OBJ = DATA_DIR / "Template.obj"
-DEMO_FACE_OBJ = DATA_DIR / "demoFace.obj"
-MESHES_AVAILABLE = TEMPLATE_OBJ.exists() and DEMO_FACE_OBJ.exists()
+DEMOFACE_OBJ = DATA_DIR / "demoFace.obj"
+MESHES_AVAILABLE = TEMPLATE_OBJ.exists() and DEMOFACE_OBJ.exists()
 
 
 # ---------------------------------------------------------------------------
@@ -37,9 +38,25 @@ MESHES_AVAILABLE = TEMPLATE_OBJ.exists() and DEMO_FACE_OBJ.exists()
 
 def test_cli_module_importable():
     """cli.py is importable without triggering a trimesh import."""
-    import meshmonk.cli  # noqa: F401
+    import subprocess
+    import sys
 
-    assert True
+    code = "import sys, meshmonk.cli; sys.exit('trimesh' in sys.modules)"
+    r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr or "importing meshmonk.cli imported trimesh"
+
+
+def test_require_trimesh_missing_gives_clear_error(monkeypatch, capsys):
+    """Without trimesh, _require_trimesh exits 1 with the install hint."""
+    import click
+
+    import meshmonk.cli as cli
+
+    monkeypatch.setitem(sys.modules, "trimesh", None)  # makes `import trimesh` raise
+    with pytest.raises((SystemExit, click.exceptions.Exit)) as ei:
+        cli._require_trimesh()
+    assert ei.value.exit_code == 1
+    assert "trimesh is required" in capsys.readouterr().err
 
 
 def test_app_object_exists():
@@ -91,7 +108,8 @@ def test_pyramid_help(runner, app):
 def test_demo_help(runner, app):
     result = runner.invoke(app, ["demo", "--help"])
     assert result.exit_code == 0, result.output
-    assert "--download" in result.output or "download" in result.output.lower()
+    # option row (flag followed by its help column), not the docstring prose
+    assert re.search(r"^\W*--download\s{2,}", _strip_ansi(result.output), re.M)
 
 
 # ---------------------------------------------------------------------------
@@ -120,7 +138,7 @@ def test_nonrigid_help_shows_iterations(runner, app):
 def test_pyramid_help_shows_layers(runner, app):
     result = runner.invoke(app, ["pyramid", "--help"])
     assert result.exit_code == 0
-    assert "layers" in result.output.lower()
+    assert re.search(r"^\W*--layers\s{2,}", _strip_ansi(result.output), re.M)
 
 
 # ---------------------------------------------------------------------------
@@ -139,7 +157,7 @@ def test_rigid_e2e_produces_output_file(runner, app, tmp_path):
         [
             "rigid",
             str(TEMPLATE_OBJ),
-            str(DEMO_FACE_OBJ),
+            str(DEMOFACE_OBJ),
             "--out",
             str(out_path),
         ],
@@ -160,7 +178,7 @@ def test_rigid_e2e_prints_saved_message(runner, app, tmp_path):
         [
             "rigid",
             str(TEMPLATE_OBJ),
-            str(DEMO_FACE_OBJ),
+            str(DEMOFACE_OBJ),
             "--out",
             str(out_path),
         ],
@@ -206,13 +224,12 @@ def test_demo_download_message_is_user_friendly(runner, app):
     reason="Test meshes not available at data/",
 )
 def test_demo_runs_rigid_mode(runner, app, monkeypatch, tmp_path):
-    """demo rigid finds meshes in data/ dev fallback and runs."""
-    # Patch the cache dir so output lands somewhere predictable
-    monkeypatch.setenv("HOME", str(tmp_path))
+    """demo rigid finds meshes via the repo data/ fallback, runs, and writes output."""
+    import meshmonk.cli as cli
+
+    # _CACHE_DIR is bound at import; patch it so the empty cache falls through
+    # to cli._REPO_DATA_DIR and demo_result.obj lands in tmp_path
+    monkeypatch.setattr(cli, "_CACHE_DIR", tmp_path)
     result = runner.invoke(app, ["demo", "rigid"])
-    # Should either succeed or give clear instructions — never a raw traceback
-    assert (
-        result.exit_code == 0
-        or "meshmonk[io]" in result.output
-        or "data/" in result.output
-    )
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "demo_result.obj").stat().st_size > 0
