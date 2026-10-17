@@ -1,4 +1,5 @@
 #include "NonrigidRegistration.hpp"
+#include "CorrespondenceFilterFactory.hpp"
 #include "meshmonk/profiling.hpp"
 #include <memory>
 
@@ -66,17 +67,8 @@ void NonrigidRegistration::update() {
 
   // # Set up the filters
   // ## Correspondence Filter
-  std::unique_ptr<BaseCorrespondenceFilter> correspondenceFilter;
-
-  if (_symmetric) {
-    auto *f = new SymmetricCorrespondenceFilter();
-    f->set_parameters(_numNeighbours, _flagThreshold, _equalizePushPull);
-    correspondenceFilter.reset(f);
-  } else {
-    auto *f = new CorrespondenceFilter();
-    f->set_parameters(_numNeighbours, _flagThreshold);
-    correspondenceFilter.reset(f);
-  }
+  auto correspondenceFilter = make_correspondence_filter(
+      _symmetric, _numNeighbours, _flagThreshold, _equalizePushPull);
   correspondenceFilter->set_floating_input(_ioFloatingFeatures,
                                            _inFloatingFlags);
   correspondenceFilter->set_target_input(_inTargetFeatures, _inTargetFlags);

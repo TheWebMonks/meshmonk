@@ -12,6 +12,7 @@
 // target_include_directories)
 #include "BaseCorrespondenceFilter.hpp"
 #include "CorrespondenceFilter.hpp"
+#include "CorrespondenceFilterFactory.hpp"
 #include "Downsampler.hpp"
 #include "InlierDetector.hpp"
 #include "NonrigidRegistration.hpp"
@@ -39,6 +40,45 @@ namespace meshmonk {
 
 namespace {
 
+// Shared DegenerateInput prefix: empty inputs, size/shape mismatch, all-zero
+// flags, zero-range bounding box. Returns true if the inputs are degenerate.
+bool has_degenerate_input(const Eigen::Ref<const FeatureMat> &floating_features,
+                          const Eigen::Ref<const FeatureMat> &target_features,
+                          const Eigen::Ref<const FacesMat> &floating_faces,
+                          const Eigen::Ref<const FacesMat> &target_faces,
+                          const Eigen::Ref<const VecDynFloat> &floating_flags,
+                          const Eigen::Ref<const VecDynFloat> &target_flags) {
+  if (floating_features.rows() == 0 || target_features.rows() == 0)
+    return true;
+  if (floating_features.rows() != floating_flags.size())
+    return true;
+  if (target_features.rows() != target_flags.size())
+    return true;
+  if (floating_faces.cols() != 3 || target_faces.cols() != 3)
+    return true;
+  if (floating_faces.rows() == 0 || target_faces.rows() == 0)
+    return true;
+  if (floating_flags.maxCoeff() == 0.0f)
+    return true;
+  if (target_flags.maxCoeff() == 0.0f)
+    return true;
+  // Zero-range bounding box check — degenerate only if ALL three axes have zero
+  // range
+  if (floating_features.col(0).maxCoeff() ==
+          floating_features.col(0).minCoeff() &&
+      floating_features.col(1).maxCoeff() ==
+          floating_features.col(1).minCoeff() &&
+      floating_features.col(2).maxCoeff() ==
+          floating_features.col(2).minCoeff())
+    return true;
+  // Target bounding box degeneracy check
+  if (target_features.col(0).maxCoeff() == target_features.col(0).minCoeff() &&
+      target_features.col(1).maxCoeff() == target_features.col(1).minCoeff() &&
+      target_features.col(2).maxCoeff() == target_features.col(2).minCoeff())
+    return true;
+  return false;
+}
+
 // Run a single correspondence + inlier pass on already-aligned features.
 // Used for final_inlier_weights in NonrigidResult and PyramidResult.
 VecDynFloat run_final_inlier_pass(FeatureMat &aligned_features,
@@ -56,19 +96,9 @@ VecDynFloat run_final_inlier_pass(FeatureMat &aligned_features,
   VecDynFloat final_weights = VecDynFloat::Ones(N);
 
   // Correspondence filter — branch on symmetric
-  std::unique_ptr<registration::BaseCorrespondenceFilter> corr_filter;
-  if (corr_params.symmetric) {
-    auto f = std::make_unique<registration::SymmetricCorrespondenceFilter>();
-    f->set_parameters((size_t)corr_params.num_neighbours,
-                      corr_params.flag_threshold,
-                      corr_params.equalize_push_pull);
-    corr_filter = std::move(f);
-  } else {
-    auto f = std::make_unique<registration::CorrespondenceFilter>();
-    f->set_parameters((size_t)corr_params.num_neighbours,
-                      corr_params.flag_threshold);
-    corr_filter = std::move(f);
-  }
+  auto corr_filter = registration::make_correspondence_filter(
+      corr_params.symmetric, (size_t)corr_params.num_neighbours,
+      corr_params.flag_threshold, corr_params.equalize_push_pull);
   corr_filter->set_floating_input(&aligned_features, &floating_flags_copy);
   corr_filter->set_target_input(&target_copy, &target_flags_copy);
   corr_filter->set_output(&corresponding_features, &corresponding_flags);
@@ -103,33 +133,8 @@ rigid_registration(Eigen::Ref<const FeatureMat> floating_features,
   //-------------------------------------------------------------------------
   // DegenerateInput checks (before any algorithmic code)
   //-------------------------------------------------------------------------
-  if (floating_features.rows() == 0 || target_features.rows() == 0)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_features.rows() != floating_flags.size())
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (target_features.rows() != target_flags.size())
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_faces.cols() != 3 || target_faces.cols() != 3)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_faces.rows() == 0 || target_faces.rows() == 0)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_flags.maxCoeff() == 0.0f)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (target_flags.maxCoeff() == 0.0f)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  // Zero-range bounding box check — degenerate only if ALL three axes have zero
-  // range
-  if (floating_features.col(0).maxCoeff() ==
-          floating_features.col(0).minCoeff() &&
-      floating_features.col(1).maxCoeff() ==
-          floating_features.col(1).minCoeff() &&
-      floating_features.col(2).maxCoeff() ==
-          floating_features.col(2).minCoeff())
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  // Target bounding box degeneracy check
-  if (target_features.col(0).maxCoeff() == target_features.col(0).minCoeff() &&
-      target_features.col(1).maxCoeff() == target_features.col(1).minCoeff() &&
-      target_features.col(2).maxCoeff() == target_features.col(2).minCoeff())
+  if (has_degenerate_input(floating_features, target_features, floating_faces,
+                           target_faces, floating_flags, target_flags))
     return tl::unexpected{RegistrationError::DegenerateInput};
 
   //-------------------------------------------------------------------------
@@ -192,31 +197,8 @@ nonrigid_registration(Eigen::Ref<const FeatureMat> floating_features,
   //-------------------------------------------------------------------------
   // DegenerateInput checks
   //-------------------------------------------------------------------------
-  if (floating_features.rows() == 0 || target_features.rows() == 0)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_features.rows() != floating_flags.size())
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (target_features.rows() != target_flags.size())
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_faces.cols() != 3 || target_faces.cols() != 3)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_faces.rows() == 0 || target_faces.rows() == 0)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_flags.maxCoeff() == 0.0f)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (target_flags.maxCoeff() == 0.0f)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_features.col(0).maxCoeff() ==
-          floating_features.col(0).minCoeff() &&
-      floating_features.col(1).maxCoeff() ==
-          floating_features.col(1).minCoeff() &&
-      floating_features.col(2).maxCoeff() ==
-          floating_features.col(2).minCoeff())
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  // Target bounding box degeneracy check
-  if (target_features.col(0).maxCoeff() == target_features.col(0).minCoeff() &&
-      target_features.col(1).maxCoeff() == target_features.col(1).minCoeff() &&
-      target_features.col(2).maxCoeff() == target_features.col(2).minCoeff())
+  if (has_degenerate_input(floating_features, target_features, floating_faces,
+                           target_faces, floating_flags, target_flags))
     return tl::unexpected{RegistrationError::DegenerateInput};
 
   //-------------------------------------------------------------------------
@@ -241,8 +223,7 @@ nonrigid_registration(Eigen::Ref<const FeatureMat> floating_features,
     NonrigidResult result;
     result.aligned_features = floating_copy;
     result.final_inlier_weights = final_weights;
-    result.displacement_field =
-        Vec3Mat::Zero(floating_copy.rows(), 3);
+    result.displacement_field = Vec3Mat::Zero(floating_copy.rows(), 3);
     result.iterations_run = 0;
     return result;
   }
@@ -300,31 +281,8 @@ pyramid_registration(Eigen::Ref<const FeatureMat> floating_features,
   //-------------------------------------------------------------------------
   // DegenerateInput checks
   //-------------------------------------------------------------------------
-  if (floating_features.rows() == 0 || target_features.rows() == 0)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_features.rows() != floating_flags.size())
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (target_features.rows() != target_flags.size())
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_faces.cols() != 3 || target_faces.cols() != 3)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_faces.rows() == 0 || target_faces.rows() == 0)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_flags.maxCoeff() == 0.0f)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (target_flags.maxCoeff() == 0.0f)
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  if (floating_features.col(0).maxCoeff() ==
-          floating_features.col(0).minCoeff() &&
-      floating_features.col(1).maxCoeff() ==
-          floating_features.col(1).minCoeff() &&
-      floating_features.col(2).maxCoeff() ==
-          floating_features.col(2).minCoeff())
-    return tl::unexpected{RegistrationError::DegenerateInput};
-  // Target bounding box degeneracy check
-  if (target_features.col(0).maxCoeff() == target_features.col(0).minCoeff() &&
-      target_features.col(1).maxCoeff() == target_features.col(1).minCoeff() &&
-      target_features.col(2).maxCoeff() == target_features.col(2).minCoeff())
+  if (has_degenerate_input(floating_features, target_features, floating_faces,
+                           target_faces, floating_flags, target_flags))
     return tl::unexpected{RegistrationError::DegenerateInput};
   if (params.num_pyramid_layers < 1)
     return tl::unexpected{RegistrationError::DegenerateInput};
@@ -349,8 +307,7 @@ pyramid_registration(Eigen::Ref<const FeatureMat> floating_features,
     PyramidResult result;
     result.aligned_features = floating_copy;
     result.final_inlier_weights = final_weights;
-    result.displacement_field =
-        Vec3Mat::Zero(floating_copy.rows(), 3);
+    result.displacement_field = Vec3Mat::Zero(floating_copy.rows(), 3);
     result.per_layer_iterations =
         std::vector<int>(params.num_pyramid_layers, 0);
     return result;
@@ -445,17 +402,8 @@ compute_correspondences(Eigen::Ref<const FeatureMat> floating_features,
       FeatureMat::Zero(N, registration::NUM_FEATURES);
   VecDynFloat corresponding_flags = VecDynFloat::Zero(N);
 
-  std::unique_ptr<registration::BaseCorrespondenceFilter> filter;
-  if (symmetric) {
-    auto f = std::make_unique<registration::SymmetricCorrespondenceFilter>();
-    f->set_parameters((size_t)num_neighbours, flag_threshold,
-                      equalize_push_pull);
-    filter = std::move(f);
-  } else {
-    auto f = std::make_unique<registration::CorrespondenceFilter>();
-    f->set_parameters((size_t)num_neighbours, flag_threshold);
-    filter = std::move(f);
-  }
+  auto filter = registration::make_correspondence_filter(
+      symmetric, (size_t)num_neighbours, flag_threshold, equalize_push_pull);
   filter->set_floating_input(&floating_copy, &floating_flags_copy);
   filter->set_target_input(&target_copy, &target_flags_copy);
   filter->set_output(&corresponding_features, &corresponding_flags);
