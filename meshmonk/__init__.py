@@ -278,7 +278,7 @@ def _mesh_to_arrays(mesh_or_path, normals_override=None, force_recompute=False):
     (features, faces, flags)
         features: (N, 6) float32
         faces:    (M, 3) int32
-        flags:    (N,)   float32 (all ones)
+        flags:    (N,)   float32 (mesh.flags when present, else all ones)
     """
     import pathlib  # noqa: PLC0415
 
@@ -495,10 +495,6 @@ def _prepare_arrays(
         feat_target, faces_target, flags_target = _mesh_to_arrays(
             target, force_recompute=force_recompute_normals
         )
-        if floating_flags is not None:
-            flags_float = np.asarray(floating_flags, dtype=np.float32)
-        if target_flags is not None:
-            flags_target = np.asarray(target_flags, dtype=np.float32)
     else:
         required = {
             "floating_features": floating_features,
