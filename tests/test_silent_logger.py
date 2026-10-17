@@ -9,6 +9,17 @@ import sys
 import tempfile
 
 
+# compute_inlier_weights with flipped normals logs a [WARNING] at the default level
+# (InlierDetector.cpp); registration on identical icospheres logs nothing.
+_FLIPPED = (
+    "import numpy as np; "
+    "V = np.asarray(m.vertices, np.float32); "
+    "N = np.asarray(m.vertex_normals, np.float32); "
+    "meshmonk.compute_inlier_weights("
+    "np.hstack([V, N]), np.hstack([V, -N]), np.ones(len(V), np.float32))"
+)
+
+
 class TestSilentMode:
     """All internal C++ output must be suppressed when log_level is 'silent'."""
 
@@ -44,7 +55,8 @@ class TestSilentMode:
             "import meshmonk, trimesh; "
             "meshmonk.set_log_level('silent'); "
             "m = trimesh.creation.icosphere(subdivisions=1); "
-            "meshmonk.rigid_register(floating=m, target=m, num_iterations=2)"
+            "meshmonk.rigid_register(floating=m, target=m, num_iterations=2); "
+            + _FLIPPED
         )
         assert result.returncode == 0, f"subprocess failed: {result.stderr!r}"
         assert (
@@ -57,7 +69,8 @@ class TestSilentMode:
             "import meshmonk, trimesh; "
             "meshmonk.set_log_level('silent'); "
             "m = trimesh.creation.icosphere(subdivisions=1); "
-            "meshmonk.nonrigid_register(floating=m, target=m, num_iterations=2)"
+            "meshmonk.nonrigid_register(floating=m, target=m, num_iterations=2); "
+            + _FLIPPED
         )
         assert result.returncode == 0, f"subprocess failed: {result.stderr!r}"
         assert (
@@ -66,11 +79,11 @@ class TestSilentMode:
 
     def test_warning_level_default_emits_output(self):
         """At default warning level, meshmonk registration should emit output (not silent)."""
-        # We just verify the process runs and doesn't crash — the key invariant
-        # is that silent mode (tested above) suppresses it.
         result = self._run_subprocess(
             "import meshmonk, trimesh; "
             "m = trimesh.creation.icosphere(subdivisions=1); "
-            "meshmonk.rigid_register(floating=m, target=m, num_iterations=2)"
+            "meshmonk.rigid_register(floating=m, target=m, num_iterations=2); "
+            + _FLIPPED
         )
         assert result.returncode == 0, f"subprocess failed: {result.stderr!r}"
+        assert "[WARNING]" in result.stderr, f"expected a warning: {result.stderr!r}"
