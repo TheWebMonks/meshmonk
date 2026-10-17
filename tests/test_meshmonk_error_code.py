@@ -16,59 +16,29 @@ from meshmonk import MeshMonkError, RegistrationError
 # ---------------------------------------------------------------------------
 
 
-def test_meshmonk_error_has_code_property():
+def test_meshmonk_error_has_code_property(empty_registration_kwargs):
     """MeshMonkError must have a .code attribute."""
-    empty = np.zeros((0, 6), dtype=np.float32)
-    faces = np.zeros((0, 3), dtype=np.int32)
-    flags = np.zeros((0,), dtype=np.float32)
     with pytest.raises(MeshMonkError) as exc_info:
-        meshmonk.rigid_register(
-            floating_features=empty,
-            target_features=empty,
-            floating_faces=faces,
-            target_faces=faces,
-            floating_flags=flags,
-            target_flags=flags,
-        )
+        meshmonk.rigid_register(**empty_registration_kwargs)
     assert hasattr(
         exc_info.value, "code"
     ), "MeshMonkError instance must have a .code attribute"
 
 
-def test_degenerate_input_code_is_registration_error_enum():
+def test_degenerate_input_code_is_registration_error_enum(empty_registration_kwargs):
     """MeshMonkError.code must return a RegistrationError enum member."""
-    empty = np.zeros((0, 6), dtype=np.float32)
-    faces = np.zeros((0, 3), dtype=np.int32)
-    flags = np.zeros((0,), dtype=np.float32)
     with pytest.raises(MeshMonkError) as exc_info:
-        meshmonk.rigid_register(
-            floating_features=empty,
-            target_features=empty,
-            floating_faces=faces,
-            target_faces=faces,
-            floating_flags=flags,
-            target_flags=flags,
-        )
+        meshmonk.rigid_register(**empty_registration_kwargs)
     code = exc_info.value.code
     assert isinstance(
         code, RegistrationError
     ), f"Expected .code to be RegistrationError, got {type(code)}: {code!r}"
 
 
-def test_degenerate_input_code_value():
+def test_degenerate_input_code_value(empty_registration_kwargs):
     """Empty input must produce DegenerateInput code."""
-    empty = np.zeros((0, 6), dtype=np.float32)
-    faces = np.zeros((0, 3), dtype=np.int32)
-    flags = np.zeros((0,), dtype=np.float32)
     with pytest.raises(MeshMonkError) as exc_info:
-        meshmonk.rigid_register(
-            floating_features=empty,
-            target_features=empty,
-            floating_faces=faces,
-            target_faces=faces,
-            floating_flags=flags,
-            target_flags=flags,
-        )
+        meshmonk.rigid_register(**empty_registration_kwargs)
     assert exc_info.value.code == RegistrationError.DegenerateInput
 
 
@@ -77,20 +47,10 @@ def test_degenerate_input_code_value():
 # ---------------------------------------------------------------------------
 
 
-def test_programmatic_error_dispatch():
+def test_programmatic_error_dispatch(empty_registration_kwargs):
     """Users must be able to switch on .code instead of parsing strings."""
-    empty = np.zeros((0, 6), dtype=np.float32)
-    faces = np.zeros((0, 3), dtype=np.int32)
-    flags = np.zeros((0,), dtype=np.float32)
     try:
-        meshmonk.rigid_register(
-            floating_features=empty,
-            target_features=empty,
-            floating_faces=faces,
-            target_faces=faces,
-            floating_flags=flags,
-            target_flags=flags,
-        )
+        meshmonk.rigid_register(**empty_registration_kwargs)
         pytest.fail("Expected MeshMonkError")
     except MeshMonkError as e:
         if e.code == RegistrationError.DegenerateInput:
@@ -110,37 +70,17 @@ def test_meshmonk_error_still_subclass_of_runtime_error():
     assert issubclass(MeshMonkError, RuntimeError)
 
 
-def test_except_runtime_error_catches_meshmonk_error():
+def test_except_runtime_error_catches_meshmonk_error(empty_registration_kwargs):
     """except RuntimeError must still catch MeshMonkError."""
-    empty = np.zeros((0, 6), dtype=np.float32)
-    faces = np.zeros((0, 3), dtype=np.int32)
-    flags = np.zeros((0,), dtype=np.float32)
     with pytest.raises(RuntimeError):
-        meshmonk.rigid_register(
-            floating_features=empty,
-            target_features=empty,
-            floating_faces=faces,
-            target_faces=faces,
-            floating_flags=flags,
-            target_flags=flags,
-        )
+        meshmonk.rigid_register(**empty_registration_kwargs)
 
 
-def test_except_meshmonk_error_catches_it():
+def test_except_meshmonk_error_catches_it(empty_registration_kwargs):
     """except MeshMonkError must catch the exception."""
-    empty = np.zeros((0, 6), dtype=np.float32)
-    faces = np.zeros((0, 3), dtype=np.int32)
-    flags = np.zeros((0,), dtype=np.float32)
     caught = False
     try:
-        meshmonk.rigid_register(
-            floating_features=empty,
-            target_features=empty,
-            floating_faces=faces,
-            target_faces=faces,
-            floating_flags=flags,
-            target_flags=flags,
-        )
+        meshmonk.rigid_register(**empty_registration_kwargs)
     except MeshMonkError:
         caught = True
     assert caught
@@ -151,20 +91,10 @@ def test_except_meshmonk_error_catches_it():
 # ---------------------------------------------------------------------------
 
 
-def test_error_message_still_contains_description():
+def test_error_message_still_contains_description(empty_registration_kwargs):
     """str(e) must still contain the human-readable error description."""
-    empty = np.zeros((0, 6), dtype=np.float32)
-    faces = np.zeros((0, 3), dtype=np.int32)
-    flags = np.zeros((0,), dtype=np.float32)
     with pytest.raises(MeshMonkError) as exc_info:
-        meshmonk.rigid_register(
-            floating_features=empty,
-            target_features=empty,
-            floating_faces=faces,
-            target_faces=faces,
-            floating_flags=flags,
-            target_flags=flags,
-        )
+        meshmonk.rigid_register(**empty_registration_kwargs)
     msg = str(exc_info.value)
     assert (
         "DegenerateInput" in msg
@@ -180,14 +110,14 @@ def test_insufficient_inliers_code():
     """Trigger InsufficientInliers and verify .code."""
     # Use a mesh where most flags are zero → too few inliers after InlierDetector
     n = 100
-    features = np.random.randn(n, 6).astype(np.float32)
+    features = np.random.RandomState(0).randn(n, 6).astype(np.float32)
     faces = np.zeros((1, 3), dtype=np.int32)  # minimal faces
     # Set all flags to near-zero except 2 (fewer than the 4 minimum)
     flags = np.zeros(n, dtype=np.float32)
     flags[0] = 1.0
     flags[1] = 1.0
 
-    try:
+    with pytest.raises(MeshMonkError) as exc_info:
         meshmonk.rigid_register(
             floating_features=features,
             target_features=features,
@@ -195,16 +125,9 @@ def test_insufficient_inliers_code():
             target_faces=faces,
             floating_flags=flags,
             target_flags=flags,
-            num_iterations=2,
+            num_iterations=0,  # straight to the final inlier check (iterating can fail earlier in the eigensolver)
         )
-    except MeshMonkError as e:
-        # We may get DegenerateInput or InsufficientInliers depending on
-        # how the C++ code validates. Either way, .code must be a valid enum.
-        assert isinstance(
-            e.code, RegistrationError
-        ), f"Expected .code to be RegistrationError, got {type(e.code)}: {e.code!r}"
-    except Exception:
-        pass  # Other exceptions (e.g. from malformed faces) are acceptable
+    assert exc_info.value.code == RegistrationError.InsufficientInliers
 
 
 # ---------------------------------------------------------------------------

@@ -350,12 +350,12 @@ class TestDegenerateMeshes:
                 target_flags=flags,
             )
 
-    def test_empty_vertex_raises_degenerate_input(self):
+    def test_empty_vertex_raises_degenerate_input(self, empty_registration_kwargs):
         """A zero-row floating mesh raises MeshMonkError(DegenerateInput)."""
         feat, faces, flags = _make_features()
-        empty_feat = np.zeros((0, 6), dtype=np.float32)
-        empty_flags = np.zeros(0, dtype=np.float32)
-        empty_faces = np.zeros((0, 3), dtype=np.int32)
+        empty_feat = empty_registration_kwargs["floating_features"]
+        empty_flags = empty_registration_kwargs["floating_flags"]
+        empty_faces = empty_registration_kwargs["floating_faces"]
         with pytest.raises(meshmonk.MeshMonkError, match="DegenerateInput"):
             meshmonk.rigid_register(
                 floating_features=empty_feat,

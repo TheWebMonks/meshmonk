@@ -28,20 +28,10 @@ def test_meshmonk_error_not_raised_for_valid_input():
     assert result is not None
 
 
-def test_degenerate_input_raises_meshmonk_error_not_generic_runtime_error():
+def test_degenerate_input_raises_meshmonk_error_not_generic_runtime_error(empty_registration_kwargs):
     # After bead 1: MeshMonkError is only thrown for intentional library failures
-    empty = np.zeros((0, 6), dtype=np.float32)
-    faces = np.zeros((0, 3), dtype=np.int32)
-    flags = np.zeros((0,), dtype=np.float32)
     with pytest.raises(meshmonk.MeshMonkError) as exc_info:
-        meshmonk.rigid_register(
-            floating_features=empty,
-            target_features=empty,
-            floating_faces=faces,
-            target_faces=faces,
-            floating_flags=flags,
-            target_flags=flags,
-        )
+        meshmonk.rigid_register(**empty_registration_kwargs)
     # Error message must identify the error type
     assert "DegenerateInput" in str(exc_info.value)
 

@@ -10,6 +10,7 @@ Custom markers:
 
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 # ---------------------------------------------------------------------------
@@ -72,3 +73,19 @@ def golden_dir():
             f"No .npz golden files found in {golden} — run golden capture first"
         )
     return golden
+
+
+@pytest.fixture
+def empty_registration_kwargs():
+    """rigid_register kwargs for all-empty meshes: raises MeshMonkError(DegenerateInput)."""
+    empty = np.zeros((0, 6), dtype=np.float32)
+    faces = np.zeros((0, 3), dtype=np.int32)
+    flags = np.zeros((0,), dtype=np.float32)
+    return dict(
+        floating_features=empty,
+        target_features=empty,
+        floating_faces=faces,
+        target_faces=faces,
+        floating_flags=flags,
+        target_flags=flags,
+    )
