@@ -10,8 +10,9 @@ Tests are structured to cover:
 - generate_report: produces markdown with all 4 required sections
 - main: step-0 guard (profiling_enabled=False -> sys.exit(2))
 
-All tests are designed to work when MESHMONK_PROFILING is ON.
-Tests that require profiling_enabled() are skipped otherwise.
+These tests exercise run_profile.py as pure Python and do not need a
+profiling-enabled build. Tests that load meshes skip when the data/ OBJ
+files are absent.
 """
 
 import sys
@@ -257,15 +258,15 @@ class TestCollectStats:
         total_share = stats["A"]["share_pct"] + stats["B"]["share_pct"]
         assert total_share == pytest.approx(100.0, abs=0.01)
 
-    def test_unreliable_flag_when_ms_per_call_lt_5x_overhead(self):
+    def test_not_unreliable_when_ms_per_call_ge_5x_overhead(self):
         # overhead_us=1.0 -> overhead_ms=0.001, 5x = 0.005 ms
-        # ms_per_call = 100us / 1 / 1000 = 0.1 ms -> NOT unreliable
+        # corrected = 99 us/call -> 0.099 ms/call >= 5x overhead -> NOT unreliable
         measured = self._make_measured(
             "FastLabel",
             total_us_values=[100, 100, 100, 100, 100],
             count_values=[1, 1, 1, 1, 1],
         )
-        stats = rp.collect_stats(measured, overhead_us=0.0)
+        stats = rp.collect_stats(measured, overhead_us=1.0)
         assert not stats["FastLabel"]["unreliable"]
 
     def test_unreliable_flag_set_when_ms_per_call_lt_5x_overhead(self):
@@ -312,8 +313,8 @@ class TestCollectStats:
         assert "B" in stats
 
     def test_pyramid_bare_label_reconciliation(self):
-        """In pyramid mode, bare NonrigidRegistration::update should match sum of layers.
-        collect_stats stores the raw labels - reconciliation is done in generate_report."""
+        """collect_stats keeps bare and /layerN labels; _pyramid_reconcile_check
+        is silent when the bare total matches the layer sum and warns when it does not."""
         # Simulate data like what pyramid produces
         layer_times = [24521, 24954, 28931]
         bare_total = sum(layer_times)  # Perfect match scenario
@@ -332,6 +333,11 @@ class TestCollectStats:
         assert "NonrigidRegistration::update" in stats
         assert "NonrigidRegistration::update/layer0" in stats
         assert "PyramidNonrigidRegistration::update" in stats
+        assert rp._pyramid_reconcile_check(stats, "pyramid") == ""
+        # Bare total 20% above the layer sum must trigger the sanity warning
+        skewed = {k: dict(v) for k, v in stats.items()}
+        skewed["NonrigidRegistration::update"]["corrected_total_us"] = bare_total * 1.2
+        assert "SANITY WARNING" in rp._pyramid_reconcile_check(skewed, "pyramid")
 
 
 # ---------------------------------------------------------------------------
@@ -388,15 +394,15 @@ class TestFitScalingExponent:
         k = rp.fit_scaling_exponent(stats, "Func", "rigid")
         assert np.isnan(k)
 
-    def test_nlogn_scaling_gives_k_approx_116(self):
-        # n*log(n) scaling: approximate fit
+    def test_nlogn_scaling_gives_k_between_1_and_1_25(self):
+        # n*log(n) over 1k/10k/100k measures k ~= 1.11
         import math
         ns = [1000, 10000, 100000]
         ys = [n * math.log(n) for n in ns]
         stats = self._make_stats_by_tier_mode("Func", "rigid", ys)
         k = rp.fit_scaling_exponent(stats, "Func", "rigid")
         # Should be between 1.0 and 1.25 for n*log(n)
-        assert 1.0 <= k <= 1.3
+        assert 1.0 <= k <= 1.25
 
 
 # ---------------------------------------------------------------------------
@@ -537,7 +543,16 @@ class TestGenerateReport:
             stats_by_tier_mode=stats,
             scaling_exponents={},
         )
-        assert "UNRELIABLE" in report
+        # The Notes-cell marker is conditional; the footnote "*UNRELIABLE" is not.
+        assert "* UNRELIABLE |" in report
+        stats["1k", "rigid"]["TinyFunc"]["unreliable"] = False
+        reliable = rp.generate_report(
+            self._make_minimal_args(),
+            overhead_ns=100,
+            stats_by_tier_mode=stats,
+            scaling_exponents={},
+        )
+        assert "* UNRELIABLE |" not in reliable
 
     def test_pyramid_bare_label_reconciliation_note(self):
         """Pyramid mode report should note the dedup logic."""
@@ -584,6 +599,8 @@ class TestGenerateReport:
         assert "/layer" in report
         # Should contain the pyramid outer label
         assert "PyramidNonrigidRegistration::update" in report
+        # Should contain the dedup note
+        assert "### Pyramid-mode deduplication note" in report
 
 
 # ---------------------------------------------------------------------------
@@ -654,9 +671,3 @@ class TestModuleStructure:
             "main",
         ]:
             assert hasattr(rp, fn), f"Missing function: {fn}"
-
-    def test_parse_args_is_callable(self):
-        assert callable(rp.parse_args)
-
-    def test_generate_report_is_callable(self):
-        assert callable(rp.generate_report)
