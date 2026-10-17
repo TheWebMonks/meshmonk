@@ -7,8 +7,10 @@ They cover: C1, C2, I1, I2, I3, I4, I5, M1, M2.
 from __future__ import annotations
 
 import re
+import urllib.error
 from pathlib import Path
 
+import pytest
 import yaml
 
 try:
@@ -96,21 +98,15 @@ def test_release_yml_no_fabricated_v7_v8_artifact_actions():
 def test_release_yml_artifact_actions_are_v4():
     """All upload-artifact and download-artifact references must be v4."""
     content = (ROOT / ".github/workflows/release.yml").read_text()
-    upload_refs = re.findall(r"actions/upload-artifact@(\S+)", content)
-    download_refs = re.findall(r"actions/download-artifact@(\S+)", content)
-    for ref in upload_refs:
-        # Either a valid 40-char SHA OR v4 floating tag
-        sha_valid = re.fullmatch(r"[0-9a-f]{40}", ref) is not None
-        tag_valid = ref.startswith("v4")
-        assert (
-            sha_valid or tag_valid
-        ), f"upload-artifact ref is not v4 SHA or tag: @{ref}"
-    for ref in download_refs:
-        sha_valid = re.fullmatch(r"[0-9a-f]{40}", ref) is not None
-        tag_valid = ref.startswith("v4")
-        assert (
-            sha_valid or tag_valid
-        ), f"download-artifact ref is not v4 SHA or tag: @{ref}"
+    refs = re.findall(
+        r"actions/((?:up|down)load-artifact)@(\S+)(?:[ \t]+#[ \t]*(\S+))?", content
+    )
+    assert refs
+    for action, ref, comment in refs:
+        # A v4 tag, or a 40-char SHA whose trailing comment names a v4 release
+        tag_ok = ref.startswith("v4")
+        sha_ok = re.fullmatch(r"[0-9a-f]{40}", ref) and (comment or "").startswith("v4")
+        assert tag_ok or sha_ok, f"{action} ref is not v4 tag or v4-commented SHA: @{ref}"
 
 
 # ---------------------------------------------------------------------------
@@ -129,34 +125,68 @@ def test_cli_download_uses_urlopen_not_urlretrieve():
     ), "_demo_download must use urllib.request.urlopen with timeout=30"
 
 
-def test_cli_download_has_timeout():
-    """cli.py _demo_download must pass timeout=30 to urlopen."""
-    content = (ROOT / "meshmonk/cli.py").read_text()
-    assert "timeout=30" in content, "_demo_download missing timeout=30 in urlopen call"
+def _download(monkeypatch, tmp_path, urlopen, assets=None):
+    import urllib.request
+
+    import meshmonk.cli as cli
+
+    monkeypatch.setattr(cli, "_CACHE_DIR", tmp_path)
+    if assets is not None:
+        monkeypatch.setattr(cli, "DEMO_ASSETS", assets)
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    return cli._demo_download
 
 
-def test_cli_download_catches_urlerror():
-    """cli.py _demo_download must catch URLError and OSError."""
-    content = (ROOT / "meshmonk/cli.py").read_text()
-    assert "URLError" in content, "_demo_download missing URLError in except clause"
+class _Resp:
+    def __init__(self, data):
+        self._data = data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def read(self):
+        return self._data
 
 
-def test_cli_download_cleanup_partial_file():
-    """cli.py _demo_download must call dest.unlink(missing_ok=True) on exception."""
-    content = (ROOT / "meshmonk/cli.py").read_text()
-    assert (
-        "unlink(missing_ok=True)" in content
-    ), "_demo_download must clean up partial file on exception"
+@pytest.mark.parametrize("exc", [urllib.error.URLError("boom"), OSError("boom")])
+def test_cli_download_network_error_exits_1_and_cleans_partial(
+    monkeypatch, tmp_path, exc
+):
+    """URLError and plain OSError both exit 1 and remove a partial file."""
+    import click
+
+    def urlopen(url, timeout=None):
+        raise exc
+
+    (tmp_path / "Template.obj").write_bytes(b"partial")
+    with pytest.raises((SystemExit, click.exceptions.Exit)) as ei:
+        _download(monkeypatch, tmp_path, urlopen)()
+    assert ei.value.exit_code == 1
+    assert not (tmp_path / "Template.obj").exists()
 
 
-def test_cli_download_raises_typer_exit():
-    """cli.py _demo_download must raise typer.Exit(code=1) on network error."""
-    content = (ROOT / "meshmonk/cli.py").read_text()
-    # There should be a raise typer.Exit(code=1) in the error handling path
-    # (already exists for SHA mismatch, but must also exist for download errors)
-    assert (
-        content.count("raise typer.Exit(code=1)") >= 2
-    ), "_demo_download must raise typer.Exit(code=1) for both SHA mismatch and network errors"
+def test_cli_download_passes_timeout_30(monkeypatch, tmp_path):
+    seen = []
+
+    def urlopen(url, timeout=None):
+        seen.append(timeout)
+        return _Resp(b"x")
+
+    _download(monkeypatch, tmp_path, urlopen)()
+    assert seen and set(seen) == {30}
+
+
+def test_cli_download_sha_mismatch_exits_1_and_removes_file(monkeypatch, tmp_path):
+    import click
+
+    assets = {"a.obj": {"url": "http://x/a.obj", "sha256": "0" * 64}}
+    with pytest.raises((SystemExit, click.exceptions.Exit)) as ei:
+        _download(monkeypatch, tmp_path, lambda url, timeout=None: _Resp(b"x"), assets)()
+    assert ei.value.exit_code == 1
+    assert not (tmp_path / "a.obj").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -220,14 +250,6 @@ def test_release_yml_workflow_level_permissions_empty():
     assert (
         workflow_perms == {} or workflow_perms is None
     ), f"Workflow-level permissions must be empty dict or absent, got: {workflow_perms}"
-    # Specifically, id-token and contents must NOT be at workflow level
-    if workflow_perms:
-        assert (
-            "id-token" not in workflow_perms
-        ), "id-token: write must NOT be at workflow level"
-        assert (
-            "contents" not in workflow_perms
-        ), "contents: write must NOT be at workflow level"
 
 
 def test_release_yml_publish_testpypi_has_id_token():
@@ -340,6 +362,9 @@ def test_errors_md_has_code_dispatch_example():
 def test_types_md_has_aligned_features():
     """docs/api/types.md result types must document aligned_features field."""
     content = (ROOT / "docs/api/types.md").read_text()
-    assert (
-        "aligned_features" in content
-    ), "types.md missing aligned_features field documentation"
+    for name in ("RigidRegResult", "NonrigidRegResult", "PyramidRegResult"):
+        start = content.index(f"### {name}")
+        end = content.find("\n#", start + 1)
+        assert (
+            "| `aligned_features`" in content[start:end]
+        ), f"types.md {name} missing aligned_features field documentation"

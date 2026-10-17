@@ -91,7 +91,7 @@ def test_cibuildwheel_test_excludes_silent_logger():
     """cibuildwheel test-command must exclude test_silent_logger.py."""
     content = tomllib.loads((ROOT / "pyproject.toml").read_text())
     test_cmd = content["tool"]["cibuildwheel"]["test-command"]
-    assert "test_silent_logger" in test_cmd
+    assert "--ignore={project}/tests/test_silent_logger.py" in test_cmd.split()
 
 
 def test_no_py_api_in_scikit_build_wheel():
@@ -180,14 +180,14 @@ def test_release_yml_has_trusted_publisher_permissions():
 
 def test_release_yml_has_pypi_environment():
     """release.yml must reference pypi-release environment."""
-    content = (ROOT / ".github/workflows/release.yml").read_text()
-    assert "pypi-release" in content
+    jobs = yaml.safe_load((ROOT / ".github/workflows/release.yml").read_text())["jobs"]
+    assert jobs["publish-pypi"]["environment"] == "pypi-release"
 
 
 def test_release_yml_has_testpypi_environment():
     """release.yml must reference testpypi-release environment."""
-    content = (ROOT / ".github/workflows/release.yml").read_text()
-    assert "testpypi-release" in content
+    jobs = yaml.safe_load((ROOT / ".github/workflows/release.yml").read_text())["jobs"]
+    assert jobs["publish-testpypi"]["environment"] == "testpypi-release"
 
 
 def test_release_yml_has_workflow_dispatch():
@@ -326,12 +326,22 @@ def test_mkdocs_nav_references_existing_files():
 
 
 def test_mkdocs_nav_has_decisions_section():
-    """mkdocs.yml nav must reference ADR decisions doc."""
-    mkdocs = yaml.safe_load((ROOT / "mkdocs.yml").read_text())
-    content_str = str(mkdocs)
-    assert (
-        "decisions" in content_str.lower() or "ADR" in content_str
-    ), "mkdocs.yml nav does not reference decisions/ADR docs"
+    """mkdocs.yml nav must contain a page under decisions/."""
+    nav = yaml.safe_load((ROOT / "mkdocs.yml").read_text())["nav"]
+
+    def pages(node):
+        if isinstance(node, str):
+            yield node
+        elif isinstance(node, dict):
+            for v in node.values():
+                yield from pages(v)
+        elif isinstance(node, list):
+            for v in node:
+                yield from pages(v)
+
+    assert any(
+        p.startswith("decisions/") for p in pages(nav)
+    ), "mkdocs.yml nav has no page under decisions/"
 
 
 # ---------------------------------------------------------------------------
@@ -349,8 +359,11 @@ def test_cli_demo_assets_dict_exists():
 
 def test_cli_demo_assets_have_sha256_field():
     """Each DEMO_ASSETS entry must have a sha256 field (may be None)."""
-    content = (ROOT / "meshmonk/cli.py").read_text()
-    assert "sha256" in content
+    from meshmonk.cli import DEMO_ASSETS
+
+    assert DEMO_ASSETS
+    for name, asset in DEMO_ASSETS.items():
+        assert "sha256" in asset, f"DEMO_ASSETS[{name!r}] lacks a sha256 key"
 
 
 def test_cli_no_none_url_constants():
@@ -411,15 +424,17 @@ def test_cmake_stable_abi_consistent_with_cp312_override():
 def test_displacement_field_has_docstring_in_bindings():
     """bindings.cpp displacement_field binding must have a docstring."""
     content = (ROOT / "bindings/bindings.cpp").read_text()
-    # Find displacement_field def and verify it has a string argument (docstring)
-    match = re.search(
-        r'\.def_ro\(\s*"displacement_field"[^;]*"[^"]+"\s*\)',
+    # Every displacement_field binding (one per result class) needs a docstring
+    all_defs = re.findall(r'\.def_ro\(\s*"displacement_field"', content)
+    documented = re.findall(
+        r'\.def_ro\(\s*"displacement_field"\s*,\s*&meshmonk::\w+::displacement_field'
+        r'\s*,\s*"[^"]+"',
         content,
-        re.DOTALL,
     )
-    assert (
-        match is not None
-    ), "displacement_field binding in bindings.cpp is missing a docstring argument"
+    assert len(all_defs) >= 2
+    assert len(documented) == len(
+        all_defs
+    ), "a displacement_field binding in bindings.cpp is missing a docstring argument"
 
 
 # ---------------------------------------------------------------------------

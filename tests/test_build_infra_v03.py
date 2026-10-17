@@ -45,10 +45,27 @@ def test_ci_no_manylinux2014():
 
 def test_ci_test_command_excludes_silent_logger():
     """ci.yml CIBW_TEST_COMMAND must exclude test_silent_logger.py."""
-    ci_content = (WORKSPACE / ".github/workflows/ci.yml").read_text()
-    assert (
-        "test_silent_logger" in ci_content
-    ), "ci.yml CIBW_TEST_COMMAND must add --ignore for test_silent_logger.py"
+    import yaml
+
+    ci = yaml.safe_load((WORKSPACE / ".github/workflows/ci.yml").read_text())
+    cmds = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k == "CIBW_TEST_COMMAND":
+                    cmds.append(v)
+                walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+
+    walk(ci)
+    assert cmds, "ci.yml has no CIBW_TEST_COMMAND"
+    for cmd in cmds:
+        assert (
+            "--ignore={project}/tests/test_silent_logger.py" in cmd.split()
+        ), "ci.yml CIBW_TEST_COMMAND must add --ignore for test_silent_logger.py"
 
 
 # ---------------------------------------------------------------------------
