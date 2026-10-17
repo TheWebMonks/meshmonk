@@ -2,7 +2,7 @@
 
 Single canonical implementation of mesh-loading and downsampling helpers
 used by bench_rigid.py, bench_nonrigid.py, bench_pyramid.py, and
-test_harness_sizing.py.
+scripts/generate_profiling_meshes.py.
 
 Root-cause note (bead 03i.1)
 -----------------------------
@@ -80,12 +80,14 @@ def downsample_to(feat, faces, flags, target_n: int):
     flags:
         (N,) float32 per-vertex flags.
     target_n:
-        Target vertex count (upper bound — actual result may be <= target_n).
+        Target vertex count (upper bound, unless decimation stalls above it).
 
     Returns
     -------
     (feat, faces, flags)
-        Downsampled arrays with vertex count <= target_n.
+        Downsampled arrays. The vertex count is <= target_n unless decimation
+        stalled (see the loop-termination note above), in which case the
+        stalled, larger mesh is returned.
     """
     current_n = feat.shape[0]
     while current_n > target_n:

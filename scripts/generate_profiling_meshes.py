@@ -3,11 +3,13 @@
 ADR-004 D1 FIRM: ALL tiers use one loop subdivision pass (1K/10K) or two passes (100K)
 before downsampling. Never decimate the raw seed mesh directly.
 
-Run from /workspace:
-    python scripts/generate_profiling_meshes.py
+Run from the repo root (meshes are read from <repo>/data; pass an output
+directory as the first argument to write elsewhere, default <repo>/data):
+    uv run python scripts/generate_profiling_meshes.py [OUT_DIR]
 Requires: trimesh, fast-simplification, meshmonk (installed with -DMESHMONK_PROFILING not required)
 Install extras: pip install "meshmonk[profiling]" or pip install trimesh fast-simplification
 """
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -15,7 +17,12 @@ import trimesh
 
 import meshmonk
 
-DATA = Path("/workspace/data")
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
+from benchmarks._harness import downsample_to  # noqa: E402
+
+DATA = REPO_ROOT / "data"
+OUT_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else DATA
 
 seeds = [
     ("Template", DATA / "Template.obj"),
@@ -113,18 +120,9 @@ def subdivide_and_decimate(seed_path: Path, n_subdivisions: int, target_n: int):
     feat = np.hstack([verts, normals]).astype(np.float32)
     flags = np.ones(len(verts), dtype=np.float32)
 
-    # Iterative decimation until at or below target_n.
-    # meshmonk.downsample_mesh(ratio) interprets ratio as fraction of vertices to REMOVE.
-    # Correct formula: ratio_to_remove = 1.0 - target_n / current_n, capped at 0.5.
+    # Iterative decimation until at or below target_n (may stall above it).
+    feat, faces, flags = downsample_to(feat, faces, flags, target_n)
     current_n = feat.shape[0]
-    while current_n > target_n:
-        ratio = 1.0 - target_n / current_n
-        ratio = min(ratio, 0.5)  # never remove more than 50% per step
-        feat, faces, flags, _ = meshmonk.downsample_mesh(feat, faces, flags, ratio)
-        new_n = feat.shape[0]
-        if new_n >= current_n:
-            break  # stalled — stop (boundary lock or degenerate mesh)
-        current_n = new_n
 
     # Check whether the meshmonk result meets BOTH the vertex count tolerance AND the
     # Euler F/V ratio requirement [1.8, 2.2]. Open meshes (e.g. Template, demoFace)
@@ -154,7 +152,7 @@ for seed_name, seed_path in seeds:
     for tier_name, n_sub, target_n in tiers:
         print(f"Generating {seed_name}_{tier_name} ...")
         verts, faces = subdivide_and_decimate(seed_path, n_sub, target_n)
-        out_path = DATA / f"{seed_name}_{tier_name}.obj"
+        out_path = OUT_DIR / f"{seed_name}_{tier_name}.obj"
         trimesh.Trimesh(vertices=verts, faces=faces).export(str(out_path))
         print(f"  Wrote {out_path} ({len(verts)} vertices)")
 
