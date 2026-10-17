@@ -74,7 +74,7 @@ def _make_cube_mesh():
 
 
 def _get_rigid_transform_s1():
-    """Return a RigidTransform with known pure rotation (s=1) via compute_rigid_transform.
+    """Return (T, R, t): a RigidTransform with known pure rotation (s=1), plus its ground-truth R and t.
 
     Applies 30-degree rotation about Z to the cube, then uses compute_rigid_transform
     with use_scaling=False to recover a unit-scale transform.
@@ -102,7 +102,7 @@ def _get_rigid_transform_s1():
 
 
 def _get_rigid_transform_scaled(scale: float):
-    """Return a RigidTransform with known scale factor via compute_rigid_transform(use_scaling=True).
+    """Return (T, sR, t): a RigidTransform with known scale, plus its ground-truth sR and t.
 
     Applies (scale * R + t) to the cube. Uses a well-conditioned setup so that
     compute_rigid_transform with use_scaling=True returns the correct sR matrix.
@@ -246,7 +246,7 @@ class TestPyramidValidation:
         """num_pyramid_layers=0 must raise MeshMonkError with DegenerateInput message.
 
         Bug 2: without the fix, divides by zero at iters_per_layer computation.
-        Currently the C++ logs a warning but proceeds — no exception is raised.
+        The C++ returns DegenerateInput for num_pyramid_layers < 1 (meshmonk.cpp).
         """
         with pytest.raises(MeshMonkError, match="DegenerateInput"):
             self._call_pyramid(num_iterations=100, num_pyramid_layers=0)
@@ -354,7 +354,10 @@ class TestTargetBboxValidation:
     """Verify target mesh with degenerate bounding box raises MeshMonkError."""
 
     def _make_degenerate_target(self):
-        """Target where all vertices are at the same point."""
+        """Return a 6-tuple (float_feat, target_feat, float_faces, target_faces, float_flags, target_flags).
+
+        The floating mesh is random; the target has all vertices at the same point.
+        """
         n = 10
         # Normal floating mesh
         float_verts = np.random.randn(n, 3).astype(np.float32) * 10
