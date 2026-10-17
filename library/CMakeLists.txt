@@ -5,9 +5,6 @@ file(GLOB_RECURSE MESHMONK_SOURCES src/*.cpp)
 
 # --- Build OpenMesh Statically ---
 # Important: Set these BEFORE add_subdirectory for OpenMesh
-set(BUILD_SHARED_LIBS
-    OFF
-    CACHE BOOL "Build OpenMesh as static" FORCE)
 set(OPENMESH_BUILD_APPS
     OFF
     CACHE BOOL "Do not build OpenMesh apps" FORCE)
@@ -23,13 +20,12 @@ add_subdirectory(../vendor/OpenMesh-11.0.0
 # --- Define the meshmonk_lib Library ---
 add_library(meshmonk_lib STATIC ${MESHMONK_SOURCES})
 
-option(MESHMONK_PROFILING "Enable registration profiling instrumentation" OFF)
 if(MESHMONK_PROFILING)
   target_compile_definitions(meshmonk_lib PUBLIC MESHMONK_PROFILING)
 endif()
 
 # MSVC does not expose M_PI from <cmath> unless _USE_MATH_DEFINES is set before
-# <cmath> is included. src/ uses M_PI.
+# <cmath> is included. The vendored OpenMesh headers use M_PI.
 if(MSVC)
   target_compile_definitions(meshmonk_lib PRIVATE _USE_MATH_DEFINES)
 endif()
@@ -47,7 +43,7 @@ target_include_directories(
 
 # --- Link Dependencies ---
 # OpenMesh's CMake builds SHAREDANDSTATIC on non-Windows platforms regardless of
-# BUILD_SHARED_LIBS, exposing `OpenMeshCore`/`OpenMeshTools` as shared and
+# the shared-libs setting, exposing `OpenMeshCore`/`OpenMeshTools` as shared and
 # `OpenMeshCoreStatic`/`OpenMeshToolsStatic` as static. We link the static
 # variants so the wheel has no runtime dependency on libOpenMeshTools.so. On
 # Windows only the single `OpenMeshCore`/`OpenMeshTools` target exists (built
