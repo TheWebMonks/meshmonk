@@ -38,6 +38,22 @@
 namespace nb = nanobind;
 using namespace nb::literals;
 
+namespace {
+using ProfileMap =
+    std::unordered_map<std::string, std::unordered_map<std::string, uint64_t>>;
+
+#ifdef MESHMONK_PROFILING
+// Snapshot -> {name: {"total_us": ..., "count": ...}} for profiling_peek/dump.
+template <typename Snapshot> ProfileMap snapshot_to_map(const Snapshot &raw) {
+  ProfileMap out;
+  for (const auto &[k, v] : raw) {
+    out[k] = {{"total_us", v.total_us}, {"count", v.count}};
+  }
+  return out;
+}
+#endif
+} // namespace
+
 // ---------------------------------------------------------------------------
 // Error-unwrap helper: convert tl::expected failure to MeshMonkError
 // Called inside the function body (after GIL is released) — only throws,
@@ -307,16 +323,7 @@ NB_MODULE(_meshmonk_core, m) {
   // -----------------------------------------------------------------------
   m.def(
       "compute_correspondences",
-      [](Eigen::Ref<const meshmonk::FeatureMat> floating_features,
-         Eigen::Ref<const meshmonk::FeatureMat> target_features,
-         Eigen::Ref<const meshmonk::VecDynFloat> floating_flags,
-         Eigen::Ref<const meshmonk::VecDynFloat> target_flags, bool symmetric,
-         int num_neighbours, float flag_threshold, bool equalize_push_pull)
-          -> std::pair<meshmonk::FeatureMat, meshmonk::VecDynFloat> {
-        return meshmonk::compute_correspondences(
-            floating_features, target_features, floating_flags, target_flags,
-            symmetric, num_neighbours, flag_threshold, equalize_push_pull);
-      },
+      &meshmonk::compute_correspondences,
       "floating_features"_a, "target_features"_a, "floating_flags"_a,
       "target_flags"_a, "symmetric"_a = true, "num_neighbours"_a = 3,
       "flag_threshold"_a = 0.9f, "equalize_push_pull"_a = false,
@@ -338,30 +345,13 @@ NB_MODULE(_meshmonk_core, m) {
 
   m.def(
       "compute_rigid_transform",
-      [](Eigen::Ref<const meshmonk::FeatureMat> floating_features,
-         Eigen::Ref<const meshmonk::FeatureMat> corresponding_features,
-         Eigen::Ref<const meshmonk::VecDynFloat> weights,
-         bool use_scaling) -> meshmonk::RigidTransform {
-        return meshmonk::compute_rigid_transform(
-            floating_features, corresponding_features, weights, use_scaling);
-      },
+      &meshmonk::compute_rigid_transform,
       "floating_features"_a, "corresponding_features"_a, "weights"_a,
       "use_scaling"_a = false, nb::call_guard<nb::gil_scoped_release>());
 
   m.def(
       "compute_nonrigid_transform",
-      [](Eigen::Ref<const meshmonk::FeatureMat> floating_features,
-         Eigen::Ref<const meshmonk::FeatureMat> corresponding_features,
-         Eigen::Ref<const meshmonk::FacesMat> floating_faces,
-         Eigen::Ref<const meshmonk::VecDynFloat> floating_flags,
-         Eigen::Ref<const meshmonk::VecDynFloat> weights,
-         int num_smoothing_neighbours, float sigma, int num_viscous_iterations,
-         int num_elastic_iterations) -> meshmonk::FeatureMat {
-        return meshmonk::compute_nonrigid_transform(
-            floating_features, corresponding_features, floating_faces,
-            floating_flags, weights, num_smoothing_neighbours, sigma,
-            num_viscous_iterations, num_elastic_iterations);
-      },
+      &meshmonk::compute_nonrigid_transform,
       "floating_features"_a, "corresponding_features"_a, "floating_faces"_a,
       "floating_flags"_a, "weights"_a, "num_smoothing_neighbours"_a = 10,
       "sigma"_a = 3.0f, "num_viscous_iterations"_a = 50,
@@ -370,29 +360,16 @@ NB_MODULE(_meshmonk_core, m) {
 
   m.def(
       "downsample_mesh",
-      [](Eigen::Ref<const meshmonk::FeatureMat> features,
-         Eigen::Ref<const meshmonk::FacesMat> faces,
-         Eigen::Ref<const meshmonk::VecDynFloat> flags, float downsample_ratio)
-          -> std::tuple<meshmonk::FeatureMat, meshmonk::FacesMat,
-                        meshmonk::VecDynFloat, Eigen::VectorXi> {
-        return meshmonk::downsample_mesh(features, faces, flags,
-                                         downsample_ratio);
-      },
+      &meshmonk::downsample_mesh,
       "features"_a, "faces"_a, "flags"_a, "downsample_ratio"_a = 0.8f,
       nb::call_guard<nb::gil_scoped_release>());
 
   m.def(
       "compute_normals",
-      [](Eigen::Ref<const meshmonk::Vec3Mat> positions,
-         Eigen::Ref<const meshmonk::FacesMat> faces) -> meshmonk::Vec3Mat {
-        return meshmonk::compute_normals(positions, faces);
-      },
+      &meshmonk::compute_normals,
       "positions"_a, "faces"_a, nb::call_guard<nb::gil_scoped_release>());
 
-  m.def(
-      "set_log_level",
-      [](meshmonk::LogLevel level) { meshmonk::set_log_level(level); },
-      "level"_a);
+  m.def("set_log_level", &meshmonk::set_log_level, "level"_a);
 
   // -----------------------------------------------------------------------
   // Profiling bindings (always compiled — no-ops when MESHMONK_PROFILING OFF)
@@ -403,38 +380,23 @@ NB_MODULE(_meshmonk_core, m) {
 #endif
   });
 
-  m.def("profiling_peek",
-    []() -> std::unordered_map<std::string,
-                                std::unordered_map<std::string, uint64_t>> {
+  m.def("profiling_peek", []() -> ProfileMap {
 #ifdef MESHMONK_PROFILING
-      auto raw = g_profiler.snapshot();
-      std::unordered_map<std::string,
-                         std::unordered_map<std::string, uint64_t>> out;
-      for (auto& [k, v] : raw) {
-        out[k] = {{"total_us", v.total_us}, {"count", v.count}};
-      }
-      return out;
+    return snapshot_to_map(g_profiler.snapshot());
 #else
-      return {};
+    return {};
 #endif
-    });
+  });
 
-  m.def("profiling_dump",
-    []() -> std::unordered_map<std::string,
-                                std::unordered_map<std::string, uint64_t>> {
+  m.def("profiling_dump", []() -> ProfileMap {
 #ifdef MESHMONK_PROFILING
-      auto raw = g_profiler.snapshot();
-      std::unordered_map<std::string,
-                         std::unordered_map<std::string, uint64_t>> out;
-      for (auto& [k, v] : raw) {
-        out[k] = {{"total_us", v.total_us}, {"count", v.count}};
-      }
-      g_profiler.reset();
-      return out;
+    auto out = snapshot_to_map(g_profiler.snapshot());
+    g_profiler.reset();
+    return out;
 #else
-      return {};
+    return {};
 #endif
-    });
+  });
 
   m.def("profiling_enabled", []() -> bool {
 #ifdef MESHMONK_PROFILING
