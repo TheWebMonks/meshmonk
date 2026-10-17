@@ -121,7 +121,7 @@ void CorrespondenceFilter::_update_affinity() {
     normalize_sparse_matrix(_affinity);
   }
 
-} // end wknn_affinity()
+} // end _update_affinity()
 
 void CorrespondenceFilter::update() {
 #ifdef MESHMONK_PROFILING
@@ -167,6 +167,6 @@ void CorrespondenceFilter::update() {
     the output.
     */
   }
-} // end wkkn_correspondences()
+} // end update()
 
 } // namespace registration

@@ -31,20 +31,6 @@ void InlierDetector::update() {
   auto _t = g_profiler.scoped("InlierDetector::update");
 #endif
 
-  //    _parameterList["jos"] = 2.0f;
-  //    _parameterList.insert(std::make_pair("ljkewqr", 3));
-  //    _parameterList.insert(std::make_pair("beschrijving", "Wat een
-  //    moeilijkheden")); _parameterList.insert(std::make_pair("inlierKappa",
-  //    int(3))); std::cout << "Parameter list 'beschrijving':" <<
-  //    _parameterList["beschrijving"] << std::endl;
-  //
-  //    DictionaryType::iterator it = _parameterList.begin();
-  //    while(it != _parameterList.end())
-  //    {
-  //        std::cout<<it->first<<" :: "<<it->second<<std::endl;
-  //        it++;
-  //    }
-
   // # Flag based inlier/outlier classification
   // ## If a floating node is attracted to a corresponding node with flag 0.0,
   // ## its inlier weight should be made zero as well. So we can use the

@@ -28,7 +28,8 @@ class CorrespondenceFilter : public BaseCorrespondenceFilter {
   # GOAL
   For each element in inFloatingFeatures, we're going to find corresponding
   features in the elements of inTargetFeatures.
-  The used weight is one over the distance squared.
+  The used weight is one over the distance squared (floored), times an
+  orientation weight (normal dot product mapped to [0,1]), floored at 1e-4.
 
   # INPUTS
   -inFloatingFeatures

@@ -42,7 +42,8 @@ protected:
   // # Inputs
   const FeatureMat *_inFloatingFeatures = NULL;
   const VecDynFloat *_inFloatingFlags =
-      NULL; // currently never used (only in the symmetric version)
+      NULL; // merged into the corresponding flags in
+            // _affinity_to_correspondences()
   const FeatureMat *_inTargetFeatures = NULL;
   const VecDynFloat *_inTargetFlags = NULL;
 

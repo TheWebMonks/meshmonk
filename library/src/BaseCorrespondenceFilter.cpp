@@ -26,11 +26,9 @@ void BaseCorrespondenceFilter::_affinity_to_correspondences() {
   when the affinity for a set of features and flags is given.
 
   # PARAMETERS
-  -_flagRoundingLimit:
-  Flags are binary. Anything over this double is rounded up, whereas anything
-  under it is rounded down. A suggested cut-off is 0.9, which means that if
-  an element flagged zero contributes 10 percent or to the affinity, the
-  corresponding element should be flagged a zero as well.
+  -_flagThreshold:
+  Flags are binary. A weighted corresponding flag over this threshold
+  (default 0.99, must be < 1) is rounded up to 1, anything else down to 0.
 
   # RESULT
   -outCorrespondingFeatures

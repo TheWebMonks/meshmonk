@@ -64,7 +64,7 @@ void SymmetricCorrespondenceFilter::_update_push_and_pull() {
   fuse_affinities(_affinity,
                   pullAffinity); // helper function to combine affinity matrices
 
-} // end wknn_affinity()
+} // end _update_push_and_pull()
 
 void SymmetricCorrespondenceFilter::update() {
 #ifdef MESHMONK_PROFILING
@@ -110,6 +110,6 @@ void SymmetricCorrespondenceFilter::update() {
     }
   }
 
-} // end wkkn_correspondences()
+} // end update()
 
 } // namespace registration

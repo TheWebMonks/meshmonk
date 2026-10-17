@@ -43,7 +43,7 @@ class SymmetricCorrespondenceFilter : public BaseCorrespondenceFilter {
   # PARAMETERS
   -numNeighbours(=3):
   number of nearest neighbours
-  -flagThreshold(=0.9):
+  -flagThreshold:
   threshold that the weighted corresponding flag needs to make in order to be
   flagged as 1.0. Otherwise, it receives flag 0.0f.
 

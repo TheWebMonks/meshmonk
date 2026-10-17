@@ -288,7 +288,7 @@ void ViscoElasticTransformer::_update_outlier_transformation() {
           size_t neighbourIndex = neighbourIndices(i, j);
           // get neighbour weight and vector
           float weight =
-              _smoothingWeights(i, j); // inlier weight is already incorporated
+              _smoothingWeights(i, j); // inlier flag is already incorporated
                                        // in the smoothing weight.
           neighbourVector = temporaryDisplacementField.row(neighbourIndex);
           sumWeights += weight;

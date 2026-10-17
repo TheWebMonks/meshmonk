@@ -135,8 +135,8 @@ void ScaleShifter::_interpolate_new_nodes() {
   /*
   The goal is here to interpolate the positions for the new nodes of
   the high sampled mesh. We'll do that by weighted k-nn. Therefor,
-  we can reuse the CorrespondenceFilter class, which will gives us
-  the 1/d_squared weighted average of k neighbouring positions.
+  we average the deformation of the k nearest neighbours with
+  1/d_squared weights times an orientation weight.
 
   So we will set up a k-nn finder. The source points should be the nodes
   that match between the high and low sampled mesh, but with the feature
