@@ -79,13 +79,11 @@ def multi_view_plot(
     out_png: Path,
     *,
     title: str = "Registration",
-    zoom_to: str = "aligned",
 ):
     """Render a 3x2 grid: front/side/top × (before/after), zoomed on the floating surface.
 
-    `zoom_to` selects which point set drives the viewport bounds. "aligned" zooms
-    the after-plots to the aligned floating mesh (the interesting region), and
-    the before-plots to the original floating mesh.
+    The after-plots zoom to the aligned floating mesh (the interesting region),
+    and the before-plots to the original floating mesh.
     """
     import matplotlib
 
@@ -153,8 +151,7 @@ def multi_view_plot(
         ax_after.set_xlabel(xlabel)
         ax_after.set_ylabel(ylabel)
         ax_after.set_aspect("equal")
-        zoom_pts = aligned_v if zoom_to == "aligned" else floating_v
-        (xlo, xhi), (ylo, yhi) = _zoom_bounds(zoom_pts, ix, iy)
+        (xlo, xhi), (ylo, yhi) = _zoom_bounds(aligned_v, ix, iy)
         ax_after.set_xlim(xlo, xhi)
         ax_after.set_ylim(ylo, yhi)
         if row == 0:
