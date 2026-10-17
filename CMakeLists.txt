@@ -59,6 +59,7 @@ install(TARGETS _meshmonk_core LIBRARY DESTINATION meshmonk)
 # --- Type stubs (PEP 561) ---
 nanobind_add_stub(
   _meshmonk_core_stub
+  INCLUDE_PRIVATE
   MODULE
   _meshmonk_core
   OUTPUT
