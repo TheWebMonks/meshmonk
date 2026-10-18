@@ -49,8 +49,8 @@ class TestSilentMode:
             cwd=tempfile.gettempdir(),
         )
 
-    def test_rigid_register_silent_no_stderr(self):
-        """rigid_register with log_level=silent must produce no stderr output."""
+    def test_compute_inlier_weights_silent_after_rigid_register(self):
+        """Silent mode suppresses compute_inlier_weights warnings after rigid registration."""
         result = self._run_subprocess(
             "import meshmonk, trimesh; "
             "meshmonk.set_log_level('silent'); "
@@ -63,8 +63,8 @@ class TestSilentMode:
             result.stderr == ""
         ), f"Expected no stderr output in silent mode, got: {result.stderr!r}"
 
-    def test_nonrigid_register_silent_no_stderr(self):
-        """nonrigid_register with log_level=silent must produce no stderr output."""
+    def test_compute_inlier_weights_silent_after_nonrigid_register(self):
+        """Silent mode suppresses compute_inlier_weights warnings after nonrigid registration."""
         result = self._run_subprocess(
             "import meshmonk, trimesh; "
             "meshmonk.set_log_level('silent'); "
@@ -77,8 +77,8 @@ class TestSilentMode:
             result.stderr == ""
         ), f"Expected no stderr output in silent mode, got: {result.stderr!r}"
 
-    def test_warning_level_default_emits_output(self):
-        """At default warning level, meshmonk registration should emit output (not silent)."""
+    def test_compute_inlier_weights_default_warning_level_emits_warning(self):
+        """At the default warning level, compute_inlier_weights emits a warning."""
         result = self._run_subprocess(
             "import meshmonk, trimesh; "
             "m = trimesh.creation.icosphere(subdivisions=1); "
