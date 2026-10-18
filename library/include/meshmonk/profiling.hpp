@@ -20,13 +20,13 @@ struct ProfileEntry {
 
 class Profiler {
 public:
-  void record(const std::string& label, uint64_t us) {
-    auto& e = entries_[label];
+  void record(const std::string &label, uint64_t us) {
+    auto &e = entries_[label];
     e.total_us += us;
     e.count += 1;
   }
   // Out-of-line definition below, after ScopedTimer is fully defined.
-  ScopedTimer scoped(const std::string& label);
+  ScopedTimer scoped(const std::string &label);
 
   std::unordered_map<std::string, ProfileEntry> snapshot() const {
     return entries_;
@@ -42,28 +42,29 @@ private:
 
 class ScopedTimer {
 public:
-  explicit ScopedTimer(const std::string& label, Profiler& p)
-      : label_(label), profiler_(p),
-        start_(std::chrono::steady_clock::now()) {}
+  explicit ScopedTimer(const std::string &label, Profiler &p)
+      : label_(label), profiler_(p), start_(std::chrono::steady_clock::now()) {}
   ~ScopedTimer() {
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
-        std::chrono::steady_clock::now() - start_).count();
+                       std::chrono::steady_clock::now() - start_)
+                       .count();
     profiler_.record(label_, static_cast<uint64_t>(elapsed));
   }
-  ScopedTimer(const ScopedTimer&) = delete;
-  ScopedTimer& operator=(const ScopedTimer&) = delete;
-  ScopedTimer(ScopedTimer&&) = delete;
-  ScopedTimer& operator=(ScopedTimer&&) = delete;
+  ScopedTimer(const ScopedTimer &) = delete;
+  ScopedTimer &operator=(const ScopedTimer &) = delete;
+  ScopedTimer(ScopedTimer &&) = delete;
+  ScopedTimer &operator=(ScopedTimer &&) = delete;
 
 private:
   std::string label_;
-  Profiler& profiler_;
+  Profiler &profiler_;
   std::chrono::steady_clock::time_point start_;
 };
 
 // Out-of-line definitions of Profiler methods that use ScopedTimer — required
-// because ScopedTimer was only forward-declared when Profiler was defined above.
-inline ScopedTimer Profiler::scoped(const std::string& label) {
+// because ScopedTimer was only forward-declared when Profiler was defined
+// above.
+inline ScopedTimer Profiler::scoped(const std::string &label) {
   return ScopedTimer(label, *this);
 }
 
@@ -72,22 +73,22 @@ inline ScopedTimer Profiler::scoped(const std::string& label) {
 // Operates on a local Profiler so the real g_profiler accumulator is
 // not polluted — pure function with zero side-effects on the caller.
 inline uint64_t Profiler::calibrate(size_t n) {
-  if (n == 0) return 0;
+  if (n == 0)
+    return 0;
   Profiler tmp;
   auto t0 = std::chrono::steady_clock::now();
   for (size_t i = 0; i < n; ++i) {
     ScopedTimer t("__calibration__", tmp);
   }
   auto t1 = std::chrono::steady_clock::now();
-  auto total_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-      t1 - t0).count();
-  return static_cast<uint64_t>(
-      total_ns / static_cast<int64_t>(n));
+  auto total_ns =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
+  return static_cast<uint64_t>(total_ns / static_cast<int64_t>(n));
 }
 
 inline Profiler g_profiler;
 
-#else  // MESHMONK_PROFILING not defined — no-op stubs
+#else // MESHMONK_PROFILING not defined — no-op stubs
 
 // These stubs ensure callsite patterns `auto _t = g_profiler.scoped("label");`
 // and `g_profiler.calibrate(N)` compile with zero overhead.
@@ -98,11 +99,11 @@ struct ProfileEntry {
 class ScopedTimer {};
 class Profiler {
 public:
-  ScopedTimer scoped(const std::string&) { return {}; }
+  ScopedTimer scoped(const std::string &) { return {}; }
   void reset() {}
   uint64_t calibrate(size_t) { return 0; }
   std::unordered_map<std::string, ProfileEntry> snapshot() const { return {}; }
 };
 inline Profiler g_profiler;
 
-#endif  // MESHMONK_PROFILING
+#endif // MESHMONK_PROFILING

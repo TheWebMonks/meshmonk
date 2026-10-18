@@ -188,8 +188,8 @@ void PyramidNonrigidRegistration::update() {
         _elasticIterationsIntervals[i + 1]);
     {
 #ifdef MESHMONK_PROFILING
-      auto _tlayer = g_profiler.scoped(
-          "NonrigidRegistration::update/layer" + std::to_string(i));
+      auto _tlayer = g_profiler.scoped("NonrigidRegistration::update/layer" +
+                                       std::to_string(i));
 #endif
       nonrigidRegistration.update();
     }

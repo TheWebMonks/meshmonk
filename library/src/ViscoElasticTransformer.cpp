@@ -68,7 +68,8 @@ void ViscoElasticTransformer::_update_neighbours() {
 // ## Update the weights used for smoothing
 void ViscoElasticTransformer::_update_smoothing_weights() {
 #ifdef MESHMONK_PROFILING
-  auto _t = g_profiler.scoped("ViscoElasticTransformer::_update_smoothing_weights");
+  auto _t =
+      g_profiler.scoped("ViscoElasticTransformer::_update_smoothing_weights");
 #endif
   /*
   The smoothing weights are the weights assigned to each vertex neighbour which
@@ -253,7 +254,8 @@ void ViscoElasticTransformer::_update_elastically() {
 
 void ViscoElasticTransformer::_update_outlier_transformation() {
 #ifdef MESHMONK_PROFILING
-  auto _t = g_profiler.scoped("ViscoElasticTransformer::_update_outlier_transformation");
+  auto _t = g_profiler.scoped(
+      "ViscoElasticTransformer::_update_outlier_transformation");
 #endif
   // # The transformation for the outliers is updated via a diffusion process.
   // ## The transformation field for inliers is kept the same, but diffuses into

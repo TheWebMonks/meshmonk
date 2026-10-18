@@ -183,7 +183,8 @@ template <typename VecMatType> void NeighbourFinder<VecMatType>::update() {
   // a prior update() with the same shape. Fresh-search path on mismatch.
   const bool useCache =
       _cachingEnabled &&
-      static_cast<size_t>(_cachedNeighbourIndices.rows()) == _numQueriedElements &&
+      static_cast<size_t>(_cachedNeighbourIndices.rows()) ==
+          _numQueriedElements &&
       static_cast<size_t>(_cachedNeighbourIndices.cols()) == _numNeighbours;
 
   // ADR-007 D2 — must match the eps passed to SearchParams below.
@@ -230,8 +231,8 @@ template <typename VecMatType> void NeighbourFinder<VecMatType>::update() {
         const int cachedIdx = _cachedNeighbourIndices(i, c);
         float d = 0.0f;
         for (size_t dim = 0; dim < _numDimensions; ++dim) {
-          const float diff = queriedFeature[dim] -
-                             (*_inSourcePoints)(cachedIdx, dim);
+          const float diff =
+              queriedFeature[dim] - (*_inSourcePoints)(cachedIdx, dim);
           d += diff * diff;
         }
         if (d > ceiling) {
