@@ -13,6 +13,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Corrected user-visible error-message text: the `DegenerateInput` cause list
+  and the `meshmonk demo` not-found hint. Exception types, raise conditions
+  and exit codes are unchanged (dotpi-kcjb.43).
+
 ### Removed
 
 - `meshmonk.scale_shift_mesh` (Python binding and C++ wrapper). It passed an
