@@ -18,13 +18,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Corrected user-visible error-message text: the `DegenerateInput` cause list
   and the `meshmonk demo` not-found hint. Exception types, raise conditions
   and exit codes are unchanged (dotpi-kcjb.43).
+- `meshmonk.scale_shift_mesh` takes a new third argument, `new_features`: the
+  higher-density mesh's original features. Signature is now
+  `scale_shift_mesh(previous_features, previous_indices, new_features,
+  new_indices)`; callers of the old three-argument form must pass it. Raises
+  `ValueError` when a features array and its indices disagree in length
+  (dotpi-kcjb.53).
 
-### Removed
+### Fixed
 
-- `meshmonk.scale_shift_mesh` (Python binding and C++ wrapper). It passed an
-  uninitialised output buffer that `ScaleShifter` reads before writing, and
-  had no callers. `ScaleShifter` itself stays; `pyramid_register` uses it
-  directly (dotpi-kcjb.10).
+- `meshmonk.scale_shift_mesh` returned undefined values: it handed
+  `ScaleShifter` an uninitialised output buffer, which it reads as the
+  higher-density mesh's original features before writing. The buffer is now
+  seeded from `new_features`, as `pyramid_register` does (dotpi-kcjb.53).
 
 ---
 

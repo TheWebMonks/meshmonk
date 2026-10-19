@@ -19,6 +19,7 @@
 #include "PyramidNonrigidRegistration.hpp"
 #include "RigidRegistration.hpp"
 #include "RigidTransformer.hpp"
+#include "ScaleShifter.hpp"
 #include "SymmetricCorrespondenceFilter.hpp"
 #include "ViscoElasticTransformer.hpp"
 #include "helper_functions.hpp"
@@ -26,6 +27,7 @@
 
 #include <cmath>
 #include <memory>
+#include <stdexcept>
 
 namespace meshmonk {
 
@@ -494,6 +496,36 @@ downsample_mesh(Eigen::Ref<const FeatureMat> features,
   downsampler.update();
 
   return {out_features, out_faces, out_flags, out_indices};
+}
+
+FeatureMat scale_shift_mesh(Eigen::Ref<const FeatureMat> previous_features,
+                            Eigen::Ref<const Eigen::VectorXi> previous_indices,
+                            Eigen::Ref<const FeatureMat> new_features,
+                            Eigen::Ref<const Eigen::VectorXi> new_indices) {
+  if (previous_features.rows() != previous_indices.size())
+    throw std::invalid_argument(
+        "scale_shift_mesh: previous_features and previous_indices must have "
+        "the same number of rows");
+  if (new_features.rows() != new_indices.size())
+    throw std::invalid_argument(
+        "scale_shift_mesh: new_features and new_indices must have the same "
+        "number of rows");
+
+  FeatureMat prev_features_copy = previous_features;
+  Eigen::VectorXi prev_indices_copy = previous_indices;
+  Eigen::VectorXi new_indices_copy = new_indices;
+
+  // ScaleShifter reads the output buffer as the higher-density mesh's original
+  // features before overwriting it, so it must be seeded with them
+  // (as PyramidNonrigidRegistration does).
+  FeatureMat out_features = new_features;
+
+  registration::ScaleShifter scaler;
+  scaler.set_input(prev_features_copy, prev_indices_copy, new_indices_copy);
+  scaler.set_output(out_features);
+  scaler.update();
+
+  return out_features;
 }
 
 Vec3Mat compute_normals(Eigen::Ref<const Vec3Mat> positions,

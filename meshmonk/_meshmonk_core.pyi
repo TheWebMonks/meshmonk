@@ -369,6 +369,18 @@ def downsample_mesh(
     Annotated[NDArray[numpy.float32], dict(shape=(None,), order="C")],
     Annotated[NDArray[numpy.int32], dict(shape=(None,), order="C")],
 ]: ...
+def scale_shift_mesh(
+    previous_features: Annotated[
+        NDArray[numpy.float32], dict(shape=(None, 6), writable=False)
+    ],
+    previous_indices: Annotated[
+        NDArray[numpy.int32], dict(shape=(None,), writable=False)
+    ],
+    new_features: Annotated[
+        NDArray[numpy.float32], dict(shape=(None, 6), writable=False)
+    ],
+    new_indices: Annotated[NDArray[numpy.int32], dict(shape=(None,), writable=False)],
+) -> Annotated[NDArray[numpy.float32], dict(shape=(None, 6), order="F")]: ...
 def compute_normals(
     positions: Annotated[NDArray[numpy.float32], dict(shape=(None, 3), writable=False)],
     faces: Annotated[NDArray[numpy.int32], dict(shape=(None, 3), writable=False)],

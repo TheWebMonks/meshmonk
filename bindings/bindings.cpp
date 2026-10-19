@@ -358,6 +358,10 @@ NB_MODULE(_meshmonk_core, m) {
         "flags"_a, "downsample_ratio"_a = 0.8f,
         nb::call_guard<nb::gil_scoped_release>());
 
+  m.def("scale_shift_mesh", &meshmonk::scale_shift_mesh, "previous_features"_a,
+        "previous_indices"_a, "new_features"_a, "new_indices"_a,
+        nb::call_guard<nb::gil_scoped_release>());
+
   m.def("compute_normals", &meshmonk::compute_normals, "positions"_a, "faces"_a,
         nb::call_guard<nb::gil_scoped_release>());
 

@@ -108,6 +108,17 @@ std::tuple<FeatureMat, FacesMat, VecDynFloat, Eigen::VectorXi> downsample_mesh(
     Eigen::Ref<const FeatureMat> features, Eigen::Ref<const FacesMat> faces,
     Eigen::Ref<const VecDynFloat> flags, float downsample_ratio = 0.8f);
 
+// Transfer registered features from a lower-density pyramid layer to a
+// higher-density one. previous_* is the registered lower-density mesh; new_*
+// is the higher-density mesh's original (unregistered) features. Original
+// indices are into the shared full-resolution mesh (downsample_mesh output).
+// Returns: features for the higher-density mesh (rows match new_indices).
+// Throws std::invalid_argument when a features/indices row count disagrees.
+FeatureMat scale_shift_mesh(Eigen::Ref<const FeatureMat> previous_features,
+                            Eigen::Ref<const Eigen::VectorXi> previous_indices,
+                            Eigen::Ref<const FeatureMat> new_features,
+                            Eigen::Ref<const Eigen::VectorXi> new_indices);
+
 // Compute per-vertex normals from positions + face topology.
 // Returns: normals (N,3)
 Vec3Mat compute_normals(Eigen::Ref<const Vec3Mat> positions,

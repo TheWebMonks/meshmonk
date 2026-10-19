@@ -47,6 +47,7 @@ from meshmonk._meshmonk_core import (  # noqa: E402
     compute_rigid_transform,
     compute_nonrigid_transform,
     downsample_mesh,
+    scale_shift_mesh,
     compute_normals,
     set_log_level as _set_log_level_core,
     # Profiling
@@ -114,6 +115,7 @@ __all__ = [
     "compute_rigid_transform",
     "compute_nonrigid_transform",
     "downsample_mesh",
+    "scale_shift_mesh",
     "compute_normals",
     # Profiling
     "profiling_reset",
