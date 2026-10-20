@@ -179,7 +179,7 @@ void ScaleShifter::_interpolate_new_nodes() {
   NeighbourFinder<FeatureMat> neighbourFinder;
   neighbourFinder.set_source_points(&matchingNodesOldFeatures);
   neighbourFinder.set_queried_points(&newNodesOldFeatures);
-  size_t k = 3; // k = 3
+  const size_t k = kNumInterpolationNeighbours;
   neighbourFinder.set_parameters(k);
 
   // # Get the indices and squared distances to the nearest neighbours

@@ -28,6 +28,8 @@
 #include <cmath>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <unordered_set>
 
 namespace meshmonk {
 
@@ -510,6 +512,24 @@ FeatureMat scale_shift_mesh(Eigen::Ref<const FeatureMat> previous_features,
     throw std::invalid_argument(
         "scale_shift_mesh: new_features and new_indices must have the same "
         "number of rows");
+
+  // Each new node is interpolated from its k nearest matching nodes; with
+  // fewer than k the k-NN search reads unfilled slots (0 matching: segfault).
+  const std::unordered_set<int> previous(previous_indices.data(),
+                                         previous_indices.data() +
+                                             previous_indices.size());
+  Eigen::Index num_matching = 0;
+  for (Eigen::Index i = 0; i < new_indices.size(); ++i)
+    num_matching += previous.count(new_indices[i]);
+  const auto k = static_cast<Eigen::Index>(
+      registration::ScaleShifter::kNumInterpolationNeighbours);
+  if (num_matching < new_indices.size() && num_matching < k)
+    throw std::invalid_argument(
+        "scale_shift_mesh: " + std::to_string(num_matching) +
+        " matching node(s) between previous_indices and new_indices; at "
+        "least " +
+        std::to_string(k) + " are needed to interpolate the " +
+        std::to_string(new_indices.size() - num_matching) + " new node(s)");
 
   FeatureMat prev_features_copy = previous_features;
   Eigen::VectorXi prev_indices_copy = previous_indices;

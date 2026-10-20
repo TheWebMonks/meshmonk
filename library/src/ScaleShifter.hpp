@@ -39,6 +39,9 @@ the previous scale. -inHighOriginalIndicies for the original indices of the
 
 class ScaleShifter {
 public:
+  // New nodes are interpolated from this many nearest matching nodes.
+  static constexpr size_t kNumInterpolationNeighbours = 3;
+
   void set_input(const FeatureMat &inLowFeatures,
                  const VecDynInt &inLowOriginalIndices,
                  const VecDynInt &inHighOriginalIndices);
