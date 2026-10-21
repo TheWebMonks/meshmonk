@@ -224,6 +224,6 @@ jobs:
           path: dist/
 
       - name: Create GitHub Release
-        run: gh release create ${{ github.ref_name }} dist/* --generate-notes
+        run: gh release create ${{ github.ref_name }} dist/* data/Template.obj data/demoFace.obj --generate-notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

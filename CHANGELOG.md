@@ -27,6 +27,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `meshmonk demo --download` fetched nothing: the demo meshes were never
+  attached to GitHub Releases. Each release now carries `Template.obj` and
+  `demoFace.obj`, and their SHA-256 digests are pinned so a download is
+  verified (dotpi-kcjb.11.2).
 - `meshmonk.scale_shift_mesh` returned undefined values: it handed
   `ScaleShifter` an uninitialised output buffer, which it reads as the
   higher-density mesh's original features before writing. The buffer is now

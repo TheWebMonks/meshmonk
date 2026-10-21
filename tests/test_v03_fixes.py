@@ -169,11 +169,15 @@ def test_cli_download_network_error_exits_1_and_cleans_partial(
 
 
 def test_cli_download_passes_timeout_30(monkeypatch, tmp_path):
-    seen = []
+    import meshmonk.cli as cli
 
-    def urlopen(_url, timeout=None):
+    seen = []
+    by_url = {a["url"]: name for name, a in cli.DEMO_ASSETS.items()}
+
+    def urlopen(url, timeout=None):
         seen.append(timeout)
-        return _Resp(b"x")
+        # Serve the tracked bytes so the pinned digest check passes.
+        return _Resp((ROOT / "data" / by_url[url]).read_bytes())
 
     _download(monkeypatch, tmp_path, urlopen)()
     assert seen and set(seen) == {30}
