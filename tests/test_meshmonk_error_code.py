@@ -111,12 +111,17 @@ def test_degenerate_message_names_pyramid_parameter_causes(empty_registration_kw
 
 
 # ---------------------------------------------------------------------------
-# All error codes accessible via nonrigid (InsufficientInliers)
+# InsufficientInliers — same input raises in all three pipelines
 # ---------------------------------------------------------------------------
 
 
-def test_insufficient_inliers_code():
-    """Trigger InsufficientInliers and verify .code."""
+@pytest.mark.parametrize(
+    "register",
+    [meshmonk.rigid_register, meshmonk.nonrigid_register, meshmonk.pyramid_register],
+    ids=["rigid", "nonrigid", "pyramid"],
+)
+def test_insufficient_inliers_code(register):
+    """Trigger InsufficientInliers and verify .code — same input, all three pipelines."""
     # Use a mesh where most flags are zero → too few inliers after InlierDetector
     n = 100
     features = np.random.RandomState(0).randn(n, 6).astype(np.float32)
@@ -127,7 +132,7 @@ def test_insufficient_inliers_code():
     flags[1] = 1.0
 
     with pytest.raises(MeshMonkError) as exc_info:
-        meshmonk.rigid_register(
+        register(
             floating_features=features,
             target_features=features,
             floating_faces=faces,

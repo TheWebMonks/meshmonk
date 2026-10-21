@@ -24,6 +24,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   new_indices)`; callers of the old three-argument form must pass it. Raises
   `ValueError` when a features array and its indices disagree in length
   (dotpi-kcjb.53).
+- Frozen-API behaviour change (ratified): `nonrigid_register` and
+  `pyramid_register` with `num_iterations=0` now raise
+  `MeshMonkError(InsufficientInliers)` when fewer than 4 inliers remain,
+  exactly where `rigid_register` already did. They previously returned the
+  input unchanged (dotpi-kcjb.9.3).
 
 ### Fixed
 
