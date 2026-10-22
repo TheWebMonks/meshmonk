@@ -31,6 +31,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `ScaleShifter` an uninitialised output buffer, which it reads as the
   higher-density mesh's original features before writing. The buffer is now
   seeded from `new_features`, as `pyramid_register` does (dotpi-kcjb.53).
+- `meshmonk.scale_shift_mesh` crashed (segfault) with no node shared between
+  `previous_indices` and `new_indices`, and with 1–2 shared nodes silently
+  padded its 3-nearest-neighbour interpolation. It now raises `ValueError`
+  naming the counts when new nodes need interpolating from fewer than 3
+  shared nodes (dotpi-kcjb.55).
 
 ---
 

@@ -113,7 +113,9 @@ std::tuple<FeatureMat, FacesMat, VecDynFloat, Eigen::VectorXi> downsample_mesh(
 // is the higher-density mesh's original (unregistered) features. Original
 // indices are into the shared full-resolution mesh (downsample_mesh output).
 // Returns: features for the higher-density mesh (rows match new_indices).
-// Throws std::invalid_argument when a features/indices row count disagrees.
+// Throws std::invalid_argument when a features/indices row count disagrees,
+// or when new nodes exist but fewer than 3 indices are shared (interpolation
+// uses the 3 nearest shared nodes).
 FeatureMat scale_shift_mesh(Eigen::Ref<const FeatureMat> previous_features,
                             Eigen::Ref<const Eigen::VectorXi> previous_indices,
                             Eigen::Ref<const FeatureMat> new_features,

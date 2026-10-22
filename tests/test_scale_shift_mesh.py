@@ -79,3 +79,16 @@ def test_rejects_mismatched_shapes(pyramid_pair):
         meshmonk.scale_shift_mesh(
             low_features[:-1], low_indices, high_features, high_indices
         )
+
+
+@pytest.mark.parametrize("num_matching", [0, 1, 2])
+def test_rejects_too_few_matching_nodes(num_matching):
+    # New nodes are interpolated from their 3 nearest matching nodes;
+    # fewer than 3 used to segfault (0) or silently pad the k-NN (1, 2).
+    m = trimesh.creation.icosphere(subdivisions=1)
+    features = np.hstack([m.vertices, m.vertex_normals]).astype(np.float32)
+    indices = np.arange(len(features), dtype=np.int32)
+    with pytest.raises(ValueError, match=f"{num_matching} matching node"):
+        meshmonk.scale_shift_mesh(
+            features[:num_matching], indices[:num_matching], features, indices
+        )
