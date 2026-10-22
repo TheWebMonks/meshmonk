@@ -41,11 +41,11 @@ _TRIMESH_IMPORT_ERROR = (
 DEMO_ASSETS = {
     "Template.obj": {
         "url": "https://github.com/jsnyde0/meshmonk/releases/latest/download/Template.obj",
-        "sha256": None,  # populated at first release — set to None until v0.3.0 is tagged
+        "sha256": "b06e350de44e5a571aa7aab016155f195ea224f2aa2b99ad96bb5c86ccdd2edf",
     },
     "demoFace.obj": {
         "url": "https://github.com/jsnyde0/meshmonk/releases/latest/download/demoFace.obj",
-        "sha256": None,  # redistribution rights TBD — see Prerequisites in design doc
+        "sha256": "0ff62fbbd906e9cc051b16cc6dfe93c18b147965249c8256bc169827cf6ccb42",
     },
 }
 

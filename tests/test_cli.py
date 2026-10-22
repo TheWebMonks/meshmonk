@@ -201,21 +201,104 @@ def test_demo_download_flag_present(runner, app):
     assert "--download" in result.output
 
 
-def test_demo_download_exits_code_1(runner, app):
-    """demo --download exits with code 1 in environments where GitHub Releases are unreachable."""
+class _FakeResponse:
+    """Stand-in for the urlopen context manager: serves fixed bytes."""
+
+    def __init__(self, data: bytes):
+        self._data = data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self) -> bytes:
+        return self._data
+
+
+@pytest.fixture
+def offline_cache(monkeypatch, tmp_path):
+    """Point the demo cache at tmp_path and make every urlopen fail offline."""
+    import urllib.error
+    import urllib.request
+
+    import meshmonk.cli as cli
+
+    def _unreachable(*args, **kwargs):
+        raise urllib.error.URLError("network disabled in tests")
+
+    monkeypatch.setattr(cli, "_CACHE_DIR", tmp_path)
+    monkeypatch.setattr(urllib.request, "urlopen", _unreachable)
+    return tmp_path
+
+
+def _serve(monkeypatch, body_for):
+    """Patch urlopen to return body_for(name) for each DEMO_ASSETS url."""
+    import urllib.request
+
+    import meshmonk.cli as cli
+
+    by_url = {a["url"]: name for name, a in cli.DEMO_ASSETS.items()}
+    monkeypatch.setattr(
+        urllib.request,
+        "urlopen",
+        lambda url, timeout=None: _FakeResponse(body_for(by_url[url])),
+    )
+
+
+def test_demo_download_exits_code_1(runner, app, offline_cache):
+    """demo --download exits with code 1 when GitHub Releases are unreachable."""
     result = runner.invoke(app, ["demo", "--download"])
     assert (
         result.exit_code == 1
     ), f"Expected exit code 1, got {result.exit_code}. Output: {result.output}"
 
 
-def test_demo_download_message_is_user_friendly(runner, app):
+def test_demo_download_message_is_user_friendly(runner, app, offline_cache):
     """demo --download prints a user-friendly message (not 'TODO')."""
     result = runner.invoke(app, ["demo", "--download"])
     # Should NOT contain bare 'TODO'
     assert "TODO" not in result.output
-    # Should attempt to download (new implementation uses real GitHub Releases URLs)
     assert "Downloading" in result.output or "download" in result.output.lower()
+
+
+@pytest.mark.parametrize("name", ["Template.obj", "demoFace.obj"])
+def test_demo_asset_digest_matches_tracked_file(name):
+    """DEMO_ASSETS pins the sha256 of the tracked data/ file it ships as."""
+    import hashlib
+
+    import meshmonk.cli as cli
+
+    expected = hashlib.sha256((DATA_DIR / name).read_bytes()).hexdigest()
+    assert cli.DEMO_ASSETS[name]["sha256"] == expected
+
+
+def test_demo_download_digest_mismatch_exits_1_and_removes_file(
+    runner, app, monkeypatch, tmp_path
+):
+    """Wrong bytes from the release URL: exit 1 and no file left in the cache."""
+    import meshmonk.cli as cli
+
+    monkeypatch.setattr(cli, "_CACHE_DIR", tmp_path)
+    _serve(monkeypatch, lambda name: b"not the real mesh")
+    result = runner.invoke(app, ["demo", "--download"])
+    assert result.exit_code == 1, result.output
+    assert "SHA-256 mismatch for Template.obj" in result.output
+    assert not (tmp_path / "Template.obj").exists()
+
+
+def test_demo_download_writes_verified_assets(runner, app, monkeypatch, tmp_path):
+    """Correct bytes from the release URLs: exit 0, both files cached intact."""
+    import meshmonk.cli as cli
+
+    monkeypatch.setattr(cli, "_CACHE_DIR", tmp_path)
+    _serve(monkeypatch, lambda name: (DATA_DIR / name).read_bytes())
+    result = runner.invoke(app, ["demo", "--download"])
+    assert result.exit_code == 0, result.output
+    assert "integrity check not configured" not in result.output
+    for name in cli.DEMO_ASSETS:
+        assert (tmp_path / name).read_bytes() == (DATA_DIR / name).read_bytes()
 
 
 def test_demo_not_found_hint_names_real_lookup_dirs(runner, app, monkeypatch):
