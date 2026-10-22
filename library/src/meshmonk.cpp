@@ -219,6 +219,8 @@ nonrigid_registration(Eigen::Ref<const FeatureMat> floating_features,
     VecDynFloat final_weights = run_final_inlier_pass(
         floating_copy, target_copy, floating_flags_copy, target_flags_copy,
         params.correspondences, params.inliers);
+    if ((final_weights.array() > 0.0f).count() < 4)
+      return tl::unexpected{RegistrationError::InsufficientInliers};
     NonrigidResult result;
     result.aligned_features = floating_copy;
     result.final_inlier_weights = final_weights;
@@ -303,6 +305,8 @@ pyramid_registration(Eigen::Ref<const FeatureMat> floating_features,
     VecDynFloat final_weights = run_final_inlier_pass(
         floating_copy, target_copy, floating_flags_copy, target_flags_copy,
         params.correspondences, params.inliers);
+    if ((final_weights.array() > 0.0f).count() < 4)
+      return tl::unexpected{RegistrationError::InsufficientInliers};
     PyramidResult result;
     result.aligned_features = floating_copy;
     result.final_inlier_weights = final_weights;
